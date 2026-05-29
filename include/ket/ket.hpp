@@ -2,4 +2,5 @@
 // SPDX-FileCopyrightText: 2026 Breno Cunha Queiroz
 #pragma once
 
-namespace ket {}
+#include <ket/gate.hpp>
+#include <ket/qubit.hpp>

@@ -9,6 +9,10 @@ FetchContent_MakeAvailable(googletest)
 
 include(GoogleTest)
 
-add_executable(ket_tests test_sanity.cpp)
+add_executable(ket_tests
+  test_sanity.cpp
+  test_qubit.cpp
+  test_gate.cpp
+)
 target_link_libraries(ket_tests PRIVATE ket GTest::gtest_main)
 gtest_discover_tests(ket_tests)
