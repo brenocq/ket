@@ -22,6 +22,7 @@ ok()   { printf '%s==>%s %s%s%s\n' "$BOLD$GREEN" "$RESET" "$BOLD" "$*" "$RESET";
 BUILD_DIR=build
 KET_PYTHON=OFF
 KET_TESTS=OFF
+KET_EXAMPLES=OFF
 RUN_CPP_TESTS=0
 RUN_PY_TESTS=0
 CLEAN=0
@@ -33,6 +34,7 @@ ${BOLD}Usage:${RESET} ${CYAN}./build.sh${RESET} [options]
 ${BOLD}${BLUE}Build options${RESET} (map to CMake options):
   ${GREEN}-p,  --python${RESET}         Build the Python bindings    ${DIM}(-DKET_PYTHON=ON)${RESET}
   ${GREEN}-t,  --tests${RESET}          Build the C++ tests          ${DIM}(-DKET_TESTS=ON)${RESET}
+  ${GREEN}-e,  --examples${RESET}       Build the example programs   ${DIM}(-DKET_EXAMPLES=ON)${RESET}
 
 ${BOLD}${BLUE}Test options${RESET} (build, then run):
   ${GREEN}-ct, --cpp-tests${RESET}      Run the C++ tests with ctest  ${DIM}(implies --tests)${RESET}
@@ -48,6 +50,7 @@ ${BOLD}${BLUE}Examples${RESET}:
   ${CYAN}./build.sh -ct${RESET}             ${DIM}# build and run the C++ tests${RESET}
   ${CYAN}./build.sh -p${RESET}              ${DIM}# build with the Python bindings${RESET}
   ${CYAN}./build.sh -pt${RESET}             ${DIM}# build bindings and run the Python tests${RESET}
+  ${CYAN}./build.sh -e${RESET}              ${DIM}# build the examples (./build/examples/bell)${RESET}
   ${CYAN}./build.sh --clean -ct -pt${RESET} ${DIM}# clean rebuild, run both test suites${RESET}
 EOF
 }
@@ -56,6 +59,7 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     -p|--python)     KET_PYTHON=ON ;;
     -t|--tests)      KET_TESTS=ON ;;
+    -e|--examples)   KET_EXAMPLES=ON ;;
     -ct|--cpp-tests) RUN_CPP_TESTS=1 ;;
     -pt|--py-tests)  RUN_PY_TESTS=1 ;;
     --clean)         CLEAN=1 ;;
@@ -75,8 +79,11 @@ if [[ $CLEAN == 1 ]]; then
   rm -rf "$BUILD_DIR"
 fi
 
-step "Configuring (KET_PYTHON=$KET_PYTHON, KET_TESTS=$KET_TESTS)"
-cmake -S . -B "$BUILD_DIR" -DKET_PYTHON="$KET_PYTHON" -DKET_TESTS="$KET_TESTS"
+step "Configuring (KET_PYTHON=$KET_PYTHON, KET_TESTS=$KET_TESTS, KET_EXAMPLES=$KET_EXAMPLES)"
+cmake -S . -B "$BUILD_DIR" \
+  -DKET_PYTHON="$KET_PYTHON" \
+  -DKET_TESTS="$KET_TESTS" \
+  -DKET_EXAMPLES="$KET_EXAMPLES"
 
 step "Building"
 cmake --build "$BUILD_DIR" -j
@@ -91,6 +98,10 @@ if [[ $RUN_PY_TESTS == 1 ]]; then
   # Make the freshly built extension importable as part of the `ket` package.
   cp "$BUILD_DIR"/_ket*.so python/ket/
   PYTHONPATH=python python3 -m pytest tests/python
+fi
+
+if [[ $KET_EXAMPLES == ON ]]; then
+  step "Examples built — run them from $BUILD_DIR/examples/ (e.g. ./$BUILD_DIR/examples/bell)"
 fi
 
 ok "Done"

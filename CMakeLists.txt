@@ -7,6 +7,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 option(KET_TESTS "Build the C++ test suite" OFF)
 option(KET_PYTHON "Build the Python bindings" OFF)
+option(KET_EXAMPLES "Build the example programs" OFF)
 
 # Strict warnings, applied only to our own targets (not fetched dependencies).
 add_library(ket_warnings INTERFACE)
@@ -54,4 +55,8 @@ endif()
 if(KET_TESTS)
   enable_testing()
   add_subdirectory(tests)
+endif()
+
+if(KET_EXAMPLES)
+  add_subdirectory(examples)
 endif()
