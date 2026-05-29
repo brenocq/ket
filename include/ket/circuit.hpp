@@ -3,7 +3,9 @@
 #pragma once
 
 #include <cstddef>
+#include <initializer_list>
 #include <string>
+#include <vector>
 
 #include <ket/dag.hpp>
 #include <ket/gate.hpp>
@@ -29,6 +31,17 @@ class Circuit {
   void cnot(std::size_t control, std::size_t target) {
     cnot(Qubit{control}, Qubit{target});
   }
+
+  // A barrier across all qubits, optionally labeled. Barriers are no-ops in
+  // simulation but appear in the diagram and serialize the DAG across them.
+  void barrier(const std::string& label = "");
+  // A barrier across a subset of qubits (e.g. c.barrier({0, 1}, "prep")).
+  // The initializer-list form keeps the braced syntax unambiguous; the vector
+  // form is for programmatic lists (and the Python binding).
+  void barrier(std::initializer_list<std::size_t> qubits,
+               const std::string& label = "");
+  void barrier(const std::vector<std::size_t>& qubits,
+               const std::string& label = "");
 
   const Dag& dag() const noexcept { return dag_; }
 

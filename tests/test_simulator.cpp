@@ -114,3 +114,17 @@ TEST(Simulator, BellCircuitProducesEntangledState) {
   ExpectAmplitude(s[2], {0.0, 0.0});
   ExpectAmplitude(s[3], {inv_sqrt2, 0.0});
 }
+
+TEST(Simulator, BarrierIsNoOp) {
+  ket::Circuit c{2};
+  c.h(0);
+  c.barrier();
+  c.cnot(0, 1);
+  c.barrier({1}, "done");
+  auto s = ket::run(c);
+  const double inv_sqrt2 = 1.0 / std::sqrt(2.0);
+  ExpectAmplitude(s[0], {inv_sqrt2, 0.0});
+  ExpectAmplitude(s[1], {0.0, 0.0});
+  ExpectAmplitude(s[2], {0.0, 0.0});
+  ExpectAmplitude(s[3], {inv_sqrt2, 0.0});
+}

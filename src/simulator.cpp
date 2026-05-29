@@ -81,6 +81,8 @@ StateVector run(const Circuit& circuit) {
         assert(g.qubits.size() == 2);
         apply_cnot(state, g.qubits[0].index, g.qubits[1].index);
         break;
+      case GateType::Barrier:
+        break;  // no-op: barriers only affect ordering and rendering
     }
   }
 

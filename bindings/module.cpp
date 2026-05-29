@@ -44,6 +44,14 @@ PYBIND11_MODULE(_ket, m) {
            py::arg("qubit"), "Apply a Pauli-Z gate.")
       .def("cnot", py::overload_cast<std::size_t, std::size_t>(&ket::Circuit::cnot),
            py::arg("control"), py::arg("target"), "Apply a controlled-NOT gate.")
+      .def("barrier",
+           py::overload_cast<const std::string&>(&ket::Circuit::barrier),
+           py::arg("label") = "", "Add a barrier across all qubits.")
+      .def("barrier",
+           py::overload_cast<const std::vector<std::size_t>&, const std::string&>(
+               &ket::Circuit::barrier),
+           py::arg("qubits"), py::arg("label") = "",
+           "Add a barrier across a subset of qubits.")
       .def("print", &ket::Circuit::print, "Render the circuit as ASCII art.")
       .def("__str__", &ket::Circuit::print)
       .def("__repr__", [](const ket::Circuit& c) {

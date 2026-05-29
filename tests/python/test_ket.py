@@ -89,3 +89,22 @@ def test_measure_without_seed_is_valid():
     state = ket.run(ket.Circuit(1))  # ground state |0>
     for _ in range(50):
         assert ket.measure(state) == 0
+
+
+def test_barrier_renders_and_is_noop():
+    c = ket.Circuit(2)
+    c.h(0)
+    c.barrier("sync")       # all qubits, labeled
+    c.cnot(0, 1)
+    c.barrier([1])          # subset
+
+    drawing = c.print()
+    assert "░" in drawing
+    assert "sync" in drawing
+
+    # The barrier must not change the simulated state (still a Bell state).
+    state = ket.run(c)
+    assert state[0] == pytest.approx(complex(INV_SQRT2, 0.0))
+    assert state[3] == pytest.approx(complex(INV_SQRT2, 0.0))
+    assert state[1] == pytest.approx(0.0)
+    assert state[2] == pytest.approx(0.0)

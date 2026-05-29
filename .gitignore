@@ -4,7 +4,7 @@ build-py/
 
 # Cache
 .cache/
-__pycache__/
+**/__pycache__/
 
 # Test
 Testing/

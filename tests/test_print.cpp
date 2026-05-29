@@ -64,3 +64,41 @@ TEST(Print, CnotSpansIntermediateQubit) {
             "q_2: ┤ X ├\n"
             "     └───┘\n");
 }
+
+TEST(Print, BarrierFullSpan) {
+  ket::Circuit c{2};
+  c.h(0);
+  c.barrier();
+  EXPECT_EQ(c.print(),
+            "     ┌───┐░\n"
+            "q_0: ┤ H ├░\n"
+            "     └───┘░\n"
+            "q_1: ─────░\n"
+            "          ░\n");
+}
+
+TEST(Print, BarrierWithLabel) {
+  ket::Circuit c{2};
+  c.h(0);
+  c.barrier("m");
+  EXPECT_EQ(c.print(),
+            "          m\n"
+            "     ┌───┐░\n"
+            "q_0: ┤ H ├░\n"
+            "     └───┘░\n"
+            "q_1: ─────░\n"
+            "          ░\n");
+}
+
+TEST(Print, BarrierSubsetLeavesOtherWiresConnected) {
+  ket::Circuit c{3};
+  c.barrier({1, 2});
+  EXPECT_EQ(c.print(),
+            "      \n"
+            "q_0: ─\n"
+            "     ░\n"
+            "q_1: ░\n"
+            "     ░\n"
+            "q_2: ░\n"
+            "     ░\n");
+}
