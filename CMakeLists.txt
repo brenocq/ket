@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-option(KET_TESTS "Build the C++ test suite" ON)
+option(KET_TESTS "Build the C++ test suite" OFF)
 option(KET_PYTHON "Build the Python bindings" OFF)
 
 # Strict warnings, applied only to our own targets (not fetched dependencies).

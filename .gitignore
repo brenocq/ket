@@ -10,6 +10,9 @@ __pycache__/
 Testing/
 .pytest_cache/
 
+# Compiled Python extension copied into the package by `build.sh -y`
+python/ket/*.so
+
 # Others
 .claude/
 .venv/

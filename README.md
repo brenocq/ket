@@ -140,6 +140,13 @@ pip install -e ".[test]"
 pytest
 ```
 
+From a source checkout you can also build the bindings and run the test suite
+in one step, without `pip`:
+
+```sh
+./build.sh -pt
+```
+
 ### Example
 
 ```python
@@ -185,26 +192,24 @@ q_1: ─────┤ X ├
 
 ## Building
 
-Ket uses CMake and requires a C++20 compiler. Tests are built with GoogleTest,
-which is fetched automatically.
+Ket uses CMake and requires a C++20 compiler. The `build.sh` helper wraps the
+common workflows; its flags map to the underlying CMake options. Tests and the
+Python bindings are opt-in.
 
 ```sh
-cmake -S . -B build
-cmake --build build
-ctest --test-dir build
+./build.sh            # build the C++ library
+./build.sh -ct        # build and run the C++ tests
+./build.sh -p         # build with the Python bindings
+./build.sh -pt        # build the bindings and run the Python tests
+./build.sh --help     # all options
 ```
+
+Tests are built with GoogleTest, which is fetched automatically. You can still
+drive CMake directly if you prefer (`cmake -S . -B build -DKET_TESTS=ON`, etc.).
 
 To use Ket in your own project, link against the `ket` library target and add
 `include/` to your include path. The umbrella header `<ket/ket.hpp>` pulls in
 the whole public API.
-
-The Python bindings are normally built through `pip` (see [Python](#python)).
-To build them directly with CMake instead, enable the `KET_PYTHON` option:
-
-```sh
-cmake -S . -B build -DKET_PYTHON=ON
-cmake --build build
-```
 
 ## Limitations
 
