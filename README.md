@@ -1,4 +1,7 @@
-# Ket
+<div align="center">
+  <img width="360" height="300" alt="ket_title" src="https://github.com/user-attachments/assets/3273a104-0cdc-41b0-bc54-d68fffcfd90c" />
+</div>
+
 
 **Ket** (|⟩) is a quantum computing library for C++. You describe a quantum
 circuit, add gates to it, simulate it on a built-in state-vector simulator, and
