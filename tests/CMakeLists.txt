@@ -17,6 +17,7 @@ add_executable(ket_tests
   test_dag.cpp
   test_simulator.cpp
   test_measurement.cpp
+  test_print.cpp
 )
 target_link_libraries(ket_tests PRIVATE ket GTest::gtest_main)
 gtest_discover_tests(ket_tests)

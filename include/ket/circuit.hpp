@@ -3,6 +3,7 @@
 #pragma once
 
 #include <cstddef>
+#include <string>
 
 #include <ket/dag.hpp>
 #include <ket/gate.hpp>
@@ -30,6 +31,8 @@ class Circuit {
   }
 
   const Dag& dag() const noexcept { return dag_; }
+
+  std::string print() const;
 
  private:
   std::size_t n_qubits_;
