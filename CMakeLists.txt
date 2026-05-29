@@ -8,6 +8,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 add_library(ket
   src/ket.cpp
   src/circuit.cpp
+  src/simulator.cpp
 )
 target_include_directories(ket PUBLIC include)
 
