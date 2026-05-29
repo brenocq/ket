@@ -5,13 +5,15 @@
 #include <algorithm>
 #include <cassert>
 #include <cstddef>
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
 
 namespace ket {
 
-Circuit::Circuit(std::size_t n_qubits) : n_qubits_(n_qubits), dag_(n_qubits) {}
+Circuit::Circuit(std::size_t n_qubits, std::string name)
+    : n_qubits_(n_qubits), name_(std::move(name)), dag_(n_qubits) {}
 
 Qubit Circuit::qubit(std::size_t i) const {
   assert(i < n_qubits_);
@@ -61,6 +63,41 @@ void Circuit::barrier(const std::vector<std::size_t>& qubits,
     qs.push_back(Qubit{i});
   }
   dag_.add(Gate{GateType::Barrier, std::move(qs), label});
+}
+
+void Circuit::append(const Circuit& sub, const std::vector<std::size_t>& qubits,
+                     const std::string& name) {
+  assert(qubits.size() == sub.n_qubits());
+  std::vector<Qubit> qs;
+  qs.reserve(qubits.size());
+  for (std::size_t i : qubits) {
+    assert(i < n_qubits_);
+    qs.push_back(Qubit{i});
+  }
+  std::string block_name = !name.empty() ? name
+                           : !sub.name_.empty() ? sub.name_
+                                                : "circ";
+  dag_.add(Gate{GateType::Composite, std::move(qs), std::move(block_name),
+                std::make_shared<const Circuit>(sub)});
+}
+
+Circuit Circuit::decompose() const {
+  Circuit out{n_qubits_, name_};
+  for (const DagNode& node : dag_.nodes()) {
+    const Gate& g = node.gate;
+    if (g.type == GateType::Composite && g.definition) {
+      // Inline the definition, remapping each sub-qubit i to the parent qubit
+      // recorded in g.qubits[i].
+      for (const DagNode& sub_node : g.definition->dag().nodes()) {
+        Gate inlined = sub_node.gate;
+        for (Qubit& q : inlined.qubits) q = g.qubits[q.index];
+        out.dag_.add(std::move(inlined));
+      }
+    } else {
+      out.dag_.add(g);
+    }
+  }
+  return out;
 }
 
 namespace {
@@ -133,6 +170,57 @@ std::vector<std::string> render_barrier(std::size_t n_qubits,
   return col;
 }
 
+// A composite block: a labeled box spanning its qubits, with each mapped wire
+// annotated by its sub-circuit qubit index, and the name centered vertically.
+std::vector<std::string> render_composite(std::size_t n_qubits, const Gate& g,
+                                          const std::string& name,
+                                          std::size_t inner_w) {
+  const std::size_t height = 2 * n_qubits + 1;
+  std::vector<int> sub_index(n_qubits, -1);
+  std::size_t lo = n_qubits - 1;
+  std::size_t hi = 0;
+  for (std::size_t j = 0; j < g.qubits.size(); ++j) {
+    sub_index[g.qubits[j].index] = static_cast<int>(j);
+    lo = std::min(lo, g.qubits[j].index);
+    hi = std::max(hi, g.qubits[j].index);
+  }
+
+  std::string dashes;
+  for (std::size_t k = 0; k < inner_w; ++k) dashes += "─";
+  std::string wire_full;
+  for (std::size_t k = 0; k < inner_w + 2; ++k) wire_full += "─";
+  const std::string spaces_full(inner_w + 2, ' ');
+  const std::size_t center = lo + hi + 1;  // vertically centered row
+
+  std::vector<std::string> col(height);
+  for (std::size_t r = 0; r < height; ++r) {
+    if (r < 2 * lo || r > 2 * hi + 2) {
+      col[r] = (r % 2 == 1) ? wire_full : spaces_full;  // wire outside the box
+    } else if (r == 2 * lo) {
+      col[r] = "┌" + dashes + "┐";
+    } else if (r == 2 * hi + 2) {
+      col[r] = "└" + dashes + "┘";
+    } else {
+      std::string inner(inner_w, ' ');
+      if (r == center) {  // name, right-justified
+        const std::size_t start = inner_w - name.size();
+        for (std::size_t k = 0; k < name.size(); ++k) inner[start + k] = name[k];
+      }
+      if (r % 2 == 1) {  // wire row: prepend the sub-qubit index
+        const int j = sub_index[(r - 1) / 2];
+        if (j >= 0) {
+          const std::string idx = std::to_string(j);
+          for (std::size_t k = 0; k < idx.size(); ++k) inner[k] = idx[k];
+        }
+        col[r] = "┤" + inner + "├";
+      } else {
+        col[r] = "│" + inner + "│";
+      }
+    }
+  }
+  return col;
+}
+
 }  // namespace
 
 std::string Circuit::print() const {
@@ -188,6 +276,14 @@ std::string Circuit::print() const {
         if (!g.label.empty()) top_labels.emplace_back(current_offset(), g.label);
         add_column(render_barrier(n_qubits_, g.qubits), 1);
         break;
+      case GateType::Composite: {
+        const std::string nm = g.label.empty() ? "circ" : g.label;
+        const std::size_t max_idx = g.qubits.empty() ? 0 : g.qubits.size() - 1;
+        const std::size_t inner_w =
+            std::to_string(max_idx).size() + nm.size() + 1;
+        add_column(render_composite(n_qubits_, g, nm, inner_w), inner_w + 2);
+        break;
+      }
     }
   }
 

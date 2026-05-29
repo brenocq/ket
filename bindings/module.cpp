@@ -34,8 +34,10 @@ PYBIND11_MODULE(_ket, m) {
       });
 
   py::class_<ket::Circuit>(m, "Circuit", "A quantum circuit (a DAG of gates).")
-      .def(py::init<std::size_t>(), py::arg("n_qubits"))
+      .def(py::init<std::size_t, std::string>(), py::arg("n_qubits"),
+           py::arg("name") = "")
       .def_property_readonly("n_qubits", &ket::Circuit::n_qubits)
+      .def_property_readonly("name", &ket::Circuit::name)
       .def("h", py::overload_cast<std::size_t>(&ket::Circuit::h),
            py::arg("qubit"), "Apply a Hadamard gate.")
       .def("x", py::overload_cast<std::size_t>(&ket::Circuit::x),
@@ -52,6 +54,11 @@ PYBIND11_MODULE(_ket, m) {
                &ket::Circuit::barrier),
            py::arg("qubits"), py::arg("label") = "",
            "Add a barrier across a subset of qubits.")
+      .def("append", &ket::Circuit::append, py::arg("sub"), py::arg("qubits"),
+           py::arg("name") = "",
+           "Append a sub-circuit as a single composite block.")
+      .def("decompose", &ket::Circuit::decompose,
+           "Return a copy with composite blocks expanded one level.")
       .def("print", &ket::Circuit::print, "Render the circuit as ASCII art.")
       .def("__str__", &ket::Circuit::print)
       .def("__repr__", [](const ket::Circuit& c) {

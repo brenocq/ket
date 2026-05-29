@@ -15,9 +15,10 @@ namespace ket {
 
 class Circuit {
  public:
-  explicit Circuit(std::size_t n_qubits);
+  explicit Circuit(std::size_t n_qubits, std::string name = "");
 
   std::size_t n_qubits() const noexcept { return n_qubits_; }
+  const std::string& name() const noexcept { return name_; }
   Qubit qubit(std::size_t i) const;
 
   void h(Qubit q);
@@ -43,12 +44,23 @@ class Circuit {
   void barrier(const std::vector<std::size_t>& qubits,
                const std::string& label = "");
 
+  // Append a sub-circuit as a single composite block acting on the given parent
+  // qubits (sub-qubit i -> qubits[i]). It renders as one labeled box and can be
+  // expanded with decompose(). `name` defaults to the sub-circuit's name.
+  void append(const Circuit& sub, const std::vector<std::size_t>& qubits,
+              const std::string& name = "");
+
+  // Return a copy with every composite block expanded one level into its
+  // definition (with qubits remapped). Primitive gates are copied unchanged.
+  Circuit decompose() const;
+
   const Dag& dag() const noexcept { return dag_; }
 
   std::string print() const;
 
  private:
   std::size_t n_qubits_;
+  std::string name_;
   Dag dag_;
 };
 

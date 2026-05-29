@@ -8,6 +8,7 @@
 #include <sstream>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include <ket/circuit.hpp>
 #include <ket/dag.hpp>
@@ -55,6 +56,45 @@ void apply_cnot(StateVector& s, std::size_t control, std::size_t target) {
   }
 }
 
+// Apply a circuit's gates to the state. `wire[i]` is the actual state-vector
+// qubit that the circuit's qubit i maps to (identity at the top level, composed
+// for nested composite blocks).
+void apply_circuit(StateVector& state, const Circuit& circuit,
+                   const std::vector<std::size_t>& wire) {
+  for (const DagNode& node : circuit.dag().nodes()) {
+    const Gate& g = node.gate;
+    switch (g.type) {
+      case GateType::H:
+        assert(g.qubits.size() == 1);
+        apply_h(state, wire[g.qubits[0].index]);
+        break;
+      case GateType::X:
+        assert(g.qubits.size() == 1);
+        apply_x(state, wire[g.qubits[0].index]);
+        break;
+      case GateType::Z:
+        assert(g.qubits.size() == 1);
+        apply_z(state, wire[g.qubits[0].index]);
+        break;
+      case GateType::CNOT:
+        assert(g.qubits.size() == 2);
+        apply_cnot(state, wire[g.qubits[0].index], wire[g.qubits[1].index]);
+        break;
+      case GateType::Barrier:
+        break;  // no-op: barriers only affect ordering and rendering
+      case GateType::Composite: {
+        assert(g.definition);
+        std::vector<std::size_t> sub_wire(g.definition->n_qubits());
+        for (std::size_t j = 0; j < g.qubits.size(); ++j) {
+          sub_wire[j] = wire[g.qubits[j].index];
+        }
+        apply_circuit(state, *g.definition, sub_wire);
+        break;
+      }
+    }
+  }
+}
+
 }  // namespace
 
 StateVector run(const Circuit& circuit) {
@@ -62,29 +102,9 @@ StateVector run(const Circuit& circuit) {
   StateVector state(dim, Complex{0.0, 0.0});
   state[0] = Complex{1.0, 0.0};
 
-  for (const DagNode& node : circuit.dag().nodes()) {
-    const Gate& g = node.gate;
-    switch (g.type) {
-      case GateType::H:
-        assert(g.qubits.size() == 1);
-        apply_h(state, g.qubits[0].index);
-        break;
-      case GateType::X:
-        assert(g.qubits.size() == 1);
-        apply_x(state, g.qubits[0].index);
-        break;
-      case GateType::Z:
-        assert(g.qubits.size() == 1);
-        apply_z(state, g.qubits[0].index);
-        break;
-      case GateType::CNOT:
-        assert(g.qubits.size() == 2);
-        apply_cnot(state, g.qubits[0].index, g.qubits[1].index);
-        break;
-      case GateType::Barrier:
-        break;  // no-op: barriers only affect ordering and rendering
-    }
-  }
+  std::vector<std::size_t> wire(circuit.n_qubits());
+  for (std::size_t i = 0; i < wire.size(); ++i) wire[i] = i;
+  apply_circuit(state, circuit, wire);
 
   return state;
 }

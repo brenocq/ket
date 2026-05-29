@@ -25,6 +25,10 @@ cmake.version = ">=3.20"
 wheel.packages = ["python/ket"]
 cmake.define.KET_PYTHON = "ON"
 cmake.define.KET_TESTS = "OFF"
+# Persistent build dir + rebuild-on-import, so an editable install picks up
+# C++ changes the next time the package is imported.
+build-dir = "build/skbuild-{wheel_tag}"
+editable.rebuild = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests/python"]

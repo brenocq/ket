@@ -30,10 +30,18 @@ constexpr std::size_t kInputMask = (std::size_t{1} << kInputs) - 1;
 using Oracle = std::function<void(ket::Circuit&)>;
 
 ket::Circuit deutsch_jozsa(const Oracle& oracle) {
+  // Build the oracle as its own sub-circuit so it appears as a single f(x)
+  // block in the diagram (and can be expanded with decompose()).
+  ket::Circuit f{kQubits, "f(x)"};
+  oracle(f);
+
+  std::vector<std::size_t> all(kQubits);
+  for (std::size_t q = 0; q < kQubits; ++q) all[q] = q;
+
   ket::Circuit c{kQubits};
   c.x(kAncilla);                                            // ancilla -> |1⟩
   for (std::size_t q = 0; q < kQubits; ++q) c.h(q);         // H on all qubits
-  oracle(c);                                                // U_f
+  c.append(f, all);                                         // U_f as a block
   for (std::size_t q = 0; q < kInputs; ++q) c.h(q);         // H on inputs
   return c;
 }
@@ -62,11 +70,14 @@ int main() {
             << " input qubits + 1 ancilla.\n"
             << "Decides constant vs balanced in a single query.\n\n";
 
-  // Show the circuit and final state for one balanced oracle.
+  // Show the circuit and final state for one balanced oracle. The oracle is an
+  // f(x) block; decompose() reveals the gates inside it.
   const Case& demo = cases.back();
   ket::Circuit demo_circuit = deutsch_jozsa(demo.oracle);
   std::cout << "Example circuit (" << demo.name << "):\n"
             << demo_circuit.print() << '\n';
+  std::cout << "With the f(x) block expanded:\n"
+            << demo_circuit.decompose().print() << '\n';
   std::cout << "State before measuring the input register:\n"
             << ket::run(demo_circuit).print() << '\n';
 

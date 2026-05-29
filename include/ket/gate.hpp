@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2026 Breno Cunha Queiroz
 #pragma once
 
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -9,12 +10,17 @@
 
 namespace ket {
 
-enum class GateType { H, X, Z, CNOT, Barrier };
+class Circuit;  // forward declaration for composite-gate definitions
+
+enum class GateType { H, X, Z, CNOT, Barrier, Composite };
 
 struct Gate {
   GateType type;
-  std::vector<Qubit> qubits;
-  std::string label = "";  // used by Barrier; empty for unlabeled operations
+  std::vector<Qubit> qubits;  // for Composite: sub-qubit i maps to qubits[i]
+  std::string label = "";     // Barrier label, or Composite block name
+  // Non-null only for Composite: the sub-circuit this block expands to. Shared
+  // so the same definition can back several appended blocks.
+  std::shared_ptr<const Circuit> definition = nullptr;
 };
 
 }  // namespace ket

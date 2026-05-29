@@ -91,6 +91,30 @@ def test_measure_without_seed_is_valid():
         assert ket.measure(state) == 0
 
 
+def test_composite_block_append_decompose_and_simulate():
+    bell = ket.Circuit(2, "bell")
+    bell.h(0)
+    bell.cnot(0, 1)
+
+    c = ket.Circuit(2)
+    c.append(bell, [0, 1])
+
+    # Renders as a single labeled box.
+    drawing = c.print()
+    assert "bell" in drawing
+    assert "┤0" in drawing
+
+    # Simulating the block matches an inlined Bell state.
+    state = ket.run(c)
+    assert state[0] == pytest.approx(complex(INV_SQRT2, 0.0))
+    assert state[3] == pytest.approx(complex(INV_SQRT2, 0.0))
+
+    # decompose() expands the block into primitive gates.
+    expanded = c.decompose()
+    assert "bell" not in expanded.print()
+    assert "H" in expanded.print()
+
+
 def test_barrier_renders_and_is_noop():
     c = ket.Circuit(2)
     c.h(0)
