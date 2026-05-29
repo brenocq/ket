@@ -4,5 +4,6 @@
 
 #include <ket/circuit.hpp>
 #include <ket/gate.hpp>
+#include <ket/measurement.hpp>
 #include <ket/qubit.hpp>
 #include <ket/simulator.hpp>

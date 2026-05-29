@@ -9,6 +9,7 @@ add_library(ket
   src/ket.cpp
   src/circuit.cpp
   src/simulator.cpp
+  src/measurement.cpp
 )
 target_include_directories(ket PUBLIC include)
 
