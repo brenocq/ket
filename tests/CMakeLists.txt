@@ -13,6 +13,7 @@ add_executable(ket_tests
   test_sanity.cpp
   test_qubit.cpp
   test_gate.cpp
+  test_circuit.cpp
 )
 target_link_libraries(ket_tests PRIVATE ket GTest::gtest_main)
 gtest_discover_tests(ket_tests)
