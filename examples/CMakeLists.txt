@@ -3,3 +3,6 @@ target_link_libraries(bell PRIVATE ket ket_warnings)
 
 add_executable(ghz ghz.cpp)
 target_link_libraries(ghz PRIVATE ket ket_warnings)
+
+add_executable(deutsch_jozsa deutsch_jozsa.cpp)
+target_link_libraries(deutsch_jozsa PRIVATE ket ket_warnings)
