@@ -1,6 +1,15 @@
+# Build
 build/
 build-py/
+
+# Cache
 .cache/
-.venv/
-.claude/
+__pycache__/
+
+# Test
 Testing/
+.pytest_cache/
+
+# Others
+.claude/
+.venv/
