@@ -8,6 +8,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 add_library(ket
   src/ket.cpp
   src/circuit.cpp
+  src/dag.cpp
   src/simulator.cpp
   src/measurement.cpp
 )

@@ -6,7 +6,7 @@
 
 namespace ket {
 
-Circuit::Circuit(std::size_t n_qubits) : n_qubits_(n_qubits) {}
+Circuit::Circuit(std::size_t n_qubits) : n_qubits_(n_qubits), dag_(n_qubits) {}
 
 Qubit Circuit::qubit(std::size_t i) const {
   assert(i < n_qubits_);
@@ -15,24 +15,24 @@ Qubit Circuit::qubit(std::size_t i) const {
 
 void Circuit::h(Qubit q) {
   assert(q.index < n_qubits_);
-  gates_.push_back(Gate{GateType::H, {q}});
+  dag_.add(Gate{GateType::H, {q}});
 }
 
 void Circuit::x(Qubit q) {
   assert(q.index < n_qubits_);
-  gates_.push_back(Gate{GateType::X, {q}});
+  dag_.add(Gate{GateType::X, {q}});
 }
 
 void Circuit::z(Qubit q) {
   assert(q.index < n_qubits_);
-  gates_.push_back(Gate{GateType::Z, {q}});
+  dag_.add(Gate{GateType::Z, {q}});
 }
 
 void Circuit::cnot(Qubit control, Qubit target) {
   assert(control.index < n_qubits_);
   assert(target.index < n_qubits_);
   assert(control.index != target.index);
-  gates_.push_back(Gate{GateType::CNOT, {control, target}});
+  dag_.add(Gate{GateType::CNOT, {control, target}});
 }
 
 }  // namespace ket

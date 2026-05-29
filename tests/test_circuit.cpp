@@ -4,7 +4,7 @@
 TEST(Circuit, EmptyHasNoGates) {
   ket::Circuit c{2};
   EXPECT_EQ(c.n_qubits(), 2u);
-  EXPECT_TRUE(c.gates().empty());
+  EXPECT_TRUE(c.dag().nodes().empty());
 }
 
 TEST(Circuit, BellCircuit) {
@@ -14,30 +14,32 @@ TEST(Circuit, BellCircuit) {
   c.h(q0);
   c.cnot(q0, q1);
 
-  ASSERT_EQ(c.gates().size(), 2u);
+  const auto& nodes = c.dag().nodes();
+  ASSERT_EQ(nodes.size(), 2u);
 
-  EXPECT_EQ(c.gates()[0].type, ket::GateType::H);
-  ASSERT_EQ(c.gates()[0].qubits.size(), 1u);
-  EXPECT_EQ(c.gates()[0].qubits[0].index, 0u);
+  EXPECT_EQ(nodes[0].gate.type, ket::GateType::H);
+  ASSERT_EQ(nodes[0].gate.qubits.size(), 1u);
+  EXPECT_EQ(nodes[0].gate.qubits[0].index, 0u);
 
-  EXPECT_EQ(c.gates()[1].type, ket::GateType::CNOT);
-  ASSERT_EQ(c.gates()[1].qubits.size(), 2u);
-  EXPECT_EQ(c.gates()[1].qubits[0].index, 0u);
-  EXPECT_EQ(c.gates()[1].qubits[1].index, 1u);
+  EXPECT_EQ(nodes[1].gate.type, ket::GateType::CNOT);
+  ASSERT_EQ(nodes[1].gate.qubits.size(), 2u);
+  EXPECT_EQ(nodes[1].gate.qubits[0].index, 0u);
+  EXPECT_EQ(nodes[1].gate.qubits[1].index, 1u);
 }
 
 TEST(Circuit, AcceptsSizeTOverloads) {
   ket::Circuit c{2};
   c.h(0);
   c.cnot(0, 1);
-  ASSERT_EQ(c.gates().size(), 2u);
-  EXPECT_EQ(c.gates()[0].type, ket::GateType::H);
-  ASSERT_EQ(c.gates()[0].qubits.size(), 1u);
-  EXPECT_EQ(c.gates()[0].qubits[0].index, 0u);
-  EXPECT_EQ(c.gates()[1].type, ket::GateType::CNOT);
-  ASSERT_EQ(c.gates()[1].qubits.size(), 2u);
-  EXPECT_EQ(c.gates()[1].qubits[0].index, 0u);
-  EXPECT_EQ(c.gates()[1].qubits[1].index, 1u);
+  const auto& nodes = c.dag().nodes();
+  ASSERT_EQ(nodes.size(), 2u);
+  EXPECT_EQ(nodes[0].gate.type, ket::GateType::H);
+  ASSERT_EQ(nodes[0].gate.qubits.size(), 1u);
+  EXPECT_EQ(nodes[0].gate.qubits[0].index, 0u);
+  EXPECT_EQ(nodes[1].gate.type, ket::GateType::CNOT);
+  ASSERT_EQ(nodes[1].gate.qubits.size(), 2u);
+  EXPECT_EQ(nodes[1].gate.qubits[0].index, 0u);
+  EXPECT_EQ(nodes[1].gate.qubits[1].index, 1u);
 }
 
 TEST(Circuit, AllSingleQubitGates) {
@@ -46,8 +48,9 @@ TEST(Circuit, AllSingleQubitGates) {
   c.h(q);
   c.x(q);
   c.z(q);
-  ASSERT_EQ(c.gates().size(), 3u);
-  EXPECT_EQ(c.gates()[0].type, ket::GateType::H);
-  EXPECT_EQ(c.gates()[1].type, ket::GateType::X);
-  EXPECT_EQ(c.gates()[2].type, ket::GateType::Z);
+  const auto& nodes = c.dag().nodes();
+  ASSERT_EQ(nodes.size(), 3u);
+  EXPECT_EQ(nodes[0].gate.type, ket::GateType::H);
+  EXPECT_EQ(nodes[1].gate.type, ket::GateType::X);
+  EXPECT_EQ(nodes[2].gate.type, ket::GateType::Z);
 }

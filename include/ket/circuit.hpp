@@ -3,8 +3,8 @@
 #pragma once
 
 #include <cstddef>
-#include <vector>
 
+#include <ket/dag.hpp>
 #include <ket/gate.hpp>
 #include <ket/qubit.hpp>
 
@@ -29,11 +29,11 @@ class Circuit {
     cnot(Qubit{control}, Qubit{target});
   }
 
-  const std::vector<Gate>& gates() const noexcept { return gates_; }
+  const Dag& dag() const noexcept { return dag_; }
 
  private:
   std::size_t n_qubits_;
-  std::vector<Gate> gates_;
+  Dag dag_;
 };
 
 }  // namespace ket

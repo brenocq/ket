@@ -14,6 +14,7 @@ add_executable(ket_tests
   test_qubit.cpp
   test_gate.cpp
   test_circuit.cpp
+  test_dag.cpp
   test_simulator.cpp
   test_measurement.cpp
 )

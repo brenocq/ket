@@ -8,6 +8,7 @@
 #include <utility>
 
 #include <ket/circuit.hpp>
+#include <ket/dag.hpp>
 #include <ket/gate.hpp>
 #include <ket/qubit.hpp>
 
@@ -59,7 +60,8 @@ StateVector run(const Circuit& circuit) {
   StateVector state(dim, Complex{0.0, 0.0});
   state[0] = Complex{1.0, 0.0};
 
-  for (const Gate& g : circuit.gates()) {
+  for (const DagNode& node : circuit.dag().nodes()) {
+    const Gate& g = node.gate;
     switch (g.type) {
       case GateType::H:
         assert(g.qubits.size() == 1);
