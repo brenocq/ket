@@ -1,3 +1,6 @@
 build/
+build-py/
 .cache/
+.venv/
+.claude/
 Testing/

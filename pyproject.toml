@@ -1,0 +1,30 @@
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: 2026 Breno Cunha Queiroz
+[build-system]
+requires = ["scikit-build-core>=0.10", "pybind11>=2.12"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "ket"
+version = "0.1.0"
+description = "A quantum computing library for C++ with Python bindings"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "Breno Cunha Queiroz" }]
+keywords = ["quantum", "quantum-computing", "simulator"]
+
+[project.optional-dependencies]
+test = ["pytest"]
+
+[tool.scikit-build]
+minimum-version = "0.10"
+cmake.version = ">=3.20"
+# The pure-Python package lives here; the compiled _ket module is installed
+# into the same `ket/` directory by CMake (see install(TARGETS _ket ...)).
+wheel.packages = ["python/ket"]
+cmake.define.KET_PYTHON = "ON"
+cmake.define.KET_TESTS = "OFF"
+
+[tool.pytest.ini_options]
+testpaths = ["tests/python"]

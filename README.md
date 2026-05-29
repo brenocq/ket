@@ -3,16 +3,14 @@
 </div>
 
 
-**Ket** (|⟩) is a quantum computing library for C++. You describe a quantum
-circuit, add gates to it, simulate it on a built-in state-vector simulator, and
-sample measurement outcomes.
+**Ket** (|⟩) is a quantum computing library for C++, with first-class Python
+bindings. You describe a quantum circuit, add gates to it, simulate it on a
+built-in state-vector simulator, and sample measurement outcomes.
 
 Ket represents a circuit as a **directed acyclic graph (DAG)** of gates: each
 node is a gate, and edges connect gates that share a qubit, capturing the
 order in which they must execute. This makes gate dependencies explicit and
 leaves room for future analysis and optimization passes.
-
-> Python bindings are planned but not yet available.
 
 ## Status
 
@@ -115,6 +113,76 @@ proportions, and never onto |01⟩ or |10⟩:
 |3>: 507
 ```
 
+## Python
+
+Ket ships Python bindings built with [pybind11]. The Python API mirrors the C++
+one — `Circuit`, `run`, and `measure` — with a few Pythonic touches:
+`Circuit` and `StateVector` render through `print()`/`str()`, `StateVector`
+supports `len()` and indexing (returning a Python `complex`), and `measure`
+takes an optional `seed` instead of an RNG object.
+
+### Install
+
+The bindings compile from source via [scikit-build-core], so a C++20 compiler
+and CMake are required. Install into a virtual environment:
+
+```sh
+python -m venv .venv
+source .venv/bin/activate
+pip install .
+```
+
+For development, an editable install recompiles on the next import after a
+C++ change:
+
+```sh
+pip install -e ".[test]"
+pytest
+```
+
+### Example
+
+```python
+import ket
+from collections import Counter
+
+# Build a Bell state: H on q0, then CNOT(q0 -> q1).
+c = ket.Circuit(2)
+c.h(0)
+c.cnot(0, 1)
+print(c)
+
+# Simulate and inspect the amplitudes.
+state = ket.run(c)
+print(state)
+
+# Sample measurement outcomes (pass `seed` for reproducibility).
+counts = Counter(ket.measure(state, seed=s) for s in range(1000))
+for i in range(4):
+    print(f"|{i}>: {counts[i]}")
+```
+
+Output:
+
+```
+     ┌───┐
+q_0: ┤ H ├──■──
+     └───┘┌─┴─┐
+q_1: ─────┤ X ├
+          └───┘
+|00⟩: 0.707107
+|01⟩: 0
+|10⟩: 0
+|11⟩: 0.707107
+|0>: 511
+|1>: 0
+|2>: 0
+|3>: 489
+```
+
+[pybind11]: https://github.com/pybind/pybind11
+[scikit-build-core]: https://github.com/scikit-build/scikit-build-core
+
 ## Building
 
 Ket uses CMake and requires a C++20 compiler. Tests are built with GoogleTest,
@@ -129,6 +197,14 @@ ctest --test-dir build
 To use Ket in your own project, link against the `ket` library target and add
 `include/` to your include path. The umbrella header `<ket/ket.hpp>` pulls in
 the whole public API.
+
+The Python bindings are normally built through `pip` (see [Python](#python)).
+To build them directly with CMake instead, enable the `KET_PYTHON` option:
+
+```sh
+cmake -S . -B build -DKET_PYTHON=ON
+cmake --build build
+```
 
 ## Limitations
 
@@ -153,7 +229,6 @@ the whole public API.
 - DAG optimization passes (gate cancellation, commutation, fusion) — and a
   scheduler that no longer relies on insertion order.
 - Layer packing in the ASCII renderer.
-- Python bindings.
 - Alternative backends (e.g. stabilizer or tensor-network simulators).
 
 ## License
