@@ -81,6 +81,28 @@ TEST(Simulator, CNOTDoesNothingWhenControlIsZero) {
   ExpectAmplitude(s[3], {0.0, 0.0});
 }
 
+TEST(Simulator, PrintRendersBasisStatesAndAmplitudes) {
+  ket::Circuit c{2};
+  c.h(0);
+  c.cnot(0, 1);
+  auto s = ket::run(c);
+  EXPECT_EQ(s.print(),
+            "|00⟩: 0.707107\n"
+            "|01⟩: 0\n"
+            "|10⟩: 0\n"
+            "|11⟩: 0.707107\n");
+}
+
+TEST(Simulator, PrintShowsNegativeRealAmplitude) {
+  ket::Circuit c{1};
+  c.x(0);
+  c.z(0);
+  auto s = ket::run(c);
+  EXPECT_EQ(s.print(),
+            "|0⟩: 0\n"
+            "|1⟩: -1\n");
+}
+
 TEST(Simulator, BellCircuitProducesEntangledState) {
   ket::Circuit c{2};
   c.h(0);

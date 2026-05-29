@@ -65,9 +65,7 @@ int main() {
 
   // Simulate and inspect the amplitudes.
   ket::StateVector state = ket::run(c);
-  for (std::size_t i = 0; i < state.size(); ++i) {
-    std::cout << i << ": " << state[i] << '\n';
-  }
+  std::cout << state.print();
 
   // Sample 1000 measurement outcomes.
   std::mt19937 rng{42};
@@ -98,10 +96,10 @@ q_1: ─────┤ X ├
 The Bell circuit produces the entangled state (|00⟩ + |11⟩)/√2:
 
 ```
-0: (0.707107,0)
-1: (0,0)
-2: (0,0)
-3: (0.707107,0)
+|00⟩: 0.707107
+|01⟩: 0
+|10⟩: 0
+|11⟩: 0.707107
 ```
 
 Sampling collapses onto the two correlated outcomes in roughly equal
