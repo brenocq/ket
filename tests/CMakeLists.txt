@@ -7,6 +7,18 @@ FetchContent_Declare(
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
+# Treat GoogleTest headers as system includes so our strict -Werror build is
+# not broken by warnings originating inside the framework's headers.
+foreach(_gtest_target gtest gtest_main gmock gmock_main)
+  if(TARGET ${_gtest_target})
+    get_target_property(_dirs ${_gtest_target} INTERFACE_INCLUDE_DIRECTORIES)
+    if(_dirs)
+      set_target_properties(${_gtest_target} PROPERTIES
+        INTERFACE_SYSTEM_INCLUDE_DIRECTORIES "${_dirs}")
+    endif()
+  endif()
+endforeach()
+
 include(GoogleTest)
 
 add_executable(ket_tests
@@ -19,5 +31,5 @@ add_executable(ket_tests
   test_measurement.cpp
   test_print.cpp
 )
-target_link_libraries(ket_tests PRIVATE ket GTest::gtest_main)
+target_link_libraries(ket_tests PRIVATE ket ket_warnings GTest::gtest_main)
 gtest_discover_tests(ket_tests)
