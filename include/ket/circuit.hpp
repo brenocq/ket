@@ -22,6 +22,13 @@ class Circuit {
   void z(Qubit q);
   void cnot(Qubit control, Qubit target);
 
+  void h(std::size_t i) { h(Qubit{i}); }
+  void x(std::size_t i) { x(Qubit{i}); }
+  void z(std::size_t i) { z(Qubit{i}); }
+  void cnot(std::size_t control, std::size_t target) {
+    cnot(Qubit{control}, Qubit{target});
+  }
+
   const std::vector<Gate>& gates() const noexcept { return gates_; }
 
  private:

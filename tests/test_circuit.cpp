@@ -26,6 +26,20 @@ TEST(Circuit, BellCircuit) {
   EXPECT_EQ(c.gates()[1].qubits[1].index, 1u);
 }
 
+TEST(Circuit, AcceptsSizeTOverloads) {
+  ket::Circuit c{2};
+  c.h(0);
+  c.cnot(0, 1);
+  ASSERT_EQ(c.gates().size(), 2u);
+  EXPECT_EQ(c.gates()[0].type, ket::GateType::H);
+  ASSERT_EQ(c.gates()[0].qubits.size(), 1u);
+  EXPECT_EQ(c.gates()[0].qubits[0].index, 0u);
+  EXPECT_EQ(c.gates()[1].type, ket::GateType::CNOT);
+  ASSERT_EQ(c.gates()[1].qubits.size(), 2u);
+  EXPECT_EQ(c.gates()[1].qubits[0].index, 0u);
+  EXPECT_EQ(c.gates()[1].qubits[1].index, 1u);
+}
+
 TEST(Circuit, AllSingleQubitGates) {
   ket::Circuit c{1};
   auto q = c.qubit(0);

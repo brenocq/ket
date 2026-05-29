@@ -27,7 +27,7 @@ TEST(Simulator, EmptyCircuitReturnsGroundState) {
 
 TEST(Simulator, XFlipsZeroToOne) {
   ket::Circuit c{1};
-  c.x(c.qubit(0));
+  c.x(0);
   auto s = ket::run(c);
   ExpectAmplitude(s[0], {0.0, 0.0});
   ExpectAmplitude(s[1], {1.0, 0.0});
@@ -35,7 +35,7 @@ TEST(Simulator, XFlipsZeroToOne) {
 
 TEST(Simulator, HCreatesSuperposition) {
   ket::Circuit c{1};
-  c.h(c.qubit(0));
+  c.h(0);
   auto s = ket::run(c);
   const double inv_sqrt2 = 1.0 / std::sqrt(2.0);
   ExpectAmplitude(s[0], {inv_sqrt2, 0.0});
@@ -44,8 +44,8 @@ TEST(Simulator, HCreatesSuperposition) {
 
 TEST(Simulator, HHIsIdentity) {
   ket::Circuit c{1};
-  c.h(c.qubit(0));
-  c.h(c.qubit(0));
+  c.h(0);
+  c.h(0);
   auto s = ket::run(c);
   ExpectAmplitude(s[0], {1.0, 0.0});
   ExpectAmplitude(s[1], {0.0, 0.0});
@@ -53,8 +53,8 @@ TEST(Simulator, HHIsIdentity) {
 
 TEST(Simulator, ZIntroducesMinusSignOnOne) {
   ket::Circuit c{1};
-  c.x(c.qubit(0));
-  c.z(c.qubit(0));
+  c.x(0);
+  c.z(0);
   auto s = ket::run(c);
   ExpectAmplitude(s[0], {0.0, 0.0});
   ExpectAmplitude(s[1], {-1.0, 0.0});
@@ -62,8 +62,8 @@ TEST(Simulator, ZIntroducesMinusSignOnOne) {
 
 TEST(Simulator, CNOTFlipsTargetWhenControlIsOne) {
   ket::Circuit c{2};
-  c.x(c.qubit(0));
-  c.cnot(c.qubit(0), c.qubit(1));
+  c.x(0);
+  c.cnot(0, 1);
   auto s = ket::run(c);
   ExpectAmplitude(s[0], {0.0, 0.0});
   ExpectAmplitude(s[1], {0.0, 0.0});
@@ -73,7 +73,7 @@ TEST(Simulator, CNOTFlipsTargetWhenControlIsOne) {
 
 TEST(Simulator, CNOTDoesNothingWhenControlIsZero) {
   ket::Circuit c{2};
-  c.cnot(c.qubit(0), c.qubit(1));
+  c.cnot(0, 1);
   auto s = ket::run(c);
   ExpectAmplitude(s[0], {1.0, 0.0});
   ExpectAmplitude(s[1], {0.0, 0.0});
@@ -83,8 +83,8 @@ TEST(Simulator, CNOTDoesNothingWhenControlIsZero) {
 
 TEST(Simulator, BellCircuitProducesEntangledState) {
   ket::Circuit c{2};
-  c.h(c.qubit(0));
-  c.cnot(c.qubit(0), c.qubit(1));
+  c.h(0);
+  c.cnot(0, 1);
   auto s = ket::run(c);
   const double inv_sqrt2 = 1.0 / std::sqrt(2.0);
   ExpectAmplitude(s[0], {inv_sqrt2, 0.0});
