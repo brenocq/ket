@@ -116,10 +116,10 @@ proportions, and never onto |01⟩ or |10⟩:
 ## Python
 
 Ket ships Python bindings built with [pybind11]. The Python API mirrors the C++
-one — `Circuit`, `run`, and `measure` — with a few Pythonic touches:
+one — `Circuit`, `run`, `measure`, and `sample` — with a few Pythonic touches:
 `Circuit` and `StateVector` render through `print()`/`str()`, `StateVector`
-supports `len()` and indexing (returning a Python `complex`), and `measure`
-takes an optional `seed` instead of an RNG object.
+supports `len()` and indexing (returning a Python `complex`), and `measure`/
+`sample` take an optional `seed` instead of an RNG object.
 
 ### Install
 
@@ -153,38 +153,41 @@ in one step, without `pip`:
 import ket
 from collections import Counter
 
-# Build a Bell state: H on q0, then CNOT(q0 -> q1).
+# Build a Bell state and measure both qubits into a classical register.
 c = ket.Circuit(2)
 c.h(0)
 c.cnot(0, 1)
+c.measure_all()
 print(c)
 
-# Simulate and inspect the amplitudes.
-state = ket.run(c)
-print(state)
+# run() ignores measurements, so we can still inspect the amplitudes.
+print(ket.run(c))
 
-# Sample measurement outcomes (pass `seed` for reproducibility).
-counts = Counter(ket.measure(state, seed=s) for s in range(1000))
-for i in range(4):
-    print(f"|{i}>: {counts[i]}")
+# Sample shots; each shot fills the classical register (pass `seed` to repro).
+counts = Counter()
+for s in range(1000):
+    creg = ket.sample(c, seed=s)              # e.g. [0, 0] or [1, 1]
+    counts["".join(str(b) for b in reversed(creg))] += 1
+for bits, n in sorted(counts.items()):
+    print(f"|{bits}>: {n}")
 ```
 
 Output:
 
 ```
-     ┌───┐
-q_0: ┤ H ├──■──
-     └───┘┌─┴─┐
-q_1: ─────┤ X ├
-          └───┘
+     ┌───┐     ┌───┐     
+q_0: ┤ H ├──■──┤ M ├─────
+     └───┘┌─┴─┐└─╥─┘┌───┐
+q_1: ─────┤ X ├──╫──┤ M ├
+          └───┘  ║  └─╥─┘
+c: 2/════════════╩════╩══
+                 0    1  
 |00⟩: 0.707107
 |01⟩: 0
 |10⟩: 0
 |11⟩: 0.707107
-|0>: 511
-|1>: 0
-|2>: 0
-|3>: 489
+|00>: 511
+|11>: 489
 ```
 
 [pybind11]: https://github.com/pybind/pybind11

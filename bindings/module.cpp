@@ -37,6 +37,7 @@ PYBIND11_MODULE(_ket, m) {
       .def(py::init<std::size_t, std::string>(), py::arg("n_qubits"),
            py::arg("name") = "")
       .def_property_readonly("n_qubits", &ket::Circuit::n_qubits)
+      .def_property_readonly("n_clbits", &ket::Circuit::n_clbits)
       .def_property_readonly("name", &ket::Circuit::name)
       .def("h", py::overload_cast<std::size_t>(&ket::Circuit::h),
            py::arg("qubit"), "Apply a Hadamard gate.")
@@ -54,6 +55,10 @@ PYBIND11_MODULE(_ket, m) {
                &ket::Circuit::barrier),
            py::arg("qubits"), py::arg("label") = "",
            "Add a barrier across a subset of qubits.")
+      .def("measure", &ket::Circuit::measure, py::arg("qubit"), py::arg("clbit"),
+           "Measure a qubit into a classical bit.")
+      .def("measure_all", &ket::Circuit::measure_all,
+           "Measure every qubit i into classical bit i.")
       .def("append", &ket::Circuit::append, py::arg("sub"), py::arg("qubits"),
            py::arg("name") = "",
            "Append a sub-circuit as a single composite block.")
@@ -80,4 +85,17 @@ PYBIND11_MODULE(_ket, m) {
       py::arg("state"), py::arg("seed") = py::none(),
       "Sample a basis-state index from the state vector (Born rule). "
       "Pass `seed` for a reproducible result.");
+
+  m.def(
+      "sample",
+      [](const ket::Circuit& circuit, std::optional<std::uint32_t> seed) {
+        if (seed.has_value()) {
+          std::mt19937 rng{*seed};
+          return ket::sample(circuit, rng);
+        }
+        return ket::sample(circuit);
+      },
+      py::arg("circuit"), py::arg("seed") = py::none(),
+      "Run the circuit and sample one shot of its measurements, returning the "
+      "classical register. Pass `seed` for a reproducible result.");
 }

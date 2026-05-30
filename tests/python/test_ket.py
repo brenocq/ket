@@ -91,6 +91,38 @@ def test_measure_without_seed_is_valid():
         assert ket.measure(state) == 0
 
 
+def test_measure_and_sample():
+    c = ket.Circuit(2)
+    c.h(0)
+    c.cnot(0, 1)
+    c.measure_all()
+
+    assert c.n_clbits == 2
+    drawing = c.print()
+    assert "M" in drawing
+    assert "c: 2/" in drawing
+
+    # run() ignores measurements -> still the Bell state.
+    state = ket.run(c)
+    assert state[0] == pytest.approx(complex(INV_SQRT2, 0.0))
+    assert state[3] == pytest.approx(complex(INV_SQRT2, 0.0))
+
+    # Each shot fills the classical register; Bell is perfectly correlated.
+    for seed in range(20):
+        creg = ket.sample(c, seed=seed)
+        assert len(creg) == 2
+        assert creg[0] == creg[1]
+
+
+def test_sample_size_matches_clbits_not_qubits():
+    c = ket.Circuit(3)
+    c.x(2)
+    c.measure(2, 0)  # one qubit -> one clbit
+    assert c.n_clbits == 1
+    creg = ket.sample(c, seed=0)
+    assert creg == [1]
+
+
 def test_composite_block_append_decompose_and_simulate():
     bell = ket.Circuit(2, "bell")
     bell.h(0)
