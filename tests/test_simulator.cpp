@@ -115,6 +115,14 @@ TEST(Simulator, BellCircuitProducesEntangledState) {
   ExpectAmplitude(s[3], {inv_sqrt2, 0.0});
 }
 
+TEST(Simulator, YFlipsZeroToIOne) {
+  ket::Circuit c{1};
+  c.y(0);
+  auto s = ket::run(c);
+  ExpectAmplitude(s[0], {0.0, 0.0});
+  ExpectAmplitude(s[1], {0.0, 1.0});  // Y|0> = i|1>
+}
+
 TEST(Simulator, CzPhasesOnlyTheOneOneState) {
   ket::Circuit c{2};
   c.x(0);

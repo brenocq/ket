@@ -104,6 +104,14 @@ def test_rotation_gates():
     assert abs(s2[1]) ** 2 == pytest.approx(0.5)
 
 
+def test_pauli_y():
+    c = ket.Circuit(1)
+    c.y(0)  # Y|0> = i|1>
+    s = ket.run(c)
+    assert s[0] == pytest.approx(complex(0.0, 0.0))
+    assert s[1] == pytest.approx(complex(0.0, 1.0))
+
+
 def test_controlled_phase_gates():
     import math
 

@@ -24,6 +24,7 @@ class Circuit {
 
   void h(Qubit q);
   void x(Qubit q);
+  void y(Qubit q);
   void z(Qubit q);
   void cnot(Qubit control, Qubit target);
 
@@ -39,6 +40,7 @@ class Circuit {
 
   void h(std::size_t i) { h(Qubit{i}); }
   void x(std::size_t i) { x(Qubit{i}); }
+  void y(std::size_t i) { y(Qubit{i}); }
   void z(std::size_t i) { z(Qubit{i}); }
   void cnot(std::size_t control, std::size_t target) {
     cnot(Qubit{control}, Qubit{target});

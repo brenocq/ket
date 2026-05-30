@@ -16,6 +16,7 @@ enum class GateType {
   // Single-qubit gates
   H,
   X,
+  Y,
   Z,
   Rx,
   Ry,

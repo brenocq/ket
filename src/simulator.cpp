@@ -41,6 +41,10 @@ void apply_x(State& s, std::size_t q) {
   apply_single(s, q, 0.0, 1.0, 1.0, 0.0);
 }
 
+void apply_y(State& s, std::size_t q) {
+  apply_single(s, q, 0.0, Complex{0.0, -1.0}, Complex{0.0, 1.0}, 0.0);
+}
+
 void apply_z(State& s, std::size_t q) {
   apply_single(s, q, 1.0, 0.0, 0.0, -1.0);
 }
@@ -100,6 +104,10 @@ void apply_circuit(State& state, const Circuit& circuit,
       case GateType::X:
         assert(g.qubits.size() == 1);
         apply_x(state, wire[g.qubits[0].index]);
+        break;
+      case GateType::Y:
+        assert(g.qubits.size() == 1);
+        apply_y(state, wire[g.qubits[0].index]);
         break;
       case GateType::Z:
         assert(g.qubits.size() == 1);

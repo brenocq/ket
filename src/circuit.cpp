@@ -32,6 +32,11 @@ void Circuit::x(Qubit q) {
   dag_.add(Gate{GateType::X, {q}});
 }
 
+void Circuit::y(Qubit q) {
+  assert(q.index < n_qubits_);
+  dag_.add(Gate{GateType::Y, {q}});
+}
+
 void Circuit::z(Qubit q) {
   assert(q.index < n_qubits_);
   dag_.add(Gate{GateType::Z, {q}});
@@ -478,6 +483,9 @@ std::string Circuit::print() const {
         break;
       case GateType::X:
         add_quantum(render_single(n_qubits_, g.qubits[0].index, 'X'), 5);
+        break;
+      case GateType::Y:
+        add_quantum(render_single(n_qubits_, g.qubits[0].index, 'Y'), 5);
         break;
       case GateType::Z:
         add_quantum(render_single(n_qubits_, g.qubits[0].index, 'Z'), 5);
