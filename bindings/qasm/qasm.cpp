@@ -309,6 +309,13 @@ void apply_gate(Circuit& c, const std::string& statement,
   } else if (name == "cp" || name == "cu1") {
     need(2);
     c.cp(q[0], q[1], eval_angle(params));
+  } else if (name == "cu3" || name == "cu") {
+    // Our 3-parameter controlled-U. (OpenQASM 3.0's `cu` adds a 4th global-
+    // phase parameter; we accept the 3-arg form under both spellings.)
+    const std::vector<double> a = angles();
+    if (a.size() != 3) fail(name + ": expected 3 angles");
+    need(2);
+    c.cu(q[0], q[1], a[0], a[1], a[2]);
   } else if (name == "U" || name == "u" || name == "u3") {
     const std::vector<double> a = angles();
     if (a.size() != 3) fail(name + ": expected 3 angles");
@@ -508,6 +515,13 @@ std::string to_qasm(const Circuit& circuit) {
       case GateType::CRz:
         os << "crz(" << qasm_angle(g.params[0]) << ") q[" << g.qubits[0].index
            << "],q[" << g.qubits[1].index << "];\n";
+        break;
+      case GateType::CU:
+        // Emitted as the unambiguous 3-parameter qelib1 spelling `cu3`.
+        os << "cu3(" << qasm_angle(g.params[0]) << ","
+           << qasm_angle(g.params[1]) << "," << qasm_angle(g.params[2])
+           << ") q[" << g.qubits[0].index << "],q[" << g.qubits[1].index
+           << "];\n";
         break;
       case GateType::CP:
         os << "cp(" << qasm_angle(g.params[0]) << ") q[" << g.qubits[0].index

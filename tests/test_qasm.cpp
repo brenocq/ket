@@ -98,6 +98,22 @@ TEST(Qasm, UGateRoundTrips) {
   }
 }
 
+TEST(Qasm, ParsesAndEmitsCu) {
+  // cu3(pi/2,0,pi) with the control set acts like H on the target:
+  // |01> -> (|01> + |11>)/sqrt(2).
+  ket::Circuit c =
+      ket::from_qasm("qreg q[2]; x q[0]; cu3(pi/2,0,pi) q[0],q[1];");
+  auto s = ket::run(c);
+  EXPECT_NEAR(s[1].real(), kInvSqrt2, 1e-12);
+  EXPECT_NEAR(s[3].real(), kInvSqrt2, 1e-12);
+  EXPECT_NE(ket::to_qasm(c).find("cu3("), std::string::npos);
+
+  // The OpenQASM 3.0 spelling `cu` (3-arg form) is accepted as an alias and
+  // still serializes back as the unambiguous `cu3`.
+  ket::Circuit c2 = ket::from_qasm("qreg q[2]; cu(0.5,0.25,0.125) q[0],q[1];");
+  EXPECT_NE(ket::to_qasm(c2).find("cu3("), std::string::npos);
+}
+
 TEST(Qasm, ParsesAndEmitsCh) {
   const double inv_sqrt2 = 0.7071067811865476;
   ket::Circuit c = ket::from_qasm("qreg q[2]; x q[0]; ch q[0],q[1];");
@@ -148,7 +164,7 @@ TEST(Qasm, ParsesAndEmitsSwap) {
 }
 
 TEST(Qasm, ThrowsOnUnsupported) {
-  EXPECT_THROW(ket::from_qasm("qreg q[2]; cu3(0,0,0) q[0],q[1];"),
+  EXPECT_THROW(ket::from_qasm("qreg q[2]; rzz(0) q[0],q[1];"),
                std::runtime_error);
   EXPECT_THROW(ket::from_qasm("qreg q[1]; bogus q[0];"), std::runtime_error);
 }

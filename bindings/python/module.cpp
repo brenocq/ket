@@ -91,6 +91,12 @@ PYBIND11_MODULE(_ket, m) {
                &ket::Circuit::crz),
            py::arg("control"), py::arg("target"), py::arg("theta"),
            "Apply a controlled-Rz rotation by angle theta.")
+      .def("cu",
+           py::overload_cast<std::size_t, std::size_t, double, double, double>(
+               &ket::Circuit::cu),
+           py::arg("control"), py::arg("target"), py::arg("theta"),
+           py::arg("phi"), py::arg("lam"),
+           "Apply a controlled general unitary U(theta, phi, lambda).")
       .def("swap",
            py::overload_cast<std::size_t, std::size_t>(&ket::Circuit::swap),
            py::arg("a"), py::arg("b"), "Exchange the states of two qubits.")

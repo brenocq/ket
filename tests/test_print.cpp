@@ -221,6 +221,16 @@ TEST(Print, ControlledRotationBox) {
   EXPECT_NE(drawing.find("┴"), std::string::npos);        // wired to target
 }
 
+TEST(Print, ControlledUBox) {
+  const double pi = std::acos(-1.0);
+  ket::Circuit c{2};
+  c.cu(0, 1, pi / 2.0, 0.0, pi);
+  const std::string drawing = c.print();
+  EXPECT_NE(drawing.find("U(π/2,0,π)"), std::string::npos);  // labeled box
+  EXPECT_NE(drawing.find("■"), std::string::npos);           // control dot
+  EXPECT_NE(drawing.find("┴"), std::string::npos);           // wired to target
+}
+
 TEST(Print, ProbeMarkersAtBottom) {
   ket::Circuit c{2};
   c.h(0);

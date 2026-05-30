@@ -131,6 +131,15 @@ void Circuit::crz(Qubit control, Qubit target, double theta) {
       .type = GateType::CRz, .qubits = {control, target}, .params = {theta}});
 }
 
+void Circuit::cu(Qubit control, Qubit target, double theta, double phi,
+                 double lambda) {
+  assert(control.index < n_qubits_ && target.index < n_qubits_);
+  assert(control.index != target.index);
+  dag_.add(Gate{.type = GateType::CU,
+                .qubits = {control, target},
+                .params = {theta, phi, lambda}});
+}
+
 void Circuit::cp(Qubit a, Qubit b, double lambda) {
   assert(a.index < n_qubits_ && b.index < n_qubits_);
   assert(a.index != b.index);
@@ -739,6 +748,15 @@ std::string Circuit::print() const {
                                                     : 'z';
         const std::string lbl =
             std::string("R") + axis + "(" + format_angle(g.params[0]) + ")";
+        add_quantum(render_controlled_box(n_qubits_, g.qubits[0].index,
+                                          g.qubits[1].index, lbl),
+                    display_width(lbl) + 4);
+        break;
+      }
+      case GateType::CU: {
+        const std::string lbl = "U(" + format_angle(g.params[0]) + "," +
+                                format_angle(g.params[1]) + "," +
+                                format_angle(g.params[2]) + ")";
         add_quantum(render_controlled_box(n_qubits_, g.qubits[0].index,
                                           g.qubits[1].index, lbl),
                     display_width(lbl) + 4);

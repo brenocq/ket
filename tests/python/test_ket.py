@@ -207,6 +207,22 @@ def test_controlled_rotation_gates():
     assert "Rz(" in c3.print()
 
 
+def test_cu_gate():
+    import math
+
+    # cu(pi/2, 0, pi) is controlled-H: |01> -> (|01> + |11>)/sqrt(2).
+    c = ket.Circuit(2)
+    c.x(0)  # |01>
+    c.cu(0, 1, math.pi / 2, 0, math.pi)
+    s = ket.run(c)
+    assert s[1] == pytest.approx(complex(INV_SQRT2, 0.0))
+    assert s[3] == pytest.approx(complex(INV_SQRT2, 0.0))
+
+    # Renders as a controlled U(...) box and serializes as cu3 in QASM.
+    assert "U(" in c.print()
+    assert "cu3(" in ket.to_qasm(c)
+
+
 def test_cy_gate():
     c = ket.Circuit(2)
     c.x(0)  # |01>

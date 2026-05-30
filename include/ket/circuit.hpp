@@ -46,9 +46,9 @@ class Circuit {
   // u(0,0,lambda), u(pi/2,phi,lambda), and u(theta,phi,lambda).
   void u(Qubit q, double theta, double phi, double lambda);
 
-  // Two-qubit gates: ch, cx (CNOT), cy, and crx/cry/crz (controlled rotations)
-  // are controlled (control, target); cz, cp (controlled-phase), and swap are
-  // symmetric in their qubits.
+  // Two-qubit gates: ch, cx (CNOT), cy, crx/cry/crz (controlled rotations), and
+  // cu (controlled general unitary) are controlled (control, target); cz, cp
+  // (controlled-phase), and swap are symmetric in their qubits.
   void ch(Qubit control, Qubit target);
   void cx(Qubit control, Qubit target);
   void cy(Qubit control, Qubit target);
@@ -56,6 +56,7 @@ class Circuit {
   void crx(Qubit control, Qubit target, double theta);
   void cry(Qubit control, Qubit target, double theta);
   void crz(Qubit control, Qubit target, double theta);
+  void cu(Qubit control, Qubit target, double theta, double phi, double lambda);
   void cp(Qubit a, Qubit b, double lambda);
   void swap(Qubit a, Qubit b);
 
@@ -97,6 +98,10 @@ class Circuit {
   }
   void crz(std::size_t control, std::size_t target, double theta) {
     crz(Qubit{control}, Qubit{target}, theta);
+  }
+  void cu(std::size_t control, std::size_t target, double theta, double phi,
+          double lambda) {
+    cu(Qubit{control}, Qubit{target}, theta, phi, lambda);
   }
   void cp(std::size_t a, std::size_t b, double lambda) {
     cp(Qubit{a}, Qubit{b}, lambda);

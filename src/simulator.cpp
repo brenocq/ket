@@ -177,6 +177,17 @@ void apply_crz(State& s, std::size_t control, std::size_t target,
                           Complex{c, sn});
 }
 
+// Controlled general unitary: apply U(theta, phi, lambda) to the target when
+// the control is 1 (same matrix as apply_u).
+void apply_cu(State& s, std::size_t control, std::size_t target, double theta,
+              double phi, double lambda) {
+  const double c = std::cos(theta / 2.0);
+  const double sn = std::sin(theta / 2.0);
+  apply_controlled_single(s, control, target, Complex{c, 0.0},
+                          -std::polar(sn, lambda), std::polar(sn, phi),
+                          std::polar(c, phi + lambda));
+}
+
 // SWAP: exchange amplitudes of basis states that differ in exactly the two
 // qubits (|..1..0..> <-> |..0..1..>).
 void apply_swap(State& s, std::size_t qa, std::size_t qb) {
@@ -298,6 +309,11 @@ void apply_circuit(State& state, const Circuit& circuit,
         assert(g.qubits.size() == 2 && !g.params.empty());
         apply_crz(state, wire[g.qubits[0].index], wire[g.qubits[1].index],
                   g.params[0]);
+        break;
+      case GateType::CU:
+        assert(g.qubits.size() == 2 && g.params.size() == 3);
+        apply_cu(state, wire[g.qubits[0].index], wire[g.qubits[1].index],
+                 g.params[0], g.params[1], g.params[2]);
         break;
       case GateType::CP:
         assert(g.qubits.size() == 2 && !g.params.empty());
