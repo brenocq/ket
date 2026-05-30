@@ -1,0 +1,15 @@
+# Benchmark dependencies. Each simulator is optional — any that aren't
+# installed are simply skipped. `ket` itself is installed from the repo root
+# (`pip install .`). Quantum++ needs only CMake + a C++ compiler (it is fetched
+# and built on the first run).
+matplotlib
+numpy
+
+# Comparison simulators (optional):
+qiskit
+qiskit-aer
+cirq-core
+ply               # Cirq's OpenQASM importer (cirq.contrib.qasm_import) needs it
+pennylane
+pennylane-lightning
+pennylane-qiskit  # provides PennyLane's qml.from_qasm OpenQASM loader
