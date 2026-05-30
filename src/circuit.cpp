@@ -65,6 +65,18 @@ void Circuit::barrier(const std::vector<std::size_t>& qubits,
   dag_.add(Gate{GateType::Barrier, std::move(qs), label});
 }
 
+void Circuit::measure(std::size_t qubit, std::size_t clbit) {
+  assert(qubit < n_qubits_);
+  n_clbits_ = std::max(n_clbits_, clbit + 1);
+  dag_.add(Gate{.type = GateType::Measure,
+                .qubits = {Qubit{qubit}},
+                .clbit = clbit});
+}
+
+void Circuit::measure_all() {
+  for (std::size_t q = 0; q < n_qubits_; ++q) measure(q, q);
+}
+
 void Circuit::append(const Circuit& sub, const std::vector<std::size_t>& qubits,
                      const std::string& name) {
   assert(qubits.size() == sub.n_qubits());
@@ -221,69 +233,124 @@ std::vector<std::string> render_composite(std::size_t n_qubits, const Gate& g,
   return col;
 }
 
+// A measurement: an M box on the qubit, a connector down to the classical bus,
+// and the target clbit index printed below. Returns the full grid height
+// (quantum rows + the classical bus row + an index row).
+std::vector<std::string> render_measure(std::size_t n_qubits, std::size_t qubit,
+                                        std::size_t clbit) {
+  const std::size_t q_height = 2 * n_qubits + 1;
+  const std::size_t bus = q_height;
+  const std::size_t total = q_height + 2;
+  std::vector<std::string> col(total);
+  for (std::size_t r = 0; r < total; ++r) {
+    if (r == 2 * qubit) {
+      col[r] = "┌───┐";
+    } else if (r == 2 * qubit + 1) {
+      col[r] = "┤ M ├";
+    } else if (r == 2 * qubit + 2) {
+      col[r] = "└─╥─┘";  // connector leaves the box downward
+    } else if (r > 2 * qubit + 2 && r < bus) {
+      col[r] = (r % 2 == 1) ? "──╫──" : "  ║  ";  // cross wires / separators
+    } else if (r == bus) {
+      col[r] = "══╩══";  // lands on the classical bus
+    } else if (r == bus + 1) {
+      std::string cell(5, ' ');
+      const std::string idx = std::to_string(clbit);
+      const std::size_t start = idx.size() < 5 ? (5 - idx.size()) / 2 : 0;
+      for (std::size_t k = 0; k < idx.size() && start + k < 5; ++k) {
+        cell[start + k] = idx[k];
+      }
+      col[r] = std::move(cell);
+    } else {
+      col[r] = (r % 2 == 1) ? "─────" : "     ";  // wire above the box
+    }
+  }
+  return col;
+}
+
 }  // namespace
 
 std::string Circuit::print() const {
   if (n_qubits_ == 0) return "";
-  const std::size_t height = 2 * n_qubits_ + 1;
+  const std::size_t q_height = 2 * n_qubits_ + 1;
+  const bool has_clbits = n_clbits_ > 0;
+  const std::size_t total_height = has_clbits ? q_height + 2 : q_height;
 
   const std::size_t label_width =
       std::string("q_" + std::to_string(n_qubits_ - 1) + ":").size();
-  std::vector<std::string> prefix(height, std::string(label_width + 1, ' '));
+  const std::string c_label = "c: " + std::to_string(n_clbits_) + "/";
+  const std::size_t prefix_width =
+      has_clbits ? std::max(label_width + 1, c_label.size()) : label_width + 1;
+
+  std::vector<std::string> prefix(total_height, std::string(prefix_width, ' '));
   for (std::size_t q = 0; q < n_qubits_; ++q) {
     std::string label = "q_" + std::to_string(q) + ":";
-    label.resize(label_width, ' ');
-    label += ' ';
+    label.resize(prefix_width, ' ');
     prefix[2 * q + 1] = std::move(label);
   }
+  if (has_clbits) {  // classical register label, right-aligned so '/' meets bus
+    prefix[q_height] = std::string(prefix_width - c_label.size(), ' ') + c_label;
+  }
 
-  const std::size_t prefix_width = label_width + 1;
   std::vector<std::vector<std::string>> columns;
   std::vector<std::size_t> widths;  // display width of each column
   // Top-row annotations for labeled barriers: (display offset, text).
   std::vector<std::pair<std::size_t, std::string>> top_labels;
 
-  auto add_column = [&](std::vector<std::string> col, std::size_t width) {
-    columns.push_back(std::move(col));
-    widths.push_back(width);
-  };
   auto current_offset = [&]() {
     std::size_t offset = prefix_width;
     for (std::size_t w : widths) offset += w;
     return offset;
   };
+  // Add a quantum-only column, extending it with the classical bus rows so all
+  // columns share total_height.
+  auto add_quantum = [&](std::vector<std::string> col, std::size_t width) {
+    if (has_clbits) {
+      std::string bus_cell;
+      for (std::size_t k = 0; k < width; ++k) bus_cell += "═";
+      col.push_back(std::move(bus_cell));
+      col.push_back(std::string(width, ' '));
+    }
+    columns.push_back(std::move(col));
+    widths.push_back(width);
+  };
 
   if (dag_.nodes().empty()) {
-    add_column(default_column(n_qubits_), 5);
+    add_quantum(default_column(n_qubits_), 5);
   }
   for (const DagNode& node : dag_.nodes()) {
     const Gate& g = node.gate;
     switch (g.type) {
       case GateType::H:
-        add_column(render_single(n_qubits_, g.qubits[0].index, 'H'), 5);
+        add_quantum(render_single(n_qubits_, g.qubits[0].index, 'H'), 5);
         break;
       case GateType::X:
-        add_column(render_single(n_qubits_, g.qubits[0].index, 'X'), 5);
+        add_quantum(render_single(n_qubits_, g.qubits[0].index, 'X'), 5);
         break;
       case GateType::Z:
-        add_column(render_single(n_qubits_, g.qubits[0].index, 'Z'), 5);
+        add_quantum(render_single(n_qubits_, g.qubits[0].index, 'Z'), 5);
         break;
       case GateType::CNOT:
-        add_column(
+        add_quantum(
             render_cnot(n_qubits_, g.qubits[0].index, g.qubits[1].index), 5);
         break;
       case GateType::Barrier:
         if (!g.label.empty()) top_labels.emplace_back(current_offset(), g.label);
-        add_column(render_barrier(n_qubits_, g.qubits), 1);
+        add_quantum(render_barrier(n_qubits_, g.qubits), 1);
         break;
       case GateType::Composite: {
         const std::string nm = g.label.empty() ? "circ" : g.label;
         const std::size_t max_idx = g.qubits.empty() ? 0 : g.qubits.size() - 1;
         const std::size_t inner_w =
             std::to_string(max_idx).size() + nm.size() + 1;
-        add_column(render_composite(n_qubits_, g, nm, inner_w), inner_w + 2);
+        add_quantum(render_composite(n_qubits_, g, nm, inner_w), inner_w + 2);
         break;
       }
+      case GateType::Measure:
+        // render_measure already spans the classical rows.
+        columns.push_back(render_measure(n_qubits_, g.qubits[0].index, g.clbit));
+        widths.push_back(5);
+        break;
     }
   }
 
@@ -308,7 +375,7 @@ std::string Circuit::print() const {
     result += '\n';
   }
 
-  for (std::size_t r = 0; r < height; ++r) {
+  for (std::size_t r = 0; r < total_height; ++r) {
     result += prefix[r];
     for (const auto& col : columns) {
       result += col[r];

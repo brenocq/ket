@@ -12,7 +12,7 @@ namespace ket {
 
 class Circuit;  // forward declaration for composite-gate definitions
 
-enum class GateType { H, X, Z, CNOT, Barrier, Composite };
+enum class GateType { H, X, Z, CNOT, Barrier, Composite, Measure };
 
 struct Gate {
   GateType type;
@@ -21,6 +21,7 @@ struct Gate {
   // Non-null only for Composite: the sub-circuit this block expands to. Shared
   // so the same definition can back several appended blocks.
   std::shared_ptr<const Circuit> definition = nullptr;
+  std::size_t clbit = 0;  // target classical bit, for Measure
 };
 
 }  // namespace ket

@@ -8,7 +8,7 @@
 #include <array>
 #include <cstddef>
 #include <iostream>
-#include <random>
+#include <vector>
 
 #include <ket/ket.hpp>
 
@@ -16,17 +16,19 @@ int main() {
   ket::Circuit circuit{2};
   circuit.h(0);
   circuit.cnot(0, 1);
+  circuit.measure_all();  // measure qubit i into classical bit i
 
   std::cout << "Circuit:\n" << circuit.print() << '\n';
 
-  ket::StateVector state = ket::run(circuit);
-  std::cout << "State vector:\n" << state.print() << '\n';
+  // run() ignores the measurements, so we can still inspect the amplitudes.
+  std::cout << "State vector:\n" << ket::run(circuit).print() << '\n';
 
-  // Sample measurement outcomes.
+  // Sample shots from the circuit; each shot fills the classical register.
   constexpr int shots = 1000;
   std::array<int, 4> counts{};
   for (int i = 0; i < shots; ++i) {
-    ++counts[ket::measure(state)];
+    const std::vector<int> creg = ket::sample(circuit);
+    counts[static_cast<std::size_t>(creg[0] | (creg[1] << 1))]++;
   }
 
   std::cout << "Measurements (" << shots << " shots):\n";

@@ -18,6 +18,7 @@ class Circuit {
   explicit Circuit(std::size_t n_qubits, std::string name = "");
 
   std::size_t n_qubits() const noexcept { return n_qubits_; }
+  std::size_t n_clbits() const noexcept { return n_clbits_; }
   const std::string& name() const noexcept { return name_; }
   Qubit qubit(std::size_t i) const;
 
@@ -44,6 +45,11 @@ class Circuit {
   void barrier(const std::vector<std::size_t>& qubits,
                const std::string& label = "");
 
+  // Measure a qubit into a classical bit; the classical register grows to fit.
+  void measure(std::size_t qubit, std::size_t clbit);
+  // Measure every qubit i into classical bit i.
+  void measure_all();
+
   // Append a sub-circuit as a single composite block acting on the given parent
   // qubits (sub-qubit i -> qubits[i]). It renders as one labeled box and can be
   // expanded with decompose(). `name` defaults to the sub-circuit's name.
@@ -60,6 +66,7 @@ class Circuit {
 
  private:
   std::size_t n_qubits_;
+  std::size_t n_clbits_ = 0;
   std::string name_;
   Dag dag_;
 };

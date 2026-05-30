@@ -102,3 +102,39 @@ TEST(Print, BarrierSubsetLeavesOtherWiresConnected) {
             "q_2: ░\n"
             "     ░\n");
 }
+
+TEST(Print, MeasureSingleQubit) {
+  ket::Circuit c{1};
+  c.measure(0, 0);
+  EXPECT_EQ(c.print(),
+            "     ┌───┐\n"
+            "q_0: ┤ M ├\n"
+            "     └─╥─┘\n"
+            "c: 1/══╩══\n"
+            "       0  \n");
+}
+
+TEST(Print, MeasureBellIntoClassicalRegister) {
+  ket::Circuit c{2};
+  c.h(0);
+  c.cnot(0, 1);
+  c.measure_all();
+  EXPECT_EQ(c.print(),
+            "     ┌───┐     ┌───┐     \n"
+            "q_0: ┤ H ├──■──┤ M ├─────\n"
+            "     └───┘┌─┴─┐└─╥─┘┌───┐\n"
+            "q_1: ─────┤ X ├──╫──┤ M ├\n"
+            "          └───┘  ║  └─╥─┘\n"
+            "c: 2/════════════╩════╩══\n"
+            "                 0    1  \n");
+}
+
+TEST(Print, NoClassicalRowsWithoutMeasurement) {
+  // A circuit without measurements renders exactly as before (no bus row).
+  ket::Circuit c{1};
+  c.h(0);
+  EXPECT_EQ(c.print(),
+            "     ┌───┐\n"
+            "q_0: ┤ H ├\n"
+            "     └───┘\n");
+}

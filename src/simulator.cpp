@@ -82,6 +82,8 @@ void apply_circuit(StateVector& state, const Circuit& circuit,
         break;
       case GateType::Barrier:
         break;  // no-op: barriers only affect ordering and rendering
+      case GateType::Measure:
+        break;  // no-op here: run() returns the pre-measurement state vector
       case GateType::Composite: {
         assert(g.definition);
         std::vector<std::size_t> sub_wire(g.definition->n_qubits());
