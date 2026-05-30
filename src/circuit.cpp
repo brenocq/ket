@@ -151,6 +151,14 @@ void Circuit::ccx(Qubit control1, Qubit control2, Qubit target) {
   dag_.add(Gate{GateType::CCX, {control1, control2, target}});
 }
 
+void Circuit::cswap(Qubit control, Qubit a, Qubit b) {
+  assert(control.index < n_qubits_ && a.index < n_qubits_ &&
+         b.index < n_qubits_);
+  assert(control.index != a.index && control.index != b.index &&
+         a.index != b.index);
+  dag_.add(Gate{GateType::CSwap, {control, a, b}});
+}
+
 void Circuit::barrier(const std::string& label) {
   std::vector<Qubit> qubits;
   qubits.reserve(n_qubits_);
@@ -404,6 +412,23 @@ std::vector<std::string> render_ccx(std::size_t n_qubits, std::size_t c1,
   col[2 * target] = (lo < target) ? "┌─┴─┐" : "┌───┐";
   col[2 * target + 1] = "┤ X ├";
   col[2 * target + 2] = (hi > target) ? "└─┬─┘" : "└───┘";
+  return col;
+}
+
+// Fredkin (CSwap): a control dot wired to an × on each of the two swapped
+// targets, joined by one vertical line spanning the three qubits.
+std::vector<std::string> render_cswap(std::size_t n_qubits, std::size_t control,
+                                      std::size_t a, std::size_t b) {
+  auto col = default_column(n_qubits);
+  const std::size_t lo = std::min({control, a, b});
+  const std::size_t hi = std::max({control, a, b});
+
+  for (std::size_t i = 2 * lo + 1; i <= 2 * hi + 1; ++i) {
+    col[i] = (i % 2 == 1) ? "──┼──" : "  │  ";
+  }
+  col[2 * control + 1] = "──■──";
+  col[2 * a + 1] = "──╳──";
+  col[2 * b + 1] = "──╳──";
   return col;
 }
 
@@ -733,6 +758,11 @@ std::string Circuit::print() const {
       case GateType::CCX:
         add_quantum(render_ccx(n_qubits_, g.qubits[0].index, g.qubits[1].index,
                                g.qubits[2].index),
+                    5);
+        break;
+      case GateType::CSwap:
+        add_quantum(render_cswap(n_qubits_, g.qubits[0].index,
+                                 g.qubits[1].index, g.qubits[2].index),
                     5);
         break;
       case GateType::Probe: {

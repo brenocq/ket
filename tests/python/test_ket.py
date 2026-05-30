@@ -232,6 +232,25 @@ def test_ccx_gate():
     assert c2.print().count("■") == 2
 
 
+def test_cswap_gate():
+    # Control set -> the two targets swap: |011> -> |101> (index 5).
+    c = ket.Circuit(3)
+    c.x(0)  # control
+    c.x(1)  # |011>
+    c.cswap(0, 1, 2)
+    s = ket.run(c)
+    assert s[5] == pytest.approx(complex(1.0, 0.0))
+
+    # Control off -> no swap; renders with a control dot and two × marks.
+    c2 = ket.Circuit(3)
+    c2.x(1)  # |010>
+    c2.cswap(0, 1, 2)
+    assert ket.run(c2)[2] == pytest.approx(complex(1.0, 0.0))
+    drawing = c2.print()
+    assert "■" in drawing
+    assert drawing.count("╳") == 2
+
+
 def test_swap_gate():
     c = ket.Circuit(2)
     c.x(0)  # |01>

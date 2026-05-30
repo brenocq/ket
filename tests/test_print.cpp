@@ -296,6 +296,19 @@ TEST(Print, ToffoliTargetInMiddle) {
             "          \n");
 }
 
+TEST(Print, FredkinControlAndTwoSwapMarks) {
+  ket::Circuit c{3};
+  c.cswap(0, 1, 2);
+  EXPECT_EQ(c.print(),
+            "          \n"
+            "q_0: ──■──\n"
+            "       │  \n"
+            "q_1: ──╳──\n"
+            "       │  \n"
+            "q_2: ──╳──\n"
+            "          \n");
+}
+
 TEST(Print, UGateBox) {
   const double pi = std::acos(-1.0);
   ket::Circuit c{1};

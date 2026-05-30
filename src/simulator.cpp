@@ -202,6 +202,19 @@ void apply_ccx(State& s, std::size_t control1, std::size_t control2,
   }
 }
 
+// Fredkin (CSwap): exchange the two targets on basis states where the control
+// is 1 (a controlled apply_swap).
+void apply_cswap(State& s, std::size_t control, std::size_t a, std::size_t b) {
+  const std::size_t cmask = std::size_t{1} << control;
+  const std::size_t ma = std::size_t{1} << a;
+  const std::size_t mb = std::size_t{1} << b;
+  const std::size_t n = s.size();
+  for (std::size_t k = 0; k < n; ++k) {
+    if ((k & cmask) == 0) continue;  // control = 1
+    if ((k & ma) != 0 && (k & mb) == 0) std::swap(s[k], s[(k ^ ma) | mb]);
+  }
+}
+
 // Controlled phase: multiply by `phase` exactly when both qubits are 1.
 // Symmetric in qa/qb (CZ uses phase = -1, CP uses e^{i lambda}).
 void apply_cphase(State& s, std::size_t qa, std::size_t qb, Complex phase) {
@@ -299,6 +312,11 @@ void apply_circuit(State& state, const Circuit& circuit,
         assert(g.qubits.size() == 3);
         apply_ccx(state, wire[g.qubits[0].index], wire[g.qubits[1].index],
                   wire[g.qubits[2].index]);
+        break;
+      case GateType::CSwap:
+        assert(g.qubits.size() == 3);
+        apply_cswap(state, wire[g.qubits[0].index], wire[g.qubits[1].index],
+                    wire[g.qubits[2].index]);
         break;
       case GateType::Rx:
         assert(g.qubits.size() == 1 && !g.params.empty());

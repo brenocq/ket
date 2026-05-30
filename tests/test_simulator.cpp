@@ -267,6 +267,24 @@ TEST(Simulator, CcxFlipsTargetOnlyWhenBothControlsAreOne) {
   }
 }
 
+TEST(Simulator, CswapExchangesTargetsOnlyWhenControlIsOne) {
+  {  // control=0: no swap. |010> stays put.
+    ket::Circuit c{3};
+    c.x(1);  // |010> (index 2)
+    c.cswap(0, 1, 2);
+    ExpectAmplitude(ket::run(c)[2], {1.0, 0.0});
+  }
+  {  // control=1: swap targets. |011> -> |101>
+    ket::Circuit c{3};
+    c.x(0);  // control
+    c.x(1);  // |011> (index 3)
+    c.cswap(0, 1, 2);
+    auto s = ket::run(c);
+    ExpectAmplitude(s[3], {0.0, 0.0});  // |011> emptied
+    ExpectAmplitude(s[5], {1.0, 0.0});  // |101>
+  }
+}
+
 TEST(Simulator, ChAppliesHWhenControlIsOne) {
   const double inv_sqrt2 = 1.0 / std::sqrt(2.0);
   {  // control=0: no-op

@@ -22,7 +22,8 @@ enum class GateType {
   // Two-qubit gates
   CH, CX, CY, CZ, CRx, CRy, CRz, CP, Swap,
   // Three-qubit gates
-  CCX,  // Toffoli (controlled-controlled-X)
+  CCX,    // Toffoli (controlled-controlled-X)
+  CSwap,  // Fredkin (controlled-SWAP)
   // Structural operations (non-unitary / rendering only)
   Measure, Barrier, Composite, Probe,
 };

@@ -133,6 +133,14 @@ TEST(Qasm, ParsesAndEmitsCcx) {
   EXPECT_NE(ket::to_qasm(c).find("ccx q[0],q[1],q[2];"), std::string::npos);
 }
 
+TEST(Qasm, ParsesAndEmitsCswap) {
+  // Control set -> the two targets swap: |011> -> |101> (index 5).
+  ket::Circuit c =
+      ket::from_qasm("qreg q[3]; x q[0]; x q[1]; cswap q[0],q[1],q[2];");
+  EXPECT_NEAR(ket::run(c)[5].real(), 1.0, 1e-12);
+  EXPECT_NE(ket::to_qasm(c).find("cswap q[0],q[1],q[2];"), std::string::npos);
+}
+
 TEST(Qasm, ParsesAndEmitsSwap) {
   ket::Circuit c = ket::from_qasm("qreg q[2]; x q[0]; swap q[0],q[1];");
   EXPECT_NEAR(ket::run(c)[2].real(), 1.0, 1e-12);  // |10>
@@ -140,7 +148,7 @@ TEST(Qasm, ParsesAndEmitsSwap) {
 }
 
 TEST(Qasm, ThrowsOnUnsupported) {
-  EXPECT_THROW(ket::from_qasm("qreg q[3]; cswap q[0],q[1],q[2];"),
+  EXPECT_THROW(ket::from_qasm("qreg q[2]; cu3(0,0,0) q[0],q[1];"),
                std::runtime_error);
   EXPECT_THROW(ket::from_qasm("qreg q[1]; bogus q[0];"), std::runtime_error);
 }

@@ -100,6 +100,11 @@ PYBIND11_MODULE(_ket, m) {
            py::arg("control1"), py::arg("control2"), py::arg("target"),
            "Apply a Toffoli (CCX) gate: flip the target when both controls "
            "are 1.")
+      .def("cswap",
+           py::overload_cast<std::size_t, std::size_t, std::size_t>(
+               &ket::Circuit::cswap),
+           py::arg("control"), py::arg("a"), py::arg("b"),
+           "Apply a Fredkin (CSwap) gate: swap a and b when the control is 1.")
       .def("cp",
            py::overload_cast<std::size_t, std::size_t, double>(
                &ket::Circuit::cp),
