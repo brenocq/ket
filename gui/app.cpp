@@ -131,6 +131,7 @@ void render_circuit(const Circuit& circuit) {
   }
 
   ImDrawList* dl = ImPlot::GetPlotDrawList();
+  ImPlot::PushPlotClipRect();  // clip drawing to the plot area
 
   const ImU32 wire_col = IM_COL32(150, 152, 162, 255);
   const ImU32 box_fill = IM_COL32(70, 120, 200, 255);
@@ -271,6 +272,7 @@ void render_circuit(const Circuit& circuit) {
     }
   }
 
+  ImPlot::PopPlotClipRect();
   ImPlot::EndPlot();
 }
 
