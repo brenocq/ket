@@ -144,10 +144,19 @@ PYBIND11_MODULE(_ket, m) {
   m.def("run", &ket::run, py::arg("circuit"),
         "Simulate the circuit and return the resulting state vector.");
 
-  m.def("expval", &ket::expval, py::arg("state"), py::arg("pauli"),
+  m.def("expval",
+        py::overload_cast<const ket::State&, const std::string&>(&ket::expval),
+        py::arg("state"), py::arg("pauli"),
         "Expectation value <psi|P|psi> of a Pauli-string observable (e.g. "
         "\"ZZ\"), read right-to-left so the rightmost character acts on qubit "
         "0. Returns a real number in [-1, 1].");
+
+  m.def(
+      "expval",
+      py::overload_cast<const ket::State&, const ket::PauliSum&>(&ket::expval),
+      py::arg("state"), py::arg("hamiltonian"),
+      "Expectation value <psi|H|psi> of a Hamiltonian: a list of "
+      "(coefficient, Pauli) terms, e.g. [(0.5, \"ZZ\"), (0.3, \"XI\")].");
 
   py::class_<ket::ProbeRun>(m, "ProbeRun",
                             "Result of a probed run: final state + captures.")

@@ -56,3 +56,19 @@ TEST(Observable, LengthMismatchThrows) {
   EXPECT_THROW(ket::expval(ket::run(ket::Circuit{2}), "Z"),
                std::invalid_argument);
 }
+
+TEST(Observable, SumOfTerms) {
+  ket::Circuit c{2};
+  c.h(0);
+  c.cx(0, 1);  // Bell state
+  const ket::State s = ket::run(c);
+
+  // H = 0.5 ZZ + 0.5 XX -> 0.5*1 + 0.5*1 = 1.0
+  EXPECT_NEAR(ket::expval(s, ket::PauliSum{{0.5, "ZZ"}, {0.5, "XX"}}), 1.0,
+              kTol);
+  // Negative coefficients: 2 ZZ - 1 YY = 2*1 - 1*(-1) = 3.
+  EXPECT_NEAR(ket::expval(s, ket::PauliSum{{2.0, "ZZ"}, {-1.0, "YY"}}), 3.0,
+              kTol);
+  // An empty Hamiltonian is zero.
+  EXPECT_NEAR(ket::expval(s, ket::PauliSum{}), 0.0, kTol);
+}

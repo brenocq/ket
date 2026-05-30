@@ -15,3 +15,6 @@ target_link_libraries(bit_flip_code PRIVATE ket ket_warnings)
 
 add_executable(grover grover.cpp)
 target_link_libraries(grover PRIVATE ket ket_warnings)
+
+add_executable(expectation_value expectation_value.cpp)
+target_link_libraries(expectation_value PRIVATE ket ket_warnings)

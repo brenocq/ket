@@ -330,6 +330,19 @@ def test_expval():
     assert ket.expval(s2, "IZ") == pytest.approx(1.0)  # Z on qubit 0
 
 
+def test_expval_hamiltonian():
+    c = ket.Circuit(2)
+    c.h(0)
+    c.cx(0, 1)  # Bell state
+    s = ket.run(c)
+    # H = 0.5 ZZ + 0.5 XX -> 1.0
+    assert ket.expval(s, [(0.5, "ZZ"), (0.5, "XX")]) == pytest.approx(1.0)
+    # 2 ZZ - 1 YY -> 2*1 - 1*(-1) = 3
+    assert ket.expval(s, [(2.0, "ZZ"), (-1.0, "YY")]) == pytest.approx(3.0)
+    # Empty Hamiltonian -> 0
+    assert ket.expval(s, []) == pytest.approx(0.0)
+
+
 def test_measure_and_sample():
     c = ket.Circuit(2)
     c.h(0)

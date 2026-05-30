@@ -79,4 +79,12 @@ double expval(const State& state, const std::string& pauli) {
   return sum.real();
 }
 
+double expval(const State& state, const PauliSum& hamiltonian) {
+  double total = 0.0;
+  for (const auto& [coeff, pauli] : hamiltonian) {
+    total += coeff * expval(state, pauli);
+  }
+  return total;
+}
+
 }  // namespace ket
