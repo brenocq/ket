@@ -188,6 +188,29 @@ TEST(Print, RotationAnglesUsePiSymbols) {
   }
 }
 
+TEST(Print, ControlledZSymmetricDots) {
+  ket::Circuit c{2};
+  c.cz(0, 1);
+  EXPECT_EQ(c.print(),
+            "          \n"
+            "q_0: ──■──\n"
+            "       │  \n"
+            "q_1: ──■──\n"
+            "          \n");
+}
+
+TEST(Print, ControlledPhaseBox) {
+  const double pi = std::acos(-1.0);
+  ket::Circuit c{2};
+  c.cp(0, 1, pi / 2.0);
+  EXPECT_EQ(c.print(),
+            "               \n"
+            "q_0: ─────■────\n"
+            "     ┌────┴───┐\n"
+            "q_1: ┤ P(π/2) ├\n"
+            "     └────────┘\n");
+}
+
 TEST(Print, NoClassicalRowsWithoutMeasurement) {
   // A circuit without measurements renders exactly as before (no bus row).
   ket::Circuit c{1};

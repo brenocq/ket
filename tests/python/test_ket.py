@@ -110,6 +110,27 @@ def test_rotation_gates():
     assert abs(s2[1]) ** 2 == pytest.approx(0.5)
 
 
+def test_controlled_phase_gates():
+    import math
+
+    # CZ puts a -1 on |11>.
+    c = ket.Circuit(2)
+    c.x(0)
+    c.x(1)
+    c.cz(0, 1)
+    s = ket.run(c)
+    assert s[3] == pytest.approx(complex(-1.0, 0.0))
+
+    # CP(pi/2) puts an i on |11>, and renders as a P(...) box.
+    c2 = ket.Circuit(2)
+    c2.x(0)
+    c2.x(1)
+    c2.cp(0, 1, math.pi / 2)
+    s2 = ket.run(c2)
+    assert s2[3] == pytest.approx(complex(0.0, 1.0))
+    assert "P(" in c2.print()
+
+
 def test_measure_and_sample():
     c = ket.Circuit(2)
     c.h(0)

@@ -115,6 +115,33 @@ TEST(Simulator, BellCircuitProducesEntangledState) {
   ExpectAmplitude(s[3], {inv_sqrt2, 0.0});
 }
 
+TEST(Simulator, CzPhasesOnlyTheOneOneState) {
+  ket::Circuit c{2};
+  c.x(0);
+  c.x(1);
+  c.cz(0, 1);  // -1 on |11>
+  auto s = ket::run(c);
+  ExpectAmplitude(s[3], {-1.0, 0.0});
+}
+
+TEST(Simulator, CzLeavesOtherStatesUnchanged) {
+  ket::Circuit c{2};
+  c.x(0);  // |01>
+  c.cz(0, 1);
+  auto s = ket::run(c);
+  ExpectAmplitude(s[1], {1.0, 0.0});  // only one qubit set -> no phase
+}
+
+TEST(Simulator, CpAppliesPhaseOnOneOne) {
+  const double pi = std::acos(-1.0);
+  ket::Circuit c{2};
+  c.x(0);
+  c.x(1);
+  c.cp(0, 1, pi / 2.0);  // e^{i pi/2} = i on |11>
+  auto s = ket::run(c);
+  ExpectAmplitude(s[3], {0.0, 1.0});
+}
+
 TEST(Simulator, RyHalfPiMakesEqualRealSuperposition) {
   const double pi = std::acos(-1.0);
   ket::Circuit c{1};

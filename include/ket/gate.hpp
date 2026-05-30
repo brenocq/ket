@@ -12,7 +12,9 @@ namespace ket {
 
 class Circuit;  // forward declaration for composite-gate definitions
 
-enum class GateType { H, X, Z, CNOT, Barrier, Composite, Measure, Rx, Ry, Rz };
+enum class GateType {
+  H, X, Z, CNOT, Barrier, Composite, Measure, Rx, Ry, Rz, CZ, CP
+};
 
 struct Gate {
   GateType type;

@@ -32,6 +32,11 @@ class Circuit {
   void ry(Qubit q, double theta);
   void rz(Qubit q, double theta);
 
+  // Controlled-Z, and controlled-phase by angle lambda (CZ = cp with lambda=pi).
+  // Both are symmetric in their two qubits.
+  void cz(Qubit a, Qubit b);
+  void cp(Qubit a, Qubit b, double lambda);
+
   void h(std::size_t i) { h(Qubit{i}); }
   void x(std::size_t i) { x(Qubit{i}); }
   void z(std::size_t i) { z(Qubit{i}); }
@@ -41,6 +46,10 @@ class Circuit {
   void rx(std::size_t i, double theta) { rx(Qubit{i}, theta); }
   void ry(std::size_t i, double theta) { ry(Qubit{i}, theta); }
   void rz(std::size_t i, double theta) { rz(Qubit{i}, theta); }
+  void cz(std::size_t a, std::size_t b) { cz(Qubit{a}, Qubit{b}); }
+  void cp(std::size_t a, std::size_t b, double lambda) {
+    cp(Qubit{a}, Qubit{b}, lambda);
+  }
 
   // A barrier across all qubits, optionally labeled. Barriers are no-ops in
   // simulation but appear in the diagram and serialize the DAG across them.

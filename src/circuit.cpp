@@ -59,6 +59,18 @@ void Circuit::rz(Qubit q, double theta) {
   dag_.add(Gate{.type = GateType::Rz, .qubits = {q}, .params = {theta}});
 }
 
+void Circuit::cz(Qubit a, Qubit b) {
+  assert(a.index < n_qubits_ && b.index < n_qubits_);
+  assert(a.index != b.index);
+  dag_.add(Gate{GateType::CZ, {a, b}});
+}
+
+void Circuit::cp(Qubit a, Qubit b, double lambda) {
+  assert(a.index < n_qubits_ && b.index < n_qubits_);
+  assert(a.index != b.index);
+  dag_.add(Gate{.type = GateType::CP, .qubits = {a, b}, .params = {lambda}});
+}
+
 void Circuit::barrier(const std::string& label) {
   std::vector<Qubit> qubits;
   qubits.reserve(n_qubits_);
@@ -228,6 +240,68 @@ std::vector<std::string> render_cnot(std::size_t n_qubits, std::size_t control,
       col[i] = (i % 2 == 1) ? "──┼──" : "  │  ";
     }
     col[2 * control + 1] = "──■──";
+  }
+  return col;
+}
+
+// Controlled-Z: a control dot on both qubits (it is symmetric), joined by a
+// vertical line.
+std::vector<std::string> render_cz(std::size_t n_qubits, std::size_t a,
+                                   std::size_t b) {
+  auto col = default_column(n_qubits);
+  const std::size_t lo = std::min(a, b);
+  const std::size_t hi = std::max(a, b);
+  col[2 * lo + 1] = "──■──";
+  col[2 * hi + 1] = "──■──";
+  for (std::size_t i = 2 * lo + 2; i < 2 * hi + 1; ++i) {
+    col[i] = (i % 2 == 1) ? "──┼──" : "  │  ";
+  }
+  return col;
+}
+
+// A controlled gate drawn as a control dot wired to a labeled box on the target
+// (e.g. controlled-phase "P(π/2)"). Generalizes the CNOT picture to any width.
+std::vector<std::string> render_controlled_box(std::size_t n_qubits,
+                                               std::size_t control,
+                                               std::size_t target,
+                                               const std::string& label) {
+  const std::size_t height = 2 * n_qubits + 1;
+  const std::size_t w = display_width(label) + 4;
+  const std::size_t mid = w / 2;  // column of the control/connector line
+
+  auto along = [&](const std::string& fill, const std::string& at_mid) {
+    std::string s;
+    for (std::size_t i = 0; i < w; ++i) s += (i == mid) ? at_mid : fill;
+    return s;
+  };
+  auto border = [&](const std::string& left, const std::string& right,
+                    bool connector, const std::string& joint) {
+    std::string s = left;
+    for (std::size_t i = 1; i + 1 < w; ++i) s += (connector && i == mid) ? joint : "─";
+    s += right;
+    return s;
+  };
+
+  const std::string ctrl = along("─", "■");
+  const std::string conn_wire = along("─", "┼");
+  const std::string conn_sep = along(" ", "│");
+  const std::string box_mid = "┤ " + label + " ├";
+  const bool above = control < target;
+
+  std::vector<std::string> col(height);
+  for (std::size_t r = 0; r < height; ++r) {
+    col[r] = (r % 2 == 1) ? along("─", "─") : std::string(w, ' ');
+  }
+
+  col[2 * control + 1] = ctrl;
+  col[2 * target] = border("┌", "┐", above, "┴");
+  col[2 * target + 1] = box_mid;
+  col[2 * target + 2] = border("└", "┘", !above, "┬");
+
+  const std::size_t from = above ? 2 * control + 2 : 2 * target + 3;
+  const std::size_t to = above ? 2 * target : 2 * control + 1;
+  for (std::size_t i = from; i < to; ++i) {
+    col[i] = (i % 2 == 1) ? conn_wire : conn_sep;
   }
   return col;
 }
@@ -435,6 +509,17 @@ std::string Circuit::print() const {
         const std::string lbl =
             std::string("R") + axis + "(" + format_angle(g.params[0]) + ")";
         add_quantum(render_box(n_qubits_, g.qubits[0].index, lbl),
+                    display_width(lbl) + 4);
+        break;
+      }
+      case GateType::CZ:
+        add_quantum(render_cz(n_qubits_, g.qubits[0].index, g.qubits[1].index),
+                    5);
+        break;
+      case GateType::CP: {
+        const std::string lbl = "P(" + format_angle(g.params[0]) + ")";
+        add_quantum(render_controlled_box(n_qubits_, g.qubits[0].index,
+                                          g.qubits[1].index, lbl),
                     display_width(lbl) + 4);
         break;
       }

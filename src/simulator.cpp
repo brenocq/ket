@@ -74,6 +74,18 @@ void apply_cnot(StateVector& s, std::size_t control, std::size_t target) {
   }
 }
 
+// Controlled phase: multiply by `phase` exactly when both qubits are 1.
+// Symmetric in qa/qb (CZ uses phase = -1, CP uses e^{i lambda}).
+void apply_cphase(StateVector& s, std::size_t qa, std::size_t qb,
+                  Complex phase) {
+  const std::size_t ma = std::size_t{1} << qa;
+  const std::size_t mb = std::size_t{1} << qb;
+  const std::size_t n = s.size();
+  for (std::size_t k = 0; k < n; ++k) {
+    if ((k & ma) != 0 && (k & mb) != 0) s[k] *= phase;
+  }
+}
+
 // Apply a circuit's gates to the state. `wire[i]` is the actual state-vector
 // qubit that the circuit's qubit i maps to (identity at the top level, composed
 // for nested composite blocks).
@@ -97,6 +109,16 @@ void apply_circuit(StateVector& state, const Circuit& circuit,
       case GateType::CNOT:
         assert(g.qubits.size() == 2);
         apply_cnot(state, wire[g.qubits[0].index], wire[g.qubits[1].index]);
+        break;
+      case GateType::CZ:
+        assert(g.qubits.size() == 2);
+        apply_cphase(state, wire[g.qubits[0].index], wire[g.qubits[1].index],
+                     Complex{-1.0, 0.0});
+        break;
+      case GateType::CP:
+        assert(g.qubits.size() == 2 && !g.params.empty());
+        apply_cphase(state, wire[g.qubits[0].index], wire[g.qubits[1].index],
+                     Complex{std::cos(g.params[0]), std::sin(g.params[0])});
         break;
       case GateType::Rx:
         assert(g.qubits.size() == 1 && !g.params.empty());
