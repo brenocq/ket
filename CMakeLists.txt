@@ -1,5 +1,11 @@
 cmake_minimum_required(VERSION 3.20)
-project(ket CXX)
+
+# Single source of truth for the version; also read by pyproject.toml.
+file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/VERSION" KET_VERSION LIMIT_COUNT 1)
+project(
+  ket
+  VERSION ${KET_VERSION}
+  LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -26,6 +32,10 @@ else()
               -Werror)
 endif()
 
+# Generate the version header so the C++ constant always matches VERSION.
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/include/ket/version.hpp.in
+               ${PROJECT_BINARY_DIR}/include/ket/version.hpp @ONLY)
+
 add_library(
   ket
   src/ket.cpp
@@ -35,7 +45,7 @@ add_library(
   src/simulator.cpp
   src/measurement.cpp
   bindings/qasm/qasm.cpp)
-target_include_directories(ket PUBLIC include)
+target_include_directories(ket PUBLIC include ${PROJECT_BINARY_DIR}/include)
 target_link_libraries(ket PRIVATE ket_warnings)
 
 if(KET_PYTHON)

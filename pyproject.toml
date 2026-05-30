@@ -6,7 +6,7 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "ket"
-version = "0.1.0"
+dynamic = ["version"]  # read from the top-level VERSION file (see below)
 description = "A quantum computing library for C++ with Python bindings"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -27,9 +27,18 @@ wheel.packages = ["bindings/python/ket"]
 cmake.define.KET_PYTHON = "ON"
 cmake.define.KET_TESTS = "OFF"
 # Persistent build dir + rebuild-on-import, so an editable install picks up
-# C++ changes the next time the package is imported.
-build-dir = "build/skbuild-{wheel_tag}"
+# C++ changes the next time the package is imported. Kept outside `build/` so
+# `./build.sh --clean` (which removes `build/`) does not break the editable
+# install's rebuild hook.
+build-dir = "build-py/skbuild-{wheel_tag}"
 editable.rebuild = true
+
+# The package version is read from the top-level VERSION file, the single
+# source of truth shared with CMake (see project.dynamic above).
+[tool.scikit-build.metadata.version]
+provider = "scikit_build_core.metadata.regex"
+input = "VERSION"
+regex = '(?P<value>.+)'
 
 [tool.pytest.ini_options]
 testpaths = ["tests/python"]
