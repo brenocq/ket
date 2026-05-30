@@ -273,6 +273,9 @@ void apply_gate(Circuit& c, const std::string& statement,
   } else if (name == "cz") {
     need(2);
     c.cz(q[0], q[1]);
+  } else if (name == "swap") {
+    need(2);
+    c.swap(q[0], q[1]);
   } else if (name == "rx") {
     need(1);
     c.rx(q[0], eval_angle(params));
@@ -463,6 +466,10 @@ std::string to_qasm(const Circuit& circuit) {
         break;
       case GateType::CZ:
         os << "cz q[" << g.qubits[0].index << "],q[" << g.qubits[1].index
+           << "];\n";
+        break;
+      case GateType::Swap:
+        os << "swap q[" << g.qubits[0].index << "],q[" << g.qubits[1].index
            << "];\n";
         break;
       case GateType::CP:

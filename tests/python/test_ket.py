@@ -175,6 +175,15 @@ def test_probe_capture_and_render():
     assert r.final[3] == pytest.approx(complex(INV_SQRT2, 0.0))
 
 
+def test_swap_gate():
+    c = ket.Circuit(2)
+    c.x(0)  # |01>
+    c.swap(0, 1)  # -> |10>
+    s = ket.run(c)
+    assert s[2] == pytest.approx(complex(1.0, 0.0))
+    assert "╳" in c.print()
+
+
 def test_u_gate():
     import math
 

@@ -46,6 +46,9 @@ class Circuit {
   void cz(Qubit a, Qubit b);
   void cp(Qubit a, Qubit b, double lambda);
 
+  // Exchange the states of two qubits (symmetric).
+  void swap(Qubit a, Qubit b);
+
   void h(std::size_t i) { h(Qubit{i}); }
   void x(std::size_t i) { x(Qubit{i}); }
   void y(std::size_t i) { y(Qubit{i}); }
@@ -64,6 +67,7 @@ class Circuit {
     u(Qubit{i}, theta, phi, lambda);
   }
   void cz(std::size_t a, std::size_t b) { cz(Qubit{a}, Qubit{b}); }
+  void swap(std::size_t a, std::size_t b) { swap(Qubit{a}, Qubit{b}); }
   void cp(std::size_t a, std::size_t b, double lambda) {
     cp(Qubit{a}, Qubit{b}, lambda);
   }

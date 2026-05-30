@@ -98,6 +98,12 @@ TEST(Qasm, UGateRoundTrips) {
   }
 }
 
+TEST(Qasm, ParsesAndEmitsSwap) {
+  ket::Circuit c = ket::from_qasm("qreg q[2]; x q[0]; swap q[0],q[1];");
+  EXPECT_NEAR(ket::run(c)[2].real(), 1.0, 1e-12);  // |10>
+  EXPECT_NE(ket::to_qasm(c).find("swap q[0],q[1];"), std::string::npos);
+}
+
 TEST(Qasm, ThrowsOnUnsupported) {
   EXPECT_THROW(ket::from_qasm("qreg q[3]; ccx q[0],q[1],q[2];"),
                std::runtime_error);

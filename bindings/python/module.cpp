@@ -71,6 +71,9 @@ PYBIND11_MODULE(_ket, m) {
            "Apply the general single-qubit gate U(theta, phi, lambda).")
       .def("cz", py::overload_cast<std::size_t, std::size_t>(&ket::Circuit::cz),
            py::arg("a"), py::arg("b"), "Apply a controlled-Z gate.")
+      .def("swap",
+           py::overload_cast<std::size_t, std::size_t>(&ket::Circuit::swap),
+           py::arg("a"), py::arg("b"), "Exchange the states of two qubits.")
       .def("cp",
            py::overload_cast<std::size_t, std::size_t, double>(
                &ket::Circuit::cp),

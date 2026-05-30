@@ -216,6 +216,34 @@ TEST(Simulator, RzPreservesComputationalProbabilities) {
   EXPECT_NEAR(std::norm(s[1]), 0.5, 1e-12);
 }
 
+TEST(Simulator, SwapExchangesQubits) {
+  ket::Circuit c{2};
+  c.x(0);        // |01> (qubit 0 set)
+  c.swap(0, 1);  // -> |10> (qubit 1 set)
+  auto s = ket::run(c);
+  ExpectAmplitude(s[1], {0.0, 0.0});  // |01> emptied
+  ExpectAmplitude(s[2], {1.0, 0.0});  // |10> populated
+}
+
+TEST(Simulator, SwapIsThreeCnots) {
+  // swap == cx(a,b); cx(b,a); cx(a,b); on an arbitrary state.
+  ket::Circuit a{2};
+  a.h(0);
+  a.swap(0, 1);
+
+  ket::Circuit b{2};
+  b.h(0);
+  b.cx(0, 1);
+  b.cx(1, 0);
+  b.cx(0, 1);
+
+  auto sa = ket::run(a);
+  auto sb = ket::run(b);
+  for (std::size_t i = 0; i < sa.size(); ++i) {
+    ExpectAmplitude(sa[i], sb[i]);
+  }
+}
+
 TEST(Simulator, UGateRecoversKnownGates) {
   const double pi = std::acos(-1.0);
   const double inv_sqrt2 = 1.0 / std::sqrt(2.0);

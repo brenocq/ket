@@ -103,6 +103,17 @@ void apply_cx(State& s, std::size_t control, std::size_t target) {
   }
 }
 
+// SWAP: exchange amplitudes of basis states that differ in exactly the two
+// qubits (|..1..0..> <-> |..0..1..>).
+void apply_swap(State& s, std::size_t qa, std::size_t qb) {
+  const std::size_t ma = std::size_t{1} << qa;
+  const std::size_t mb = std::size_t{1} << qb;
+  const std::size_t n = s.size();
+  for (std::size_t k = 0; k < n; ++k) {
+    if ((k & ma) != 0 && (k & mb) == 0) std::swap(s[k], s[(k ^ ma) | mb]);
+  }
+}
+
 // Controlled phase: multiply by `phase` exactly when both qubits are 1.
 // Symmetric in qa/qb (CZ uses phase = -1, CP uses e^{i lambda}).
 void apply_cphase(State& s, std::size_t qa, std::size_t qb, Complex phase) {
@@ -163,6 +174,10 @@ void apply_circuit(State& state, const Circuit& circuit,
         assert(g.qubits.size() == 2);
         apply_cphase(state, wire[g.qubits[0].index], wire[g.qubits[1].index],
                      Complex{-1.0, 0.0});
+        break;
+      case GateType::Swap:
+        assert(g.qubits.size() == 2);
+        apply_swap(state, wire[g.qubits[0].index], wire[g.qubits[1].index]);
         break;
       case GateType::CP:
         assert(g.qubits.size() == 2 && !g.params.empty());

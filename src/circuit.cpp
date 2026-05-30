@@ -102,6 +102,12 @@ void Circuit::cp(Qubit a, Qubit b, double lambda) {
   dag_.add(Gate{.type = GateType::CP, .qubits = {a, b}, .params = {lambda}});
 }
 
+void Circuit::swap(Qubit a, Qubit b) {
+  assert(a.index < n_qubits_ && b.index < n_qubits_);
+  assert(a.index != b.index);
+  dag_.add(Gate{GateType::Swap, {a, b}});
+}
+
 void Circuit::barrier(const std::string& label) {
   std::vector<Qubit> qubits;
   qubits.reserve(n_qubits_);
@@ -317,6 +323,20 @@ std::vector<std::string> render_cz(std::size_t n_qubits, std::size_t a,
   const std::size_t hi = std::max(a, b);
   col[2 * lo + 1] = "──■──";
   col[2 * hi + 1] = "──■──";
+  for (std::size_t i = 2 * lo + 2; i < 2 * hi + 1; ++i) {
+    col[i] = (i % 2 == 1) ? "──┼──" : "  │  ";
+  }
+  return col;
+}
+
+// SWAP: an × on each qubit, joined by a vertical line (symmetric).
+std::vector<std::string> render_swap(std::size_t n_qubits, std::size_t a,
+                                     std::size_t b) {
+  auto col = default_column(n_qubits);
+  const std::size_t lo = std::min(a, b);
+  const std::size_t hi = std::max(a, b);
+  col[2 * lo + 1] = "──╳──";
+  col[2 * hi + 1] = "──╳──";
   for (std::size_t i = 2 * lo + 2; i < 2 * hi + 1; ++i) {
     col[i] = (i % 2 == 1) ? "──┼──" : "  │  ";
   }
@@ -611,6 +631,10 @@ std::string Circuit::print() const {
       case GateType::CZ:
         add_quantum(render_cz(n_qubits_, g.qubits[0].index, g.qubits[1].index),
                     5);
+        break;
+      case GateType::Swap:
+        add_quantum(
+            render_swap(n_qubits_, g.qubits[0].index, g.qubits[1].index), 5);
         break;
       case GateType::CP: {
         const std::string lbl = "P(" + format_angle(g.params[0]) + ")";
