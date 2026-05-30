@@ -1,5 +1,5 @@
 <div align="center">
-  <img width="360" height="300" alt="ket_title" src="https://github.com/user-attachments/assets/3273a104-0cdc-41b0-bc54-d68fffcfd90c" />
+  <img width="360" height="300" alt="ket_title" src="https://github.com/user-attachments/assets/7e518df6-a526-45a4-8b9a-58f3a39b2833" />
 </div>
 
 
