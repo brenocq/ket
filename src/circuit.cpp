@@ -83,6 +83,13 @@ void Circuit::u(Qubit q, double theta, double phi, double lambda) {
       Gate{.type = GateType::U, .qubits = {q}, .params = {theta, phi, lambda}});
 }
 
+void Circuit::ch(Qubit control, Qubit target) {
+  assert(control.index < n_qubits_);
+  assert(target.index < n_qubits_);
+  assert(control.index != target.index);
+  dag_.add(Gate{GateType::CH, {control, target}});
+}
+
 void Circuit::cx(Qubit control, Qubit target) {
   assert(control.index < n_qubits_);
   assert(target.index < n_qubits_);
@@ -592,10 +599,6 @@ std::string Circuit::print() const {
         add_quantum(render_box(n_qubits_, g.qubits[0].index, "T†"),
                     display_width("T†") + 4);
         break;
-      case GateType::CX:
-        add_quantum(render_cx(n_qubits_, g.qubits[0].index, g.qubits[1].index),
-                    5);
-        break;
       case GateType::Barrier:
         if (!g.label.empty())
           top_labels.emplace_back(current_offset(), g.label);
@@ -635,6 +638,15 @@ std::string Circuit::print() const {
                     display_width(lbl) + 4);
         break;
       }
+      case GateType::CH:
+        add_quantum(render_controlled_box(n_qubits_, g.qubits[0].index,
+                                          g.qubits[1].index, "H"),
+                    5);
+        break;
+      case GateType::CX:
+        add_quantum(render_cx(n_qubits_, g.qubits[0].index, g.qubits[1].index),
+                    5);
+        break;
       case GateType::CY:
         add_quantum(render_controlled_box(n_qubits_, g.qubits[0].index,
                                           g.qubits[1].index, "Y"),
@@ -644,10 +656,6 @@ std::string Circuit::print() const {
         add_quantum(render_cz(n_qubits_, g.qubits[0].index, g.qubits[1].index),
                     5);
         break;
-      case GateType::Swap:
-        add_quantum(
-            render_swap(n_qubits_, g.qubits[0].index, g.qubits[1].index), 5);
-        break;
       case GateType::CP: {
         const std::string lbl = "P(" + format_angle(g.params[0]) + ")";
         add_quantum(render_controlled_box(n_qubits_, g.qubits[0].index,
@@ -655,6 +663,10 @@ std::string Circuit::print() const {
                     display_width(lbl) + 4);
         break;
       }
+      case GateType::Swap:
+        add_quantum(
+            render_swap(n_qubits_, g.qubits[0].index, g.qubits[1].index), 5);
+        break;
       case GateType::Probe: {
         // A 1-wide transparent column (just wire); the ↑ + label go in the
         // bottom rows, pointing at this column.

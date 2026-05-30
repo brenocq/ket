@@ -175,6 +175,15 @@ def test_probe_capture_and_render():
     assert r.final[3] == pytest.approx(complex(INV_SQRT2, 0.0))
 
 
+def test_ch_gate():
+    c = ket.Circuit(2)
+    c.x(0)  # |01>
+    c.ch(0, 1)  # control=1 -> H on target -> (|01> + |11>)/sqrt(2)
+    s = ket.run(c)
+    assert s[1] == pytest.approx(complex(INV_SQRT2, 0.0))
+    assert s[3] == pytest.approx(complex(INV_SQRT2, 0.0))
+
+
 def test_cy_gate():
     c = ket.Circuit(2)
     c.x(0)  # |01>

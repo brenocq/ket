@@ -267,6 +267,9 @@ void apply_gate(Circuit& c, const std::string& statement,
     c.tdg(q[0]);
   } else if (name == "id") {
     need(1);  // identity: no-op
+  } else if (name == "ch") {
+    need(2);
+    c.ch(q[0], q[1]);
   } else if (name == "cx") {
     need(2);
     c.cx(q[0], q[1]);
@@ -463,6 +466,10 @@ std::string to_qasm(const Circuit& circuit) {
            << "," << qasm_angle(g.params[2]) << ") q[" << g.qubits[0].index
            << "];\n";
         break;
+      case GateType::CH:
+        os << "ch q[" << g.qubits[0].index << "],q[" << g.qubits[1].index
+           << "];\n";
+        break;
       case GateType::CX:
         os << "cx q[" << g.qubits[0].index << "],q[" << g.qubits[1].index
            << "];\n";
@@ -475,13 +482,13 @@ std::string to_qasm(const Circuit& circuit) {
         os << "cz q[" << g.qubits[0].index << "],q[" << g.qubits[1].index
            << "];\n";
         break;
-      case GateType::Swap:
-        os << "swap q[" << g.qubits[0].index << "],q[" << g.qubits[1].index
-           << "];\n";
-        break;
       case GateType::CP:
         os << "cp(" << qasm_angle(g.params[0]) << ") q[" << g.qubits[0].index
            << "],q[" << g.qubits[1].index << "];\n";
+        break;
+      case GateType::Swap:
+        os << "swap q[" << g.qubits[0].index << "],q[" << g.qubits[1].index
+           << "];\n";
         break;
       case GateType::Measure:
         os << "measure q[" << g.qubits[0].index << "] -> c[" << g.clbit

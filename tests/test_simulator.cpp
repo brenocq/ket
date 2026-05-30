@@ -216,6 +216,23 @@ TEST(Simulator, RzPreservesComputationalProbabilities) {
   EXPECT_NEAR(std::norm(s[1]), 0.5, 1e-12);
 }
 
+TEST(Simulator, ChAppliesHWhenControlIsOne) {
+  const double inv_sqrt2 = 1.0 / std::sqrt(2.0);
+  {  // control=0: no-op
+    ket::Circuit c{2};
+    c.ch(0, 1);
+    ExpectAmplitude(ket::run(c)[0], {1.0, 0.0});
+  }
+  {  // control=1: H on target. |01> (q0=1) -> (|01> + |11>)/sqrt(2)
+    ket::Circuit c{2};
+    c.x(0);
+    c.ch(0, 1);
+    auto s = ket::run(c);
+    ExpectAmplitude(s[1], {inv_sqrt2, 0.0});  // |01>
+    ExpectAmplitude(s[3], {inv_sqrt2, 0.0});  // |11>
+  }
+}
+
 TEST(Simulator, CyAppliesYWhenControlIsOne) {
   {  // control=0: nothing happens
     ket::Circuit c{2};

@@ -55,6 +55,9 @@ PYBIND11_MODULE(_ket, m) {
            py::arg("qubit"), "Apply a T gate.")
       .def("tdg", py::overload_cast<std::size_t>(&ket::Circuit::tdg),
            py::arg("qubit"), "Apply a T-dagger gate.")
+      .def("ch", py::overload_cast<std::size_t, std::size_t>(&ket::Circuit::ch),
+           py::arg("control"), py::arg("target"),
+           "Apply a controlled-Hadamard gate.")
       .def("cx", py::overload_cast<std::size_t, std::size_t>(&ket::Circuit::cx),
            py::arg("control"), py::arg("target"),
            "Apply a controlled-NOT gate.")

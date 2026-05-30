@@ -118,6 +118,22 @@ void apply_cy(State& s, std::size_t control, std::size_t target) {
   }
 }
 
+// Controlled-H: apply H to the target when the control is 1.
+void apply_ch(State& s, std::size_t control, std::size_t target) {
+  const std::size_t cmask = std::size_t{1} << control;
+  const std::size_t tmask = std::size_t{1} << target;
+  const double inv_sqrt2 = 1.0 / std::sqrt(2.0);
+  const std::size_t n = s.size();
+  for (std::size_t k = 0; k < n; ++k) {
+    if ((k & cmask) == 0 || (k & tmask) != 0) continue;  // control=1, target=0
+    const std::size_t k1 = k | tmask;
+    const Complex a = s[k];
+    const Complex b = s[k1];
+    s[k] = (a + b) * inv_sqrt2;
+    s[k1] = (a - b) * inv_sqrt2;
+  }
+}
+
 // SWAP: exchange amplitudes of basis states that differ in exactly the two
 // qubits (|..1..0..> <-> |..0..1..>).
 void apply_swap(State& s, std::size_t qa, std::size_t qb) {
@@ -181,6 +197,10 @@ void apply_circuit(State& state, const Circuit& circuit,
         assert(g.qubits.size() == 1);
         apply_tdg(state, wire[g.qubits[0].index]);
         break;
+      case GateType::CH:
+        assert(g.qubits.size() == 2);
+        apply_ch(state, wire[g.qubits[0].index], wire[g.qubits[1].index]);
+        break;
       case GateType::CX:
         assert(g.qubits.size() == 2);
         apply_cx(state, wire[g.qubits[0].index], wire[g.qubits[1].index]);
@@ -194,14 +214,14 @@ void apply_circuit(State& state, const Circuit& circuit,
         apply_cphase(state, wire[g.qubits[0].index], wire[g.qubits[1].index],
                      Complex{-1.0, 0.0});
         break;
-      case GateType::Swap:
-        assert(g.qubits.size() == 2);
-        apply_swap(state, wire[g.qubits[0].index], wire[g.qubits[1].index]);
-        break;
       case GateType::CP:
         assert(g.qubits.size() == 2 && !g.params.empty());
         apply_cphase(state, wire[g.qubits[0].index], wire[g.qubits[1].index],
                      Complex{std::cos(g.params[0]), std::sin(g.params[0])});
+        break;
+      case GateType::Swap:
+        assert(g.qubits.size() == 2);
+        apply_swap(state, wire[g.qubits[0].index], wire[g.qubits[1].index]);
         break;
       case GateType::Rx:
         assert(g.qubits.size() == 1 && !g.params.empty());
