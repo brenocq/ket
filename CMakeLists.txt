@@ -15,6 +15,7 @@ option(KET_TESTS "Build the C++ test suite" OFF)
 option(KET_PYTHON "Build the Python bindings" OFF)
 option(KET_EXAMPLES "Build the example programs" OFF)
 option(KET_CLI "Build the ket-cli command-line executable" OFF)
+option(KET_GUI "Build the ket-gui graphical executable" OFF)
 
 # Strict warnings, applied only to our own targets (not fetched dependencies).
 add_library(ket_warnings INTERFACE)
@@ -73,6 +74,10 @@ endif()
 
 if(KET_CLI)
   add_subdirectory(cli)
+endif()
+
+if(KET_GUI)
+  add_subdirectory(gui)
 endif()
 
 if(KET_TESTS)

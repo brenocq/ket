@@ -24,6 +24,7 @@ KET_PYTHON=OFF
 KET_TESTS=OFF
 KET_EXAMPLES=OFF
 KET_CLI=OFF
+KET_GUI=OFF
 RUN_CPP_TESTS=0
 RUN_PY_TESTS=0
 CLEAN=0
@@ -38,6 +39,7 @@ ${BOLD}${BLUE}Build options${RESET} (map to CMake options):
   ${GREEN}-t,  --tests${RESET}          Build the C++ tests          ${DIM}(-DKET_TESTS=ON)${RESET}
   ${GREEN}-e,  --examples${RESET}       Build the example programs   ${DIM}(-DKET_EXAMPLES=ON)${RESET}
   ${GREEN}-c,  --cli${RESET}            Build the ket-cli executable ${DIM}(-DKET_CLI=ON)${RESET}
+  ${GREEN}-g,  --gui${RESET}            Build the ket-gui executable ${DIM}(-DKET_GUI=ON)${RESET}
 
 ${BOLD}${BLUE}Test options${RESET} (build, then run):
   ${GREEN}-ct, --cpp-tests${RESET}      Run the C++ tests with ctest  ${DIM}(implies --tests)${RESET}
@@ -56,6 +58,7 @@ ${BOLD}${BLUE}Examples${RESET}:
   ${CYAN}./build.sh -pt${RESET}             ${DIM}# build bindings and run the Python tests${RESET}
   ${CYAN}./build.sh -e${RESET}              ${DIM}# build the examples (./build/examples/bell)${RESET}
   ${CYAN}./build.sh -c${RESET}              ${DIM}# build the CLI (./build/cli/ket-cli)${RESET}
+  ${CYAN}./build.sh -g${RESET}              ${DIM}# build the GUI (./build/gui/ket-gui)${RESET}
   ${CYAN}./build.sh --clean -ct -pt${RESET} ${DIM}# clean rebuild, run both test suites${RESET}
 EOF
 }
@@ -66,6 +69,7 @@ while [[ $# -gt 0 ]]; do
     -t|--tests)      KET_TESTS=ON ;;
     -e|--examples)   KET_EXAMPLES=ON ;;
     -c|--cli)        KET_CLI=ON ;;
+    -g|--gui)        KET_GUI=ON ;;
     -ct|--cpp-tests) RUN_CPP_TESTS=1 ;;
     -pt|--py-tests)  RUN_PY_TESTS=1 ;;
     -f|--format)     FORMAT=1 ;;
@@ -80,7 +84,7 @@ done
 if [[ $FORMAT == 1 ]]; then
   if command -v clang-format >/dev/null 2>&1; then
     step "clang-format (C++)"
-    find include src bindings examples tests cli \
+    find include src bindings examples tests cli gui \
       \( -name '*.cpp' -o -name '*.hpp' \) -print0 | xargs -0 clang-format -i
   else
     err "clang-format not found, skipping C++"
@@ -89,7 +93,7 @@ if [[ $FORMAT == 1 ]]; then
   if command -v cmake-format >/dev/null 2>&1; then
     step "cmake-format (CMake)"
     cmake-format -i CMakeLists.txt tests/CMakeLists.txt examples/CMakeLists.txt \
-      cli/CMakeLists.txt
+      cli/CMakeLists.txt gui/CMakeLists.txt
   else
     err "cmake-format not found, skipping CMake"
   fi
@@ -121,12 +125,13 @@ if [[ $CLEAN == 1 ]]; then
   rm -rf "$BUILD_DIR"
 fi
 
-step "Configuring (KET_PYTHON=$KET_PYTHON, KET_TESTS=$KET_TESTS, KET_EXAMPLES=$KET_EXAMPLES, KET_CLI=$KET_CLI)"
+step "Configuring (KET_PYTHON=$KET_PYTHON, KET_TESTS=$KET_TESTS, KET_EXAMPLES=$KET_EXAMPLES, KET_CLI=$KET_CLI, KET_GUI=$KET_GUI)"
 cmake -S . -B "$BUILD_DIR" \
   -DKET_PYTHON="$KET_PYTHON" \
   -DKET_TESTS="$KET_TESTS" \
   -DKET_EXAMPLES="$KET_EXAMPLES" \
-  -DKET_CLI="$KET_CLI"
+  -DKET_CLI="$KET_CLI" \
+  -DKET_GUI="$KET_GUI"
 
 step "Building"
 cmake --build "$BUILD_DIR" -j
@@ -149,6 +154,10 @@ fi
 
 if [[ $KET_CLI == ON ]]; then
   step "CLI built — run ./$BUILD_DIR/cli/ket-cli --help"
+fi
+
+if [[ $KET_GUI == ON ]]; then
+  step "GUI built — run ./$BUILD_DIR/gui/ket-gui examples/bell.qasm"
 fi
 
 ok "Done"
