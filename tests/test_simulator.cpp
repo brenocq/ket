@@ -216,6 +216,31 @@ TEST(Simulator, RzPreservesComputationalProbabilities) {
   EXPECT_NEAR(std::norm(s[1]), 0.5, 1e-12);
 }
 
+TEST(Simulator, UGateRecoversKnownGates) {
+  const double pi = std::acos(-1.0);
+  const double inv_sqrt2 = 1.0 / std::sqrt(2.0);
+  {  // U(pi/2, 0, pi) == H
+    ket::Circuit c{1};
+    c.u(0, pi / 2.0, 0.0, pi);
+    auto s = ket::run(c);
+    ExpectAmplitude(s[0], {inv_sqrt2, 0.0});
+    ExpectAmplitude(s[1], {inv_sqrt2, 0.0});
+  }
+  {  // U(pi, 0, pi) == X
+    ket::Circuit c{1};
+    c.u(0, pi, 0.0, pi);
+    auto s = ket::run(c);
+    ExpectAmplitude(s[0], {0.0, 0.0});
+    ExpectAmplitude(s[1], {1.0, 0.0});
+  }
+  {  // U(0, 0, lambda) == phase: on |1> gives e^{i lambda}|1>
+    ket::Circuit c{1};
+    c.x(0);
+    c.u(0, 0.0, 0.0, pi / 2.0);
+    ExpectAmplitude(ket::run(c)[1], {0.0, 1.0});  // e^{i pi/2} = i
+  }
+}
+
 TEST(Simulator, RunWithProbesCapturesStages) {
   ket::Circuit c{2};
   c.h(0);

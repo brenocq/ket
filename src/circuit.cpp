@@ -84,6 +84,12 @@ void Circuit::rz(Qubit q, double theta) {
   dag_.add(Gate{.type = GateType::Rz, .qubits = {q}, .params = {theta}});
 }
 
+void Circuit::u(Qubit q, double theta, double phi, double lambda) {
+  assert(q.index < n_qubits_);
+  dag_.add(
+      Gate{.type = GateType::U, .qubits = {q}, .params = {theta, phi, lambda}});
+}
+
 void Circuit::cz(Qubit a, Qubit b) {
   assert(a.index < n_qubits_ && b.index < n_qubits_);
   assert(a.index != b.index);
@@ -590,6 +596,14 @@ std::string Circuit::print() const {
                                                    : 'z';
         const std::string lbl =
             std::string("R") + axis + "(" + format_angle(g.params[0]) + ")";
+        add_quantum(render_box(n_qubits_, g.qubits[0].index, lbl),
+                    display_width(lbl) + 4);
+        break;
+      }
+      case GateType::U: {
+        const std::string lbl = "U(" + format_angle(g.params[0]) + "," +
+                                format_angle(g.params[1]) + "," +
+                                format_angle(g.params[2]) + ")";
         add_quantum(render_box(n_qubits_, g.qubits[0].index, lbl),
                     display_width(lbl) + 4);
         break;

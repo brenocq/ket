@@ -18,6 +18,7 @@ enum class GateType {
   H, X, Y, Z,
   S, Sdg, T, Tdg,
   Rx, Ry, Rz,
+  U,  // general single-qubit unitary U(theta, phi, lambda)
   // Two-qubit gates
   CX, CZ, CP,
   // Structural operations (non-unitary / rendering only)

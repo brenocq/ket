@@ -37,6 +37,10 @@ class Circuit {
   void ry(Qubit q, double theta);
   void rz(Qubit q, double theta);
 
+  // General single-qubit unitary (the OpenQASM U gate); u1/u2/u3 are the cases
+  // u(0,0,lambda), u(pi/2,phi,lambda), and u(theta,phi,lambda).
+  void u(Qubit q, double theta, double phi, double lambda);
+
   // Controlled-Z, and controlled-phase by angle lambda (CZ = cp with
   // lambda=pi). Both are symmetric in their two qubits.
   void cz(Qubit a, Qubit b);
@@ -56,6 +60,9 @@ class Circuit {
   void rx(std::size_t i, double theta) { rx(Qubit{i}, theta); }
   void ry(std::size_t i, double theta) { ry(Qubit{i}, theta); }
   void rz(std::size_t i, double theta) { rz(Qubit{i}, theta); }
+  void u(std::size_t i, double theta, double phi, double lambda) {
+    u(Qubit{i}, theta, phi, lambda);
+  }
   void cz(std::size_t a, std::size_t b) { cz(Qubit{a}, Qubit{b}); }
   void cp(std::size_t a, std::size_t b, double lambda) {
     cp(Qubit{a}, Qubit{b}, lambda);

@@ -227,6 +227,13 @@ TEST(Print, ProbeMarkersAtBottom) {
             "          ψ0    ψ1\n");
 }
 
+TEST(Print, UGateBox) {
+  const double pi = std::acos(-1.0);
+  ket::Circuit c{1};
+  c.u(0, pi / 2.0, 0.0, pi);
+  EXPECT_NE(c.print().find("U(π/2,0,π)"), std::string::npos);
+}
+
 TEST(Print, NoClassicalRowsWithoutMeasurement) {
   // A circuit without measurements renders exactly as before (no bus row).
   ket::Circuit c{1};

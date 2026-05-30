@@ -84,6 +84,14 @@ void apply_rz(State& s, std::size_t q, double theta) {
   apply_single(s, q, Complex{c, -sn}, 0.0, 0.0, Complex{c, sn});
 }
 
+// General single-qubit gate U(theta, phi, lambda) (the OpenQASM primitive).
+void apply_u(State& s, std::size_t q, double theta, double phi, double lambda) {
+  const double c = std::cos(theta / 2.0);
+  const double sn = std::sin(theta / 2.0);
+  apply_single(s, q, Complex{c, 0.0}, -std::polar(sn, lambda),
+               std::polar(sn, phi), std::polar(c, phi + lambda));
+}
+
 void apply_cx(State& s, std::size_t control, std::size_t target) {
   const std::size_t cmask = std::size_t{1} << control;
   const std::size_t tmask = std::size_t{1} << target;
@@ -172,6 +180,11 @@ void apply_circuit(State& state, const Circuit& circuit,
       case GateType::Rz:
         assert(g.qubits.size() == 1 && !g.params.empty());
         apply_rz(state, wire[g.qubits[0].index], g.params[0]);
+        break;
+      case GateType::U:
+        assert(g.qubits.size() == 1 && g.params.size() == 3);
+        apply_u(state, wire[g.qubits[0].index], g.params[0], g.params[1],
+                g.params[2]);
         break;
       case GateType::Barrier:
         break;  // no-op: barriers only affect ordering and rendering

@@ -175,6 +175,20 @@ def test_probe_capture_and_render():
     assert r.final[3] == pytest.approx(complex(INV_SQRT2, 0.0))
 
 
+def test_u_gate():
+    import math
+
+    c = ket.Circuit(1)
+    c.u(0, math.pi / 2, 0, math.pi)  # U(pi/2, 0, pi) == H
+    s = ket.run(c)
+    assert abs(s[0]) == pytest.approx(INV_SQRT2)
+    assert abs(s[1]) == pytest.approx(INV_SQRT2)
+
+    # u3 from QASM maps to U; round-trips through to_qasm.
+    c2 = ket.from_qasm("qreg q[1]; u3(pi/2,0,pi) q[0];")
+    assert "U(" in ket.to_qasm(c2)
+
+
 def test_qasm_parse_and_serialize():
     c = ket.from_qasm("OPENQASM 2.0;\nqreg q[2];\nh q[0];\ncx q[0],q[1];\n")
     assert c.n_qubits == 2

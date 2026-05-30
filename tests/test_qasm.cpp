@@ -67,6 +67,37 @@ TEST(Qasm, CompositeBlocksAreFlattened) {
   EXPECT_EQ(out.find("bell"), std::string::npos);  // no composite leaks
 }
 
+TEST(Qasm, ParsesUFamily) {
+  // The builtin U and the qelib1 aliases u3/u2/u1 all map to ket's u gate.
+  // U(pi/2,0,pi) == H, so the input register becomes a uniform superposition.
+  ket::Circuit c = ket::from_qasm(R"(
+    qreg q[1];
+    U(pi/2,0,pi) q[0];
+  )");
+  auto s = ket::run(c);
+  EXPECT_NEAR(s[0].real(), kInvSqrt2, 1e-12);
+  EXPECT_NEAR(s[1].real(), kInvSqrt2, 1e-12);
+
+  // u1(pi/2) is a phase: on |1> it gives e^{i pi/2}|1> = i|1>.
+  ket::Circuit p = ket::from_qasm("qreg q[1]; x q[0]; u1(pi/2) q[0];");
+  EXPECT_NEAR(ket::run(p)[1].imag(), 1.0, 1e-12);
+}
+
+TEST(Qasm, UGateRoundTrips) {
+  ket::Circuit c{1};
+  c.u(0, 1.5, 0.5, 0.25);  // arbitrary (non-pi) angles
+  const std::string out = ket::to_qasm(c);
+  EXPECT_NE(out.find("U("), std::string::npos);
+
+  auto a = ket::run(c);
+  auto b = ket::run(ket::from_qasm(out));
+  ASSERT_EQ(a.size(), b.size());
+  for (std::size_t i = 0; i < a.size(); ++i) {
+    EXPECT_NEAR(a[i].real(), b[i].real(), 1e-9);
+    EXPECT_NEAR(a[i].imag(), b[i].imag(), 1e-9);
+  }
+}
+
 TEST(Qasm, ThrowsOnUnsupported) {
   EXPECT_THROW(ket::from_qasm("qreg q[3]; ccx q[0],q[1],q[2];"),
                std::runtime_error);

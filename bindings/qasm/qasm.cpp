@@ -231,6 +231,15 @@ void apply_gate(Circuit& c, const std::string& statement,
     if (q.size() != n)
       fail(name + ": expected " + std::to_string(n) + " qubits");
   };
+  auto angles = [&]() {
+    std::vector<double> a;
+    for (const std::string& p : split(params, ',')) a.push_back(eval_angle(p));
+    return a;
+  };
+  auto u_gate = [&](double theta, double phi, double lambda) {
+    need(1);
+    c.u(q[0], theta, phi, lambda);
+  };
 
   if (name == "h") {
     need(1);
@@ -276,6 +285,18 @@ void apply_gate(Circuit& c, const std::string& statement,
   } else if (name == "cp" || name == "cu1") {
     need(2);
     c.cp(q[0], q[1], eval_angle(params));
+  } else if (name == "U" || name == "u" || name == "u3") {
+    const std::vector<double> a = angles();
+    if (a.size() != 3) fail(name + ": expected 3 angles");
+    u_gate(a[0], a[1], a[2]);
+  } else if (name == "u2") {
+    const std::vector<double> a = angles();
+    if (a.size() != 2) fail("u2: expected 2 angles");
+    u_gate(std::acos(-1.0) / 2.0, a[0], a[1]);  // U(pi/2, phi, lambda)
+  } else if (name == "u1" || name == "p" || name == "phase") {
+    const std::vector<double> a = angles();
+    if (a.size() != 1) fail(name + ": expected 1 angle");
+    u_gate(0.0, 0.0, a[0]);  // U(0, 0, lambda)
   } else {
     fail("unsupported gate: " + name);
   }
@@ -431,6 +452,11 @@ std::string to_qasm(const Circuit& circuit) {
            << g.qubits[0].index << "];\n";
         break;
       }
+      case GateType::U:
+        os << "U(" << qasm_angle(g.params[0]) << "," << qasm_angle(g.params[1])
+           << "," << qasm_angle(g.params[2]) << ") q[" << g.qubits[0].index
+           << "];\n";
+        break;
       case GateType::CX:
         os << "cx q[" << g.qubits[0].index << "],q[" << g.qubits[1].index
            << "];\n";
