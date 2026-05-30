@@ -76,10 +76,18 @@ target_link_libraries(implot3d PUBLIC imgui)
 add_library(ket_gui_core STATIC app.cpp)
 target_link_libraries(ket_gui_core PUBLIC ket imgui implot implot3d)
 target_include_directories(ket_gui_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-# Absolute path to the bundled assets (fonts), resolved at runtime.
+# Absolute paths to the font assets, resolved at runtime: the in-tree copy for
+# dev builds, and the installed copy (share/ket) for an installed binary.
 target_compile_definitions(
-  ket_gui_core PRIVATE KET_GUI_ASSETS_DIR="${CMAKE_CURRENT_SOURCE_DIR}/assets")
+  ket_gui_core
+  PRIVATE KET_GUI_ASSETS_DIR="${CMAKE_CURRENT_SOURCE_DIR}/assets"
+          KET_GUI_INSTALL_ASSETS_DIR="${CMAKE_INSTALL_FULL_DATADIR}/ket")
 
 add_executable(ket_gui main.cpp)
 set_target_properties(ket_gui PROPERTIES OUTPUT_NAME ket-gui)
 target_link_libraries(ket_gui PRIVATE ket_gui_core)
+
+install(TARGETS ket_gui RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/assets/Inter-Regular.ttf
+              ${CMAKE_CURRENT_SOURCE_DIR}/assets/Inter-Bold.ttf
+        DESTINATION ${CMAKE_INSTALL_DATADIR}/ket)

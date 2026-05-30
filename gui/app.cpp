@@ -349,11 +349,21 @@ int run(const std::string& qasm_source, const std::string& title) {
   io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
   io.IniFilename = nullptr;  // rebuild the default layout each launch
 
+#if defined(KET_GUI_ASSETS_DIR) || defined(KET_GUI_INSTALL_ASSETS_DIR)
+  // Use the Inter UI font, looking in the source tree (dev builds) first and
+  // then in the install location; fall back to ImGui's built-in font.
+  for (const char* font : {
 #ifdef KET_GUI_ASSETS_DIR
-  // Use the Inter UI font; fall back to the built-in font if it is missing.
-  if (const char* font = KET_GUI_ASSETS_DIR "/Inter-Regular.ttf";
-      std::ifstream(font).good()) {
-    io.Fonts->AddFontFromFileTTF(font, 16.0f);
+           KET_GUI_ASSETS_DIR "/Inter-Regular.ttf",
+#endif
+#ifdef KET_GUI_INSTALL_ASSETS_DIR
+           KET_GUI_INSTALL_ASSETS_DIR "/Inter-Regular.ttf",
+#endif
+       }) {
+    if (std::ifstream(font).good()) {
+      io.Fonts->AddFontFromFileTTF(font, 16.0f);
+      break;
+    }
   }
 #endif
 

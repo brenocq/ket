@@ -41,6 +41,11 @@ bindings).
 ./build.sh --help   # all options
 ```
 
+`./build.sh --install` installs ket under `/usr/local`: the `ket-cli` and
+`ket-gui` executables, plus the library, headers, and a CMake package config so
+other projects can `find_package(ket)` and link `ket::ket`. `--uninstall`
+removes it.
+
 ## Examples
 
 The [`examples/`](examples) directory has runnable programs — Bell and GHZ

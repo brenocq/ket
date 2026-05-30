@@ -10,3 +10,5 @@ target_include_directories(ket_cli_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 add_executable(ket_cli main.cpp)
 set_target_properties(ket_cli PROPERTIES OUTPUT_NAME ket-cli)
 target_link_libraries(ket_cli PRIVATE ket_cli_core ket_warnings)
+
+install(TARGETS ket_cli RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})

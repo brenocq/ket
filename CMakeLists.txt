@@ -11,6 +11,8 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+include(GNUInstallDirs)
+
 option(KET_TESTS "Build the C++ test suite" OFF)
 option(KET_PYTHON "Build the Python bindings" OFF)
 option(KET_EXAMPLES "Build the example programs" OFF)
@@ -46,8 +48,56 @@ add_library(
   src/simulator.cpp
   src/measurement.cpp
   bindings/qasm/qasm.cpp)
-target_include_directories(ket PUBLIC include ${PROJECT_BINARY_DIR}/include)
-target_link_libraries(ket PRIVATE ket_warnings)
+# Include dirs differ between the build tree and an install: consumers in this
+# build see the source + generated headers; installed consumers see the
+# installed include directory.
+target_include_directories(
+  ket
+  PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+         $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
+         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
+# Build-only: the warning flags must not leak into the exported target.
+target_link_libraries(ket PRIVATE $<BUILD_INTERFACE:ket_warnings>)
+# Propagate the C++20 requirement to consumers of the installed target.
+target_compile_features(ket PUBLIC cxx_std_20)
+
+# Install + CMake package config, so consumers can `find_package(ket)` and link
+# `ket::ket`. Skipped for the Python wheel build, which ships only the module.
+if(NOT KET_PYTHON)
+  include(CMakePackageConfigHelpers)
+
+  install(
+    TARGETS ket
+    EXPORT ketTargets
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
+
+  install(
+    DIRECTORY include/ket
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    FILES_MATCHING
+    PATTERN "*.hpp")
+  install(FILES ${PROJECT_BINARY_DIR}/include/ket/version.hpp
+          DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ket)
+
+  install(
+    EXPORT ketTargets
+    FILE ketTargets.cmake
+    NAMESPACE ket::
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/ket)
+
+  configure_package_config_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/cmake/ketConfig.cmake.in
+    ${PROJECT_BINARY_DIR}/ketConfig.cmake
+    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/ket)
+  write_basic_package_version_file(
+    ${PROJECT_BINARY_DIR}/ketConfigVersion.cmake
+    VERSION ${PROJECT_VERSION}
+    COMPATIBILITY SameMajorVersion)
+  install(FILES ${PROJECT_BINARY_DIR}/ketConfig.cmake
+                ${PROJECT_BINARY_DIR}/ketConfigVersion.cmake
+          DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/ket)
+endif()
 
 if(KET_PYTHON)
   # The static core is linked into a shared extension module, so it must be

@@ -19,7 +19,19 @@ step() { printf '%s==>%s %s%s%s\n' "$BOLD$BLUE" "$RESET" "$BOLD" "$*" "$RESET"; 
 err()  { printf '%serror:%s %s\n' "$BOLD$RED" "$RESET" "$*" >&2; }
 ok()   { printf '%s==>%s %s%s%s\n' "$BOLD$GREEN" "$RESET" "$BOLD" "$*" "$RESET"; }
 
+# Echoes "sudo" if writing to the given directory needs elevation, else nothing.
+install_sudo() {
+  local dir="$1"
+  if [[ ${EUID:-$(id -u)} -eq 0 ]]; then return 0; fi
+  if [[ -w "$dir" ]] || { [[ ! -e "$dir" ]] && [[ -w "$(dirname "$dir")" ]]; }; then
+    return 0
+  fi
+  echo sudo
+}
+
 BUILD_DIR=build
+BINDIR=/usr/local/bin           # ket-cli / ket-gui install location (on PATH)
+SHAREDIR=/usr/local/share/ket   # ket-gui font install location
 KET_PYTHON=OFF
 KET_TESTS=OFF
 KET_EXAMPLES=OFF
@@ -29,6 +41,8 @@ RUN_CPP_TESTS=0
 RUN_PY_TESTS=0
 CLEAN=0
 FORMAT=0
+INSTALL=0
+UNINSTALL=0
 EXPLICIT_TARGETS=0  # set when any build/test flag selects specific components
 
 usage() {
@@ -50,6 +64,8 @@ ${BOLD}${BLUE}Test options${RESET} (build, then run):
 
 ${BOLD}${BLUE}Other${RESET}:
   ${GREEN}-f,  --format${RESET}         Format sources (clang-format, cmake-format, ruff) and exit
+  ${GREEN}-i,  --install${RESET}        Build and install ket under /usr/local (lib, headers, tools)
+  ${GREEN}-u,  --uninstall${RESET}      Remove the installed ket files
        ${GREEN}--clean${RESET}          Remove the build directory before configuring
   ${GREEN}-B,  --build-dir DIR${RESET}  Build directory ${DIM}(default: build)${RESET}
   ${GREEN}-h,  --help${RESET}           Show this help
@@ -62,6 +78,7 @@ ${BOLD}${BLUE}Examples${RESET}:
   ${CYAN}./build.sh --cpp-tests${RESET}  ${DIM}# build and run the C++ tests${RESET}
   ${CYAN}./build.sh --py-tests${RESET}   ${DIM}# build the bindings and run the Python tests${RESET}
   ${CYAN}./build.sh --clean${RESET}      ${DIM}# remove the build dir, then build everything${RESET}
+  ${CYAN}./build.sh --install${RESET}    ${DIM}# build, then install ket-cli and ket-gui${RESET}
 EOF
 }
 
@@ -75,6 +92,8 @@ while [[ $# -gt 0 ]]; do
     -ct|--cpp-tests) RUN_CPP_TESTS=1; EXPLICIT_TARGETS=1 ;;
     -pt|--py-tests)  RUN_PY_TESTS=1; EXPLICIT_TARGETS=1 ;;
     -f|--format)     FORMAT=1 ;;
+    -i|--install)    INSTALL=1; KET_CLI=ON; KET_GUI=ON; EXPLICIT_TARGETS=1 ;;
+    -u|--uninstall)  UNINSTALL=1 ;;
     --clean)         CLEAN=1 ;;
     -B|--build-dir)  shift; BUILD_DIR="${1:?--build-dir requires an argument}" ;;
     -h|--help)       usage; exit 0 ;;
@@ -115,6 +134,23 @@ if [[ $FORMAT == 1 ]]; then
   fi
 
   ok "Formatted"
+  exit 0
+fi
+
+if [[ $UNINSTALL == 1 ]]; then
+  SUDO=$(install_sudo "$BINDIR")
+  step "Uninstalling ket"
+  # Remove exactly what was installed (if the manifest is still around)...
+  if [[ -f "$BUILD_DIR/install_manifest.txt" ]]; then
+    $SUDO xargs rm -f <"$BUILD_DIR/install_manifest.txt"
+  fi
+  # ...and tidy up the package directories / a possible older user install.
+  $SUDO rm -rf "$SHAREDIR" /usr/local/include/ket /usr/local/lib/cmake/ket
+  $SUDO rm -f "$BINDIR/ket-cli" "$BINDIR/ket-gui" \
+    /usr/local/lib/libket.a /usr/local/lib64/libket.a
+  rm -f "$HOME/.local/bin/ket-cli" "$HOME/.local/bin/ket-gui"
+  hash -r 2>/dev/null || true
+  ok "Uninstalled"
   exit 0
 fi
 
@@ -168,6 +204,17 @@ fi
 
 if [[ $KET_GUI == ON ]]; then
   step "GUI built — run ./$BUILD_DIR/gui/ket-gui examples/bell.qasm"
+fi
+
+if [[ $INSTALL == 1 ]]; then
+  SUDO=$(install_sudo "$BINDIR")
+  if [[ -n "$SUDO" ]] && ! command -v sudo >/dev/null 2>&1; then
+    err "installing under /usr/local needs root; re-run as root"
+    exit 1
+  fi
+  step "Installing under /usr/local"
+  $SUDO cmake --install "$BUILD_DIR"
+  ok "Installed ket — library, headers, ket-cli, and ket-gui"
 fi
 
 ok "Done"
