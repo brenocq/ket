@@ -48,7 +48,7 @@ if(KET_PYTHON)
     FetchContent_MakeAvailable(pybind11)
   endif()
 
-  pybind11_add_module(_ket python/module.cpp)
+  pybind11_add_module(_ket bindings/python/module.cpp)
   target_link_libraries(_ket PRIVATE ket)
   install(TARGETS _ket LIBRARY DESTINATION ket)
 endif()

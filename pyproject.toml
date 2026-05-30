@@ -23,7 +23,7 @@ minimum-version = "0.10"
 cmake.version = ">=3.20"
 # The pure-Python package lives here; the compiled _ket module is installed
 # into the same `ket/` directory by CMake (see install(TARGETS _ket ...)).
-wheel.packages = ["python/ket"]
+wheel.packages = ["bindings/python/ket"]
 cmake.define.KET_PYTHON = "ON"
 cmake.define.KET_TESTS = "OFF"
 # Persistent build dir + rebuild-on-import, so an editable install picks up

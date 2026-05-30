@@ -25,7 +25,7 @@ jobs:
 
       - name: clang-format (C++)
         run: |
-          find include src python examples tests \
+          find include src bindings examples tests \
             \( -name '*.cpp' -o -name '*.hpp' \) -print0 \
             | xargs -0 clang-format --dry-run --Werror
 
@@ -36,5 +36,5 @@ jobs:
 
       - name: ruff (Python)
         run: |
-          ruff format --check python tests/python
-          ruff check --select I python tests/python
+          ruff format --check bindings/python tests/python
+          ruff check --select I bindings/python tests/python

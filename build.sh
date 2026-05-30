@@ -76,7 +76,7 @@ done
 if [[ $FORMAT == 1 ]]; then
   if command -v clang-format >/dev/null 2>&1; then
     step "clang-format (C++)"
-    find include src python examples tests \
+    find include src bindings examples tests \
       \( -name '*.cpp' -o -name '*.hpp' \) -print0 | xargs -0 clang-format -i
   else
     err "clang-format not found, skipping C++"
@@ -97,8 +97,8 @@ if [[ $FORMAT == 1 ]]; then
   fi
   if [[ -n "$RUFF" ]]; then
     step "ruff (Python)"
-    "$RUFF" format python tests/python
-    "$RUFF" check --select I --fix python tests/python || true
+    "$RUFF" format bindings/python tests/python
+    "$RUFF" check --select I --fix bindings/python tests/python || true
   else
     err "ruff not found (pip install -e \".[dev]\"), skipping Python"
   fi
@@ -133,8 +133,8 @@ fi
 if [[ $RUN_PY_TESTS == 1 ]]; then
   step "Running Python tests"
   # Make the freshly built extension importable as part of the `ket` package.
-  cp "$BUILD_DIR"/_ket*.so python/ket/
-  PYTHONPATH=python python3 -m pytest tests/python
+  cp "$BUILD_DIR"/_ket*.so bindings/python/ket/
+  PYTHONPATH=bindings/python python3 -m pytest tests/python
 fi
 
 if [[ $KET_EXAMPLES == ON ]]; then
