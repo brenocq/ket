@@ -8,6 +8,7 @@
 #include "app.hpp"
 
 #include <algorithm>
+#include <cmath>
 #include <cstddef>
 #include <cstdio>
 #include <exception>
@@ -112,22 +113,46 @@ void render_circuit(const Circuit& circuit) {
   }
   if (ncols == 0) ncols = 1;
 
-  const ImPlotFlags pflags = ImPlotFlags_CanvasOnly | ImPlotFlags_Equal;
-  if (!ImPlot::BeginPlot("##circuit", ImVec2(-1, -1), pflags)) return;
+  // Pixels per circuit cell: rows packed tightly, columns a touch wider (like
+  // the terminal diagram). Gate shapes are pixel-sized, so this only controls
+  // the spacing between wires and columns. No ImPlotFlags_Equal — the two axes
+  // use independent scales.
+  const float ppu_x = 50.0f;
+  const float ppu_y = 38.0f;
+  const ImVec2 avail = ImGui::GetContentRegionAvail();
+
+  ImPlot::PushStyleVar(ImPlotStyleVar_PlotPadding, ImVec2(0.0f, 0.0f));
+  const ImPlotFlags pflags = ImPlotFlags_CanvasOnly;
+  if (!ImPlot::BeginPlot("##circuit", ImVec2(-1, -1), pflags)) {
+    ImPlot::PopStyleVar();
+    return;
+  }
   ImPlot::SetupAxes(nullptr, nullptr, ImPlotAxisFlags_NoDecorations,
                     ImPlotAxisFlags_NoDecorations);
 
-  // Fit the view on first show and whenever the circuit's size changes; on
-  // other frames leave the axes untouched so the user's pan/zoom persists.
+  // Anchor the circuit to the top-left at a fixed scale on first show, when its
+  // size changes, and when the panel is resized (which also covers the docked
+  // window settling its size after the first frame). Between those the axes are
+  // left alone so the user's pan/zoom persists.
   static int last_ncols = -1;
   static std::size_t last_nq = static_cast<std::size_t>(-1);
-  if (ncols != last_ncols || nq != last_nq) {
+  static float last_aw = -1.0f;
+  static float last_ah = -1.0f;
+  const bool resized = std::fabs(avail.x - last_aw) > 0.5f ||
+                       std::fabs(avail.y - last_ah) > 0.5f;
+  if (ncols != last_ncols || nq != last_nq || resized) {
     last_ncols = ncols;
     last_nq = nq;
-    ImPlot::SetupAxisLimits(ImAxis_X1, -1.4, static_cast<double>(ncols) + 0.4,
-                            ImPlotCond_Always);
-    ImPlot::SetupAxisLimits(ImAxis_Y1, -0.8, static_cast<double>(nq) - 0.2,
-                            ImPlotCond_Always);
+    last_aw = avail.x;
+    last_ah = avail.y;
+    const double x_lo = -0.7;
+    const double x_hi =
+        x_lo + static_cast<double>(std::max(avail.x, 1.0f)) / ppu_x;
+    const double y_hi = static_cast<double>(nq) - 1.0 + 0.7;
+    const double y_lo =
+        y_hi - static_cast<double>(std::max(avail.y, 1.0f)) / ppu_y;
+    ImPlot::SetupAxisLimits(ImAxis_X1, x_lo, x_hi, ImPlotCond_Always);
+    ImPlot::SetupAxisLimits(ImAxis_Y1, y_lo, y_hi, ImPlotCond_Always);
   }
 
   ImDrawList* dl = ImPlot::GetPlotDrawList();
@@ -148,49 +173,62 @@ void render_circuit(const Circuit& circuit) {
     return static_cast<double>(nq) - 1.0 - static_cast<double>(qi);
   };
 
+  // Pixels per plot unit at the current zoom. Gate boxes and circles are sized
+  // in plot coordinates (so they grow/shrink with zoom); only text stays at a
+  // fixed pixel size. `zoom` is 1.0 at the default scale.
+  const ImVec2 origin = px(0.0, 0.0);
+  const float sx = std::fabs(px(1.0, 0.0).x - origin.x);
+  const float sy = std::fabs(px(0.0, 1.0).y - origin.y);
+  const float zoom = ((sx + sy) * 0.5f) / 44.0f;
+  auto thick = [zoom](float base) { return std::max(1.0f, base * zoom); };
+
   // Wires and left-hand qubit labels.
   for (std::size_t qi = 0; qi < nq; ++qi) {
     const double y = yq(qi);
-    dl->AddLine(px(0.0, y), px(static_cast<double>(ncols), y), wire_col, 1.5f);
+    dl->AddLine(px(0.0, y), px(static_cast<double>(ncols), y), wire_col,
+                thick(1.5f));
     char buf[24];
     std::snprintf(buf, sizeof(buf), "q%zu", qi);
     const ImVec2 ts = ImGui::CalcTextSize(buf);
-    const ImVec2 lp = px(-0.45, y);
+    const ImVec2 lp = px(-0.15, y);
     dl->AddText(ImVec2(lp.x - ts.x, lp.y - ts.y * 0.5f), text_col, buf);
   }
 
-  // Shapes are sized in pixels so labels always fit and dots stay round.
+  // Boxes/circles scale with zoom; the label text stays pixel-sized.
   auto box = [&](double cx, double y, const char* label) {
     const ImVec2 c = px(cx, y);
+    const float hw = 20.0f * zoom;
+    const float hh = 13.0f * zoom;
+    const float round = 3.0f * zoom;
+    dl->AddRectFilled(ImVec2(c.x - hw, c.y - hh), ImVec2(c.x + hw, c.y + hh),
+                      box_fill, round);
+    dl->AddRect(ImVec2(c.x - hw, c.y - hh), ImVec2(c.x + hw, c.y + hh),
+                border_col, round, 0, thick(1.5f));
     const ImVec2 ts = ImGui::CalcTextSize(label);
-    const float hw = std::max(ts.x * 0.5f + 7.0f, 13.0f);
-    const float hh = ts.y * 0.5f + 6.0f;
-    const ImVec2 a(c.x - hw, c.y - hh);
-    const ImVec2 b(c.x + hw, c.y + hh);
-    dl->AddRectFilled(a, b, box_fill, 3.0f);
-    dl->AddRect(a, b, border_col, 3.0f, 0, 1.5f);
     dl->AddText(ImVec2(c.x - ts.x * 0.5f, c.y - ts.y * 0.5f), text_col, label);
   };
   auto dot = [&](double cx, double y) {
-    dl->AddCircleFilled(px(cx, y), 5.0f, ctrl_col);
+    dl->AddCircleFilled(px(cx, y), 5.0f * zoom, ctrl_col);
   };
   auto oplus = [&](double cx, double y) {
     const ImVec2 c = px(cx, y);
-    const float r = 11.0f;
-    dl->AddCircle(c, r, ctrl_col, 0, 2.0f);
-    dl->AddLine(ImVec2(c.x - r, c.y), ImVec2(c.x + r, c.y), ctrl_col, 2.0f);
-    dl->AddLine(ImVec2(c.x, c.y - r), ImVec2(c.x, c.y + r), ctrl_col, 2.0f);
+    const float r = 11.0f * zoom;
+    const float t = thick(2.0f);
+    dl->AddCircle(c, r, ctrl_col, 0, t);
+    dl->AddLine(ImVec2(c.x - r, c.y), ImVec2(c.x + r, c.y), ctrl_col, t);
+    dl->AddLine(ImVec2(c.x, c.y - r), ImVec2(c.x, c.y + r), ctrl_col, t);
   };
   auto cross = [&](double cx, double y) {
     const ImVec2 c = px(cx, y);
-    const float r = 7.0f;
+    const float r = 7.0f * zoom;
+    const float t = thick(2.0f);
     dl->AddLine(ImVec2(c.x - r, c.y - r), ImVec2(c.x + r, c.y + r), ctrl_col,
-                2.0f);
+                t);
     dl->AddLine(ImVec2(c.x - r, c.y + r), ImVec2(c.x + r, c.y - r), ctrl_col,
-                2.0f);
+                t);
   };
   auto vline = [&](double cx, double ya, double yb) {
-    dl->AddLine(px(cx, ya), px(cx, yb), ctrl_col, 2.0f);
+    dl->AddLine(px(cx, ya), px(cx, yb), ctrl_col, thick(2.0f));
   };
 
   std::size_t idx = 0;
@@ -248,17 +286,17 @@ void render_circuit(const Circuit& circuit) {
         break;
       case GateType::Barrier:
         dl->AddLine(px(cx, yq(lo) + 0.5), px(cx, yq(hi) - 0.5), barrier_col,
-                    6.0f);
+                    thick(6.0f));
         break;
       case GateType::Probe:
         dl->AddLine(px(cx, yq(lo) + 0.5), px(cx, yq(hi) - 0.5), probe_col,
-                    2.0f);
+                    thick(2.0f));
         break;
       case GateType::Composite: {
         const ImVec2 a = px(cx - 0.36, yq(lo) + 0.36);
         const ImVec2 b = px(cx + 0.36, yq(hi) - 0.36);
-        dl->AddRectFilled(a, b, comp_fill, 4.0f);
-        dl->AddRect(a, b, border_col, 4.0f, 0, 1.5f);
+        dl->AddRectFilled(a, b, comp_fill, 4.0f * zoom);
+        dl->AddRect(a, b, border_col, 4.0f * zoom, 0, thick(1.5f));
         const char* label = g.label.empty() ? "circ" : g.label.c_str();
         const ImVec2 ts = ImGui::CalcTextSize(label);
         const ImVec2 c = px(cx, (yq(lo) + yq(hi)) * 0.5);
@@ -274,6 +312,7 @@ void render_circuit(const Circuit& circuit) {
 
   ImPlot::PopPlotClipRect();
   ImPlot::EndPlot();
+  ImPlot::PopStyleVar();
 }
 
 }  // namespace
