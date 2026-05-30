@@ -76,6 +76,9 @@ target_link_libraries(implot3d PUBLIC imgui)
 add_library(ket_gui_core STATIC app.cpp)
 target_link_libraries(ket_gui_core PUBLIC ket imgui implot implot3d)
 target_include_directories(ket_gui_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+# Absolute path to the bundled assets (fonts), resolved at runtime.
+target_compile_definitions(
+  ket_gui_core PRIVATE KET_GUI_ASSETS_DIR="${CMAKE_CURRENT_SOURCE_DIR}/assets")
 
 add_executable(ket_gui main.cpp)
 set_target_properties(ket_gui PROPERTIES OUTPUT_NAME ket-gui)

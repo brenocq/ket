@@ -12,6 +12,7 @@
 #include <cstddef>
 #include <cstdio>
 #include <exception>
+#include <fstream>
 #include <string>
 #include <vector>
 
@@ -347,6 +348,14 @@ int run(const std::string& qasm_source, const std::string& title) {
   ImGuiIO& io = ImGui::GetIO();
   io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
   io.IniFilename = nullptr;  // rebuild the default layout each launch
+
+#ifdef KET_GUI_ASSETS_DIR
+  // Use the Inter UI font; fall back to the built-in font if it is missing.
+  if (const char* font = KET_GUI_ASSETS_DIR "/Inter-Regular.ttf";
+      std::ifstream(font).good()) {
+    io.Fonts->AddFontFromFileTTF(font, 16.0f);
+  }
+#endif
 
   ImGui::StyleColorsDark();
   ImGui_ImplGlfw_InitForOpenGL(window, true);
