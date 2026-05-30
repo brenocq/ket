@@ -22,8 +22,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # The GUI needs GLFW's X11/OpenGL dev headers; macOS and Windows use their
+      # native frameworks, so only Linux needs extra packages.
+      - name: Install GUI build dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y xorg-dev libgl1-mesa-dev
+
       - name: Configure
-        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DKET_TESTS=ON
+        run: >
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          -DKET_TESTS=ON -DKET_CLI=ON -DKET_GUI=ON
+          ${{ runner.os == 'Linux' && '-DGLFW_BUILD_WAYLAND=OFF' || '' }}
 
       - name: Build
         run: cmake --build build --config Release
