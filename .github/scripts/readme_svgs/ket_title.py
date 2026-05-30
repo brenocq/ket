@@ -47,7 +47,7 @@ EAR_LEFT = (118, 82)
 EAR_RIGHT = (242, 82)
 
 # --- Nose ------------------------------------------------------------------
-NOSE_SCALE = 0.6
+NOSE_SCALE = 0.45
 NOSE = (180, 184)
 
 # --- Eyes ------------------------------------------------------------------
@@ -58,7 +58,7 @@ BLINK_PERIOD = 4.0  # seconds between blinks
 
 # --- Whiskers --------------------------------------------------------------
 # Three lines per side, fanning out from beside the nose toward the edges.
-WHISKER_INNER_X = 135
+WHISKER_INNER_X = 132
 WHISKER_OUTER_X = 66
 WHISKER_INNER_Y = (174, 188, 202)
 WHISKER_OUTER_Y = (160, 190, 220)
