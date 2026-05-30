@@ -27,11 +27,54 @@ explicit and leaves room for future analysis and optimization passes.
 - **Tooling** — a `ket-cli` command-line tool and a `ket-gui` circuit viewer.
 
 The complete list of gate methods lives in
-[`include/ket/circuit.hpp`](include/ket/circuit.hpp), and the
-[`examples/`](examples) directory has runnable programs, from Bell and GHZ
-states up to Grover's search.
+[`include/ket/circuit.hpp`](include/ket/circuit.hpp).
 
-## Quick start (C++)
+## Building
+
+Ket uses CMake and a C++20 compiler. By default `build.sh` builds everything —
+the library, the example programs, and the `ket-cli` and `ket-gui` executables;
+`--help` lists the rest (focused builds, the test runners, and the Python
+bindings).
+
+```sh
+./build.sh          # build everything
+./build.sh --help   # all options
+```
+
+## Examples
+
+The [`examples/`](examples) directory has runnable programs — Bell and GHZ
+states, the Deutsch–Jozsa and Bernstein–Vazirani algorithms, a bit-flip code,
+and Grover's search. Once built, run them from `build/examples/`:
+
+```sh
+./build/examples/bell
+./build/examples/grover
+```
+
+## CLI
+
+`ket-cli` operates on OpenQASM files (or stdin, so it composes in pipelines):
+
+```sh
+./build/cli/ket-cli draw   examples/bell.qasm                 # ASCII diagram
+./build/cli/ket-cli run    examples/bell.qasm                 # final state vector
+./build/cli/ket-cli sample examples/bell.qasm --shots 1000    # measurement histogram
+```
+
+## GUI
+
+`ket-gui` opens a circuit in a window — an editable QASM panel beside a
+pan/zoom circuit view (GLFW, Dear ImGui, and ImPlot):
+
+```sh
+./build/gui/ket-gui examples/grover.qasm
+```
+
+## C++
+
+To use ket as a library, link the `ket` target, add `include/` to your include
+path, and include the umbrella header `<ket/ket.hpp>`.
 
 ```cpp
 #include <ket/ket.hpp>
@@ -73,7 +116,7 @@ and CMake are required:
 ```sh
 python -m venv .venv
 source .venv/bin/activate
-pip install .                 # or: pip install -e ".[test]" for development
+pip install .                 # or: pip install --editable ".[test]" for development
 ```
 
 ```python
@@ -88,50 +131,6 @@ print(c)                       # circuit diagram
 print(ket.run(c))              # state vector
 print(ket.sample(c, seed=0))   # one shot, e.g. [0, 0] or [1, 1]
 ```
-
-## Command line
-
-`ket-cli` operates on OpenQASM files (or stdin, so it composes in pipelines):
-
-```sh
-ket-cli draw   examples/bell.qasm                 # ASCII diagram
-ket-cli run    examples/bell.qasm                 # final state vector
-ket-cli sample examples/bell.qasm --shots 1000    # measurement histogram
-ket-cli --help
-```
-
-Build it with `./build.sh -c` (the binary lands at `build/cli/ket-cli`).
-
-## GUI
-
-`ket-gui` opens a circuit in a window: an editable QASM panel beside a
-pan/zoom circuit view, built with GLFW, Dear ImGui, and ImPlot.
-
-```sh
-./build.sh -g
-./build/gui/ket-gui examples/grover.qasm
-```
-
-## Building
-
-Ket uses CMake and a C++20 compiler. The `build.sh` helper wraps the common
-workflows (its flags map to the underlying CMake options); everything beyond
-the core library is opt-in.
-
-```sh
-./build.sh          # build the C++ library
-./build.sh -ct      # build and run the C++ tests
-./build.sh -pt      # build the Python bindings and run their tests
-./build.sh -e       # build the example programs
-./build.sh -c       # build the ket-cli executable
-./build.sh -g       # build the ket-gui executable
-./build.sh --help   # all options
-```
-
-Tests use GoogleTest and the GUI's dependencies are fetched automatically; you
-can also drive CMake directly (`cmake -S . -B build -DKET_TESTS=ON`, …). To use
-Ket in your own project, link the `ket` target, add `include/` to your include
-path, and include the umbrella header `<ket/ket.hpp>`.
 
 ## How it works
 

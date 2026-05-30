@@ -29,17 +29,20 @@ RUN_CPP_TESTS=0
 RUN_PY_TESTS=0
 CLEAN=0
 FORMAT=0
+EXPLICIT_TARGETS=0  # set when any build/test flag selects specific components
 
 usage() {
   cat <<EOF
 ${BOLD}Usage:${RESET} ${CYAN}./build.sh${RESET} [options]
+${DIM}With no flags, builds everything (library, examples, CLI, GUI). Pass flags to
+build a focused subset, run tests, or build the Python bindings.${RESET}
 
 ${BOLD}${BLUE}Build options${RESET} (map to CMake options):
-  ${GREEN}-p,  --python${RESET}         Build the Python bindings    ${DIM}(-DKET_PYTHON=ON)${RESET}
-  ${GREEN}-t,  --tests${RESET}          Build the C++ tests          ${DIM}(-DKET_TESTS=ON)${RESET}
-  ${GREEN}-e,  --examples${RESET}       Build the example programs   ${DIM}(-DKET_EXAMPLES=ON)${RESET}
-  ${GREEN}-c,  --cli${RESET}            Build the ket-cli executable ${DIM}(-DKET_CLI=ON)${RESET}
-  ${GREEN}-g,  --gui${RESET}            Build the ket-gui executable ${DIM}(-DKET_GUI=ON)${RESET}
+  ${GREEN}-p,  --python${RESET}         Build only the Python bindings    ${DIM}(-DKET_PYTHON=ON)${RESET}
+  ${GREEN}-t,  --tests${RESET}          Build only the C++ tests          ${DIM}(-DKET_TESTS=ON)${RESET}
+  ${GREEN}-e,  --examples${RESET}       Build only the example programs   ${DIM}(-DKET_EXAMPLES=ON)${RESET}
+  ${GREEN}-c,  --cli${RESET}            Build only the ket-cli executable ${DIM}(-DKET_CLI=ON)${RESET}
+  ${GREEN}-g,  --gui${RESET}            Build only the ket-gui executable ${DIM}(-DKET_GUI=ON)${RESET}
 
 ${BOLD}${BLUE}Test options${RESET} (build, then run):
   ${GREEN}-ct, --cpp-tests${RESET}      Run the C++ tests with ctest  ${DIM}(implies --tests)${RESET}
@@ -52,26 +55,25 @@ ${BOLD}${BLUE}Other${RESET}:
   ${GREEN}-h,  --help${RESET}           Show this help
 
 ${BOLD}${BLUE}Examples${RESET}:
-  ${CYAN}./build.sh${RESET}                 ${DIM}# configure + build (C++ library only)${RESET}
-  ${CYAN}./build.sh -ct${RESET}             ${DIM}# build and run the C++ tests${RESET}
-  ${CYAN}./build.sh -p${RESET}              ${DIM}# build with the Python bindings${RESET}
-  ${CYAN}./build.sh -pt${RESET}             ${DIM}# build bindings and run the Python tests${RESET}
-  ${CYAN}./build.sh -e${RESET}              ${DIM}# build the examples (./build/examples/bell)${RESET}
-  ${CYAN}./build.sh -c${RESET}              ${DIM}# build the CLI (./build/cli/ket-cli)${RESET}
-  ${CYAN}./build.sh -g${RESET}              ${DIM}# build the GUI (./build/gui/ket-gui)${RESET}
-  ${CYAN}./build.sh --clean -ct -pt${RESET} ${DIM}# clean rebuild, run both test suites${RESET}
+  ${CYAN}./build.sh${RESET}              ${DIM}# build everything (library, examples, CLI, GUI)${RESET}
+  ${CYAN}./build.sh --cli${RESET}        ${DIM}# build only the CLI  (./build/cli/ket-cli)${RESET}
+  ${CYAN}./build.sh --gui${RESET}        ${DIM}# build only the GUI  (./build/gui/ket-gui)${RESET}
+  ${CYAN}./build.sh --examples${RESET}   ${DIM}# build only the example programs${RESET}
+  ${CYAN}./build.sh --cpp-tests${RESET}  ${DIM}# build and run the C++ tests${RESET}
+  ${CYAN}./build.sh --py-tests${RESET}   ${DIM}# build the bindings and run the Python tests${RESET}
+  ${CYAN}./build.sh --clean${RESET}      ${DIM}# remove the build dir, then build everything${RESET}
 EOF
 }
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    -p|--python)     KET_PYTHON=ON ;;
-    -t|--tests)      KET_TESTS=ON ;;
-    -e|--examples)   KET_EXAMPLES=ON ;;
-    -c|--cli)        KET_CLI=ON ;;
-    -g|--gui)        KET_GUI=ON ;;
-    -ct|--cpp-tests) RUN_CPP_TESTS=1 ;;
-    -pt|--py-tests)  RUN_PY_TESTS=1 ;;
+    -p|--python)     KET_PYTHON=ON; EXPLICIT_TARGETS=1 ;;
+    -t|--tests)      KET_TESTS=ON; EXPLICIT_TARGETS=1 ;;
+    -e|--examples)   KET_EXAMPLES=ON; EXPLICIT_TARGETS=1 ;;
+    -c|--cli)        KET_CLI=ON; EXPLICIT_TARGETS=1 ;;
+    -g|--gui)        KET_GUI=ON; EXPLICIT_TARGETS=1 ;;
+    -ct|--cpp-tests) RUN_CPP_TESTS=1; EXPLICIT_TARGETS=1 ;;
+    -pt|--py-tests)  RUN_PY_TESTS=1; EXPLICIT_TARGETS=1 ;;
     -f|--format)     FORMAT=1 ;;
     --clean)         CLEAN=1 ;;
     -B|--build-dir)  shift; BUILD_DIR="${1:?--build-dir requires an argument}" ;;
@@ -114,6 +116,14 @@ if [[ $FORMAT == 1 ]]; then
 
   ok "Formatted"
   exit 0
+fi
+
+# With no build/test flags, build everything that needs no extra setup: the
+# library, examples, CLI, and GUI. (Python bindings and tests stay opt-in.)
+if [[ $EXPLICIT_TARGETS == 0 ]]; then
+  KET_EXAMPLES=ON
+  KET_CLI=ON
+  KET_GUI=ON
 fi
 
 # Running a suite forces the relevant part of the build on.
