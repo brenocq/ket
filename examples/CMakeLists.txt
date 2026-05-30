@@ -12,3 +12,6 @@ target_link_libraries(bernstein_vazirani PRIVATE ket ket_warnings)
 
 add_executable(bit_flip_code bit_flip_code.cpp)
 target_link_libraries(bit_flip_code PRIVATE ket ket_warnings)
+
+add_executable(grover grover.cpp)
+target_link_libraries(grover PRIVATE ket ket_warnings)
