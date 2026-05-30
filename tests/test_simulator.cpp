@@ -115,6 +115,43 @@ TEST(Simulator, BellCircuitProducesEntangledState) {
   ExpectAmplitude(s[3], {inv_sqrt2, 0.0});
 }
 
+TEST(Simulator, SAndTPhaseTheOneState) {
+  const double inv_sqrt2 = 1.0 / std::sqrt(2.0);
+  {  // S|1> = i|1>
+    ket::Circuit c{1};
+    c.x(0);
+    c.s(0);
+    ExpectAmplitude(ket::run(c)[1], {0.0, 1.0});
+  }
+  {  // Sdg|1> = -i|1>
+    ket::Circuit c{1};
+    c.x(0);
+    c.sdg(0);
+    ExpectAmplitude(ket::run(c)[1], {0.0, -1.0});
+  }
+  {  // T|1> = e^{i pi/4}|1>
+    ket::Circuit c{1};
+    c.x(0);
+    c.t(0);
+    ExpectAmplitude(ket::run(c)[1], {inv_sqrt2, inv_sqrt2});
+  }
+  {  // Tdg|1> = e^{-i pi/4}|1>
+    ket::Circuit c{1};
+    c.x(0);
+    c.tdg(0);
+    ExpectAmplitude(ket::run(c)[1], {inv_sqrt2, -inv_sqrt2});
+  }
+}
+
+TEST(Simulator, TTwiceEqualsS) {
+  // T^2 = S, so T then T on |1> gives i|1>.
+  ket::Circuit c{1};
+  c.x(0);
+  c.t(0);
+  c.t(0);
+  ExpectAmplitude(ket::run(c)[1], {0.0, 1.0});
+}
+
 TEST(Simulator, YFlipsZeroToIOne) {
   ket::Circuit c{1};
   c.y(0);

@@ -47,6 +47,14 @@ PYBIND11_MODULE(_ket, m) {
            py::arg("qubit"), "Apply a Pauli-Y gate.")
       .def("z", py::overload_cast<std::size_t>(&ket::Circuit::z),
            py::arg("qubit"), "Apply a Pauli-Z gate.")
+      .def("s", py::overload_cast<std::size_t>(&ket::Circuit::s),
+           py::arg("qubit"), "Apply an S (phase) gate.")
+      .def("sdg", py::overload_cast<std::size_t>(&ket::Circuit::sdg),
+           py::arg("qubit"), "Apply an S-dagger gate.")
+      .def("t", py::overload_cast<std::size_t>(&ket::Circuit::t),
+           py::arg("qubit"), "Apply a T gate.")
+      .def("tdg", py::overload_cast<std::size_t>(&ket::Circuit::tdg),
+           py::arg("qubit"), "Apply a T-dagger gate.")
       .def("cnot",
            py::overload_cast<std::size_t, std::size_t>(&ket::Circuit::cnot),
            py::arg("control"), py::arg("target"),

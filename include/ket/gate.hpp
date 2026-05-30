@@ -12,24 +12,18 @@ namespace ket {
 
 class Circuit;  // forward declaration for composite-gate definitions
 
+// clang-format off
 enum class GateType {
   // Single-qubit gates
-  H,
-  X,
-  Y,
-  Z,
-  Rx,
-  Ry,
-  Rz,
+  H, X, Y, Z,
+  S, Sdg, T, Tdg,
+  Rx, Ry, Rz,
   // Two-qubit gates
-  CNOT,
-  CZ,
-  CP,
+  CNOT, CZ, CP,
   // Structural operations (non-unitary / rendering only)
-  Measure,
-  Barrier,
-  Composite,
+  Measure, Barrier, Composite,
 };
+// clang-format on
 
 struct Gate {
   GateType type;

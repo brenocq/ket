@@ -42,6 +42,26 @@ void Circuit::z(Qubit q) {
   dag_.add(Gate{GateType::Z, {q}});
 }
 
+void Circuit::s(Qubit q) {
+  assert(q.index < n_qubits_);
+  dag_.add(Gate{GateType::S, {q}});
+}
+
+void Circuit::sdg(Qubit q) {
+  assert(q.index < n_qubits_);
+  dag_.add(Gate{GateType::Sdg, {q}});
+}
+
+void Circuit::t(Qubit q) {
+  assert(q.index < n_qubits_);
+  dag_.add(Gate{GateType::T, {q}});
+}
+
+void Circuit::tdg(Qubit q) {
+  assert(q.index < n_qubits_);
+  dag_.add(Gate{GateType::Tdg, {q}});
+}
+
 void Circuit::cnot(Qubit control, Qubit target) {
   assert(control.index < n_qubits_);
   assert(target.index < n_qubits_);
@@ -489,6 +509,20 @@ std::string Circuit::print() const {
         break;
       case GateType::Z:
         add_quantum(render_single(n_qubits_, g.qubits[0].index, 'Z'), 5);
+        break;
+      case GateType::S:
+        add_quantum(render_single(n_qubits_, g.qubits[0].index, 'S'), 5);
+        break;
+      case GateType::T:
+        add_quantum(render_single(n_qubits_, g.qubits[0].index, 'T'), 5);
+        break;
+      case GateType::Sdg:
+        add_quantum(render_box(n_qubits_, g.qubits[0].index, "S†"),
+                    display_width("S†") + 4);
+        break;
+      case GateType::Tdg:
+        add_quantum(render_box(n_qubits_, g.qubits[0].index, "T†"),
+                    display_width("T†") + 4);
         break;
       case GateType::CNOT:
         add_quantum(

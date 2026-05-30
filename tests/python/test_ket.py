@@ -104,6 +104,27 @@ def test_rotation_gates():
     assert abs(s2[1]) ** 2 == pytest.approx(0.5)
 
 
+def test_s_and_t_gates():
+    import math
+
+    # S|1> = i|1>; T twice == S.
+    c = ket.Circuit(1)
+    c.x(0)
+    c.s(0)
+    assert ket.run(c)[1] == pytest.approx(complex(0.0, 1.0))
+
+    c2 = ket.Circuit(1)
+    c2.x(0)
+    c2.t(0)
+    r = 1.0 / math.sqrt(2.0)
+    assert ket.run(c2)[1] == pytest.approx(complex(r, r))
+
+    # S-dagger renders with the dagger glyph.
+    c3 = ket.Circuit(1)
+    c3.sdg(0)
+    assert "S†" in c3.print()
+
+
 def test_pauli_y():
     c = ket.Circuit(1)
     c.y(0)  # Y|0> = i|1>

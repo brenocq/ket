@@ -49,6 +49,24 @@ void apply_z(State& s, std::size_t q) {
   apply_single(s, q, 1.0, 0.0, 0.0, -1.0);
 }
 
+void apply_s(State& s, std::size_t q) {
+  apply_single(s, q, 1.0, 0.0, 0.0, Complex{0.0, 1.0});  // diag(1, i)
+}
+
+void apply_sdg(State& s, std::size_t q) {
+  apply_single(s, q, 1.0, 0.0, 0.0, Complex{0.0, -1.0});  // diag(1, -i)
+}
+
+void apply_t(State& s, std::size_t q) {
+  const double r = 1.0 / std::sqrt(2.0);
+  apply_single(s, q, 1.0, 0.0, 0.0, Complex{r, r});  // diag(1, e^{i pi/4})
+}
+
+void apply_tdg(State& s, std::size_t q) {
+  const double r = 1.0 / std::sqrt(2.0);
+  apply_single(s, q, 1.0, 0.0, 0.0, Complex{r, -r});  // diag(1, e^{-i pi/4})
+}
+
 void apply_rx(State& s, std::size_t q, double theta) {
   const double c = std::cos(theta / 2.0);
   const double sn = std::sin(theta / 2.0);
@@ -112,6 +130,22 @@ void apply_circuit(State& state, const Circuit& circuit,
       case GateType::Z:
         assert(g.qubits.size() == 1);
         apply_z(state, wire[g.qubits[0].index]);
+        break;
+      case GateType::S:
+        assert(g.qubits.size() == 1);
+        apply_s(state, wire[g.qubits[0].index]);
+        break;
+      case GateType::Sdg:
+        assert(g.qubits.size() == 1);
+        apply_sdg(state, wire[g.qubits[0].index]);
+        break;
+      case GateType::T:
+        assert(g.qubits.size() == 1);
+        apply_t(state, wire[g.qubits[0].index]);
+        break;
+      case GateType::Tdg:
+        assert(g.qubits.size() == 1);
+        apply_tdg(state, wire[g.qubits[0].index]);
         break;
       case GateType::CNOT:
         assert(g.qubits.size() == 2);

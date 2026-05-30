@@ -26,6 +26,10 @@ class Circuit {
   void x(Qubit q);
   void y(Qubit q);
   void z(Qubit q);
+  void s(Qubit q);    // phase gate (sqrt Z): diag(1, i)
+  void sdg(Qubit q);  // S dagger: diag(1, -i)
+  void t(Qubit q);    // T gate: diag(1, e^{i pi/4})
+  void tdg(Qubit q);  // T dagger: diag(1, e^{-i pi/4})
   void cnot(Qubit control, Qubit target);
 
   // Single-qubit rotations by angle theta (radians) about the x/y/z axes.
@@ -42,6 +46,10 @@ class Circuit {
   void x(std::size_t i) { x(Qubit{i}); }
   void y(std::size_t i) { y(Qubit{i}); }
   void z(std::size_t i) { z(Qubit{i}); }
+  void s(std::size_t i) { s(Qubit{i}); }
+  void sdg(std::size_t i) { sdg(Qubit{i}); }
+  void t(std::size_t i) { t(Qubit{i}); }
+  void tdg(std::size_t i) { tdg(Qubit{i}); }
   void cnot(std::size_t control, std::size_t target) {
     cnot(Qubit{control}, Qubit{target});
   }
