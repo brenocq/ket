@@ -103,6 +103,21 @@ void apply_cx(State& s, std::size_t control, std::size_t target) {
   }
 }
 
+// Controlled-Y: apply Y to the target when the control is 1.
+void apply_cy(State& s, std::size_t control, std::size_t target) {
+  const std::size_t cmask = std::size_t{1} << control;
+  const std::size_t tmask = std::size_t{1} << target;
+  const std::size_t n = s.size();
+  for (std::size_t k = 0; k < n; ++k) {
+    if ((k & cmask) == 0 || (k & tmask) != 0) continue;  // control=1, target=0
+    const std::size_t k1 = k | tmask;
+    const Complex a = s[k];         // target-0 amplitude
+    const Complex b = s[k1];        // target-1 amplitude
+    s[k] = Complex{0.0, -1.0} * b;  // Y: |0> <- -i * (target-1)
+    s[k1] = Complex{0.0, 1.0} * a;  // Y: |1> <- +i * (target-0)
+  }
+}
+
 // SWAP: exchange amplitudes of basis states that differ in exactly the two
 // qubits (|..1..0..> <-> |..0..1..>).
 void apply_swap(State& s, std::size_t qa, std::size_t qb) {
@@ -169,6 +184,10 @@ void apply_circuit(State& state, const Circuit& circuit,
       case GateType::CX:
         assert(g.qubits.size() == 2);
         apply_cx(state, wire[g.qubits[0].index], wire[g.qubits[1].index]);
+        break;
+      case GateType::CY:
+        assert(g.qubits.size() == 2);
+        apply_cy(state, wire[g.qubits[0].index], wire[g.qubits[1].index]);
         break;
       case GateType::CZ:
         assert(g.qubits.size() == 2);

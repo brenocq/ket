@@ -227,6 +227,17 @@ TEST(Print, ProbeMarkersAtBottom) {
             "          ψ0    ψ1\n");
 }
 
+TEST(Print, ControlledYBox) {
+  ket::Circuit c{2};
+  c.cy(0, 1);
+  EXPECT_EQ(c.print(),
+            "          \n"
+            "q_0: ──■──\n"
+            "     ┌─┴─┐\n"
+            "q_1: ┤ Y ├\n"
+            "     └───┘\n");
+}
+
 TEST(Print, SwapGate) {
   ket::Circuit c{2};
   c.swap(0, 1);

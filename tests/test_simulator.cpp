@@ -216,6 +216,22 @@ TEST(Simulator, RzPreservesComputationalProbabilities) {
   EXPECT_NEAR(std::norm(s[1]), 0.5, 1e-12);
 }
 
+TEST(Simulator, CyAppliesYWhenControlIsOne) {
+  {  // control=0: nothing happens
+    ket::Circuit c{2};
+    c.cy(0, 1);
+    ExpectAmplitude(ket::run(c)[0], {1.0, 0.0});
+  }
+  {  // control=1: Y on the target. |01> (q0=1) -> i|11>
+    ket::Circuit c{2};
+    c.x(0);
+    c.cy(0, 1);
+    auto s = ket::run(c);
+    ExpectAmplitude(s[1], {0.0, 0.0});
+    ExpectAmplitude(s[3], {0.0, 1.0});  // i|11>
+  }
+}
+
 TEST(Simulator, SwapExchangesQubits) {
   ket::Circuit c{2};
   c.x(0);        // |01> (qubit 0 set)

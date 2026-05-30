@@ -62,13 +62,6 @@ void Circuit::tdg(Qubit q) {
   dag_.add(Gate{GateType::Tdg, {q}});
 }
 
-void Circuit::cx(Qubit control, Qubit target) {
-  assert(control.index < n_qubits_);
-  assert(target.index < n_qubits_);
-  assert(control.index != target.index);
-  dag_.add(Gate{GateType::CX, {control, target}});
-}
-
 void Circuit::rx(Qubit q, double theta) {
   assert(q.index < n_qubits_);
   dag_.add(Gate{.type = GateType::Rx, .qubits = {q}, .params = {theta}});
@@ -88,6 +81,20 @@ void Circuit::u(Qubit q, double theta, double phi, double lambda) {
   assert(q.index < n_qubits_);
   dag_.add(
       Gate{.type = GateType::U, .qubits = {q}, .params = {theta, phi, lambda}});
+}
+
+void Circuit::cx(Qubit control, Qubit target) {
+  assert(control.index < n_qubits_);
+  assert(target.index < n_qubits_);
+  assert(control.index != target.index);
+  dag_.add(Gate{GateType::CX, {control, target}});
+}
+
+void Circuit::cy(Qubit control, Qubit target) {
+  assert(control.index < n_qubits_);
+  assert(target.index < n_qubits_);
+  assert(control.index != target.index);
+  dag_.add(Gate{GateType::CY, {control, target}});
 }
 
 void Circuit::cz(Qubit a, Qubit b) {
@@ -628,6 +635,11 @@ std::string Circuit::print() const {
                     display_width(lbl) + 4);
         break;
       }
+      case GateType::CY:
+        add_quantum(render_controlled_box(n_qubits_, g.qubits[0].index,
+                                          g.qubits[1].index, "Y"),
+                    5);
+        break;
       case GateType::CZ:
         add_quantum(render_cz(n_qubits_, g.qubits[0].index, g.qubits[1].index),
                     5);

@@ -22,17 +22,22 @@ class Circuit {
   const std::string& name() const noexcept { return name_; }
   Qubit qubit(std::size_t i) const;
 
+  // Gates, in the same order as the GateType enum. These take Qubit handles;
+  // size_t overloads (the c.h(0) shorthand) follow further below.
+
+  // Hadamard and the Paulis.
   void h(Qubit q);
   void x(Qubit q);
   void y(Qubit q);
   void z(Qubit q);
-  void s(Qubit q);    // phase gate (sqrt Z): diag(1, i)
-  void sdg(Qubit q);  // S dagger: diag(1, -i)
-  void t(Qubit q);    // T gate: diag(1, e^{i pi/4})
-  void tdg(Qubit q);  // T dagger: diag(1, e^{-i pi/4})
-  void cx(Qubit control, Qubit target);
 
-  // Single-qubit rotations by angle theta (radians) about the x/y/z axes.
+  // Phase gates: S = diag(1, i), T = diag(1, e^{i pi/4}); sdg/tdg invert them.
+  void s(Qubit q);
+  void sdg(Qubit q);
+  void t(Qubit q);
+  void tdg(Qubit q);
+
+  // Single-qubit rotations by theta (radians) about the x/y/z axes.
   void rx(Qubit q, double theta);
   void ry(Qubit q, double theta);
   void rz(Qubit q, double theta);
@@ -41,14 +46,15 @@ class Circuit {
   // u(0,0,lambda), u(pi/2,phi,lambda), and u(theta,phi,lambda).
   void u(Qubit q, double theta, double phi, double lambda);
 
-  // Controlled-Z, and controlled-phase by angle lambda (CZ = cp with
-  // lambda=pi). Both are symmetric in their two qubits.
+  // Two-qubit gates: cx (CNOT) and cy are controlled (control, target);
+  // cz, cp (controlled-phase), and swap are symmetric in their qubits.
+  void cx(Qubit control, Qubit target);
+  void cy(Qubit control, Qubit target);
   void cz(Qubit a, Qubit b);
   void cp(Qubit a, Qubit b, double lambda);
-
-  // Exchange the states of two qubits (symmetric).
   void swap(Qubit a, Qubit b);
 
+  // size_t overloads of the gates above.
   void h(std::size_t i) { h(Qubit{i}); }
   void x(std::size_t i) { x(Qubit{i}); }
   void y(std::size_t i) { y(Qubit{i}); }
@@ -57,20 +63,23 @@ class Circuit {
   void sdg(std::size_t i) { sdg(Qubit{i}); }
   void t(std::size_t i) { t(Qubit{i}); }
   void tdg(std::size_t i) { tdg(Qubit{i}); }
-  void cx(std::size_t control, std::size_t target) {
-    cx(Qubit{control}, Qubit{target});
-  }
   void rx(std::size_t i, double theta) { rx(Qubit{i}, theta); }
   void ry(std::size_t i, double theta) { ry(Qubit{i}, theta); }
   void rz(std::size_t i, double theta) { rz(Qubit{i}, theta); }
   void u(std::size_t i, double theta, double phi, double lambda) {
     u(Qubit{i}, theta, phi, lambda);
   }
+  void cx(std::size_t control, std::size_t target) {
+    cx(Qubit{control}, Qubit{target});
+  }
+  void cy(std::size_t control, std::size_t target) {
+    cy(Qubit{control}, Qubit{target});
+  }
   void cz(std::size_t a, std::size_t b) { cz(Qubit{a}, Qubit{b}); }
-  void swap(std::size_t a, std::size_t b) { swap(Qubit{a}, Qubit{b}); }
   void cp(std::size_t a, std::size_t b, double lambda) {
     cp(Qubit{a}, Qubit{b}, lambda);
   }
+  void swap(std::size_t a, std::size_t b) { swap(Qubit{a}, Qubit{b}); }
 
   // A barrier across all qubits, optionally labeled. Barriers are no-ops in
   // simulation but appear in the diagram and serialize the DAG across them.

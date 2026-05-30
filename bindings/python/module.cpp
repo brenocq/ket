@@ -58,6 +58,8 @@ PYBIND11_MODULE(_ket, m) {
       .def("cx", py::overload_cast<std::size_t, std::size_t>(&ket::Circuit::cx),
            py::arg("control"), py::arg("target"),
            "Apply a controlled-NOT gate.")
+      .def("cy", py::overload_cast<std::size_t, std::size_t>(&ket::Circuit::cy),
+           py::arg("control"), py::arg("target"), "Apply a controlled-Y gate.")
       .def("rx", py::overload_cast<std::size_t, double>(&ket::Circuit::rx),
            py::arg("qubit"), py::arg("theta"), "Rotate about the x-axis.")
       .def("ry", py::overload_cast<std::size_t, double>(&ket::Circuit::ry),

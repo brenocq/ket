@@ -98,6 +98,12 @@ TEST(Qasm, UGateRoundTrips) {
   }
 }
 
+TEST(Qasm, ParsesAndEmitsCy) {
+  ket::Circuit c = ket::from_qasm("qreg q[2]; x q[0]; cy q[0],q[1];");
+  EXPECT_NEAR(ket::run(c)[3].imag(), 1.0, 1e-12);  // i|11>
+  EXPECT_NE(ket::to_qasm(c).find("cy q[0],q[1];"), std::string::npos);
+}
+
 TEST(Qasm, ParsesAndEmitsSwap) {
   ket::Circuit c = ket::from_qasm("qreg q[2]; x q[0]; swap q[0],q[1];");
   EXPECT_NEAR(ket::run(c)[2].real(), 1.0, 1e-12);  // |10>
