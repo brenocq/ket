@@ -17,8 +17,11 @@ jobs:
           python-version: "3.12"
 
       # Pinned to match the versions used locally, so CI and developers agree.
+      # pyyaml is needed by cmake-format to read the .cmake-format.yaml config.
       - name: Install formatters
-        run: pip install "clang-format~=21.1" "cmakelang==0.6.13" "ruff==0.15.15"
+        run: |
+          pip install "clang-format~=21.1" "cmakelang==0.6.13" "ruff==0.15.15" \
+            pyyaml
 
       - name: clang-format (C++)
         run: |
