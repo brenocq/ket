@@ -16,21 +16,21 @@ namespace py = pybind11;
 PYBIND11_MODULE(_ket, m) {
   m.doc() = "Ket: a quantum computing library";
 
-  py::class_<ket::StateVector>(m, "StateVector",
+  py::class_<ket::State>(m, "State",
                                "A quantum state vector of 2^n complex amplitudes.")
-      .def("__len__", &ket::StateVector::size)
+      .def("__len__", &ket::State::size)
       .def(
           "__getitem__",
-          [](const ket::StateVector& s, std::size_t i) {
+          [](const ket::State& s, std::size_t i) {
             if (i >= s.size()) throw py::index_error();
             return s[i];
           },
           py::arg("index"))
-      .def("print", &ket::StateVector::print,
+      .def("print", &ket::State::print,
            "Render the amplitudes in ket notation.")
-      .def("__str__", &ket::StateVector::print)
-      .def("__repr__", [](const ket::StateVector& s) {
-        return "<ket.StateVector size=" + std::to_string(s.size()) + ">";
+      .def("__str__", &ket::State::print)
+      .def("__repr__", [](const ket::State& s) {
+        return "<ket.State size=" + std::to_string(s.size()) + ">";
       });
 
   py::class_<ket::Circuit>(m, "Circuit", "A quantum circuit (a DAG of gates).")
@@ -87,7 +87,7 @@ PYBIND11_MODULE(_ket, m) {
 
   m.def(
       "measure",
-      [](const ket::StateVector& state, std::optional<std::uint32_t> seed) {
+      [](const ket::State& state, std::optional<std::uint32_t> seed) {
         if (seed.has_value()) {
           std::mt19937 rng{*seed};
           return ket::measure(state, rng);

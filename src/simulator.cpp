@@ -18,7 +18,7 @@
 namespace ket {
 namespace {
 
-void apply_single(StateVector& s, std::size_t qubit, Complex m00, Complex m01,
+void apply_single(State& s, std::size_t qubit, Complex m00, Complex m01,
                   Complex m10, Complex m11) {
   const std::size_t mask = std::size_t{1} << qubit;
   const std::size_t n = s.size();
@@ -32,38 +32,38 @@ void apply_single(StateVector& s, std::size_t qubit, Complex m00, Complex m01,
   }
 }
 
-void apply_h(StateVector& s, std::size_t q) {
+void apply_h(State& s, std::size_t q) {
   const double inv_sqrt2 = 1.0 / std::sqrt(2.0);
   apply_single(s, q, inv_sqrt2, inv_sqrt2, inv_sqrt2, -inv_sqrt2);
 }
 
-void apply_x(StateVector& s, std::size_t q) {
+void apply_x(State& s, std::size_t q) {
   apply_single(s, q, 0.0, 1.0, 1.0, 0.0);
 }
 
-void apply_z(StateVector& s, std::size_t q) {
+void apply_z(State& s, std::size_t q) {
   apply_single(s, q, 1.0, 0.0, 0.0, -1.0);
 }
 
-void apply_rx(StateVector& s, std::size_t q, double theta) {
+void apply_rx(State& s, std::size_t q, double theta) {
   const double c = std::cos(theta / 2.0);
   const double sn = std::sin(theta / 2.0);
   apply_single(s, q, c, Complex{0.0, -sn}, Complex{0.0, -sn}, c);
 }
 
-void apply_ry(StateVector& s, std::size_t q, double theta) {
+void apply_ry(State& s, std::size_t q, double theta) {
   const double c = std::cos(theta / 2.0);
   const double sn = std::sin(theta / 2.0);
   apply_single(s, q, c, -sn, sn, c);
 }
 
-void apply_rz(StateVector& s, std::size_t q, double theta) {
+void apply_rz(State& s, std::size_t q, double theta) {
   const double c = std::cos(theta / 2.0);
   const double sn = std::sin(theta / 2.0);
   apply_single(s, q, Complex{c, -sn}, 0.0, 0.0, Complex{c, sn});
 }
 
-void apply_cnot(StateVector& s, std::size_t control, std::size_t target) {
+void apply_cnot(State& s, std::size_t control, std::size_t target) {
   const std::size_t cmask = std::size_t{1} << control;
   const std::size_t tmask = std::size_t{1} << target;
   const std::size_t n = s.size();
@@ -76,7 +76,7 @@ void apply_cnot(StateVector& s, std::size_t control, std::size_t target) {
 
 // Controlled phase: multiply by `phase` exactly when both qubits are 1.
 // Symmetric in qa/qb (CZ uses phase = -1, CP uses e^{i lambda}).
-void apply_cphase(StateVector& s, std::size_t qa, std::size_t qb,
+void apply_cphase(State& s, std::size_t qa, std::size_t qb,
                   Complex phase) {
   const std::size_t ma = std::size_t{1} << qa;
   const std::size_t mb = std::size_t{1} << qb;
@@ -89,7 +89,7 @@ void apply_cphase(StateVector& s, std::size_t qa, std::size_t qb,
 // Apply a circuit's gates to the state. `wire[i]` is the actual state-vector
 // qubit that the circuit's qubit i maps to (identity at the top level, composed
 // for nested composite blocks).
-void apply_circuit(StateVector& state, const Circuit& circuit,
+void apply_circuit(State& state, const Circuit& circuit,
                    const std::vector<std::size_t>& wire) {
   for (const DagNode& node : circuit.dag().nodes()) {
     const Gate& g = node.gate;
@@ -151,9 +151,9 @@ void apply_circuit(StateVector& state, const Circuit& circuit,
 
 }  // namespace
 
-StateVector run(const Circuit& circuit) {
+State run(const Circuit& circuit) {
   const std::size_t dim = std::size_t{1} << circuit.n_qubits();
-  StateVector state(dim, Complex{0.0, 0.0});
+  State state(dim, Complex{0.0, 0.0});
   state[0] = Complex{1.0, 0.0};
 
   std::vector<std::size_t> wire(circuit.n_qubits());
@@ -195,7 +195,7 @@ std::size_t qubit_count(std::size_t dim) {
 
 }  // namespace
 
-std::string StateVector::print() const {
+std::string State::print() const {
   const std::size_t n = qubit_count(size());
   std::string result;
   for (std::size_t i = 0; i < size(); ++i) {

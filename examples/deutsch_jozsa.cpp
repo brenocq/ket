@@ -86,7 +86,7 @@ int main() {
   // measurement decides it.
   std::cout << "Results:\n";
   for (const Case& test : cases) {
-    ket::StateVector state = ket::run(deutsch_jozsa(test.oracle));
+    ket::State state = ket::run(deutsch_jozsa(test.oracle));
     const bool balanced = (ket::measure(state) & kInputMask) != 0;
     std::cout << "  " << std::left << std::setw(26) << test.name << " -> "
               << (balanced ? "balanced" : "constant") << "  ["

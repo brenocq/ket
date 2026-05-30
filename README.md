@@ -65,7 +65,7 @@ int main() {
   std::cout << c.print();
 
   // Simulate and inspect the amplitudes.
-  ket::StateVector state = ket::run(c);
+  ket::State state = ket::run(c);
   std::cout << state.print();
 
   // Sample 1000 measurement outcomes.
@@ -117,7 +117,7 @@ proportions, and never onto |01⟩ or |10⟩:
 
 Ket ships Python bindings built with [pybind11]. The Python API mirrors the C++
 one — `Circuit`, `run`, `measure`, and `sample` — with a few Pythonic touches:
-`Circuit` and `StateVector` render through `print()`/`str()`, `StateVector`
+`Circuit` and `State` render through `print()`/`str()`, `State`
 supports `len()` and indexing (returning a Python `complex`), and `measure`/
 `sample` take an optional `seed` instead of an RNG object.
 

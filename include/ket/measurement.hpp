@@ -12,8 +12,8 @@ namespace ket {
 
 class Circuit;
 
-std::size_t measure(const StateVector& state, std::mt19937& rng);
-std::size_t measure(const StateVector& state);
+std::size_t measure(const State& state, std::mt19937& rng);
+std::size_t measure(const State& state);
 
 // Run the circuit and sample one shot of its Measure operations. Returns the
 // classical register: a vector of size circuit.n_clbits() where entry i is the

@@ -78,7 +78,7 @@ int main() {
   // recovers the whole string.
   std::cout << "Results (measured input register = s):\n";
   for (std::size_t secret = 0; secret < (std::size_t{1} << kInputs); ++secret) {
-    ket::StateVector state = ket::run(bernstein_vazirani(secret));
+    ket::State state = ket::run(bernstein_vazirani(secret));
     const std::size_t recovered = ket::measure(state) & kInputMask;
     std::cout << "  s = " << to_bits(secret) << "  ->  recovered "
               << to_bits(recovered) << "  ["

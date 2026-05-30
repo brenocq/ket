@@ -14,10 +14,10 @@ class Circuit;
 using Complex = std::complex<double>;
 
 // A quantum state vector: 2^n complex amplitudes over the computational basis.
-class StateVector {
+class State {
  public:
-  StateVector() = default;
-  StateVector(std::size_t size, Complex value) : amplitudes_(size, value) {}
+  State() = default;
+  State(std::size_t size, Complex value) : amplitudes_(size, value) {}
 
   std::size_t size() const noexcept { return amplitudes_.size(); }
 
@@ -35,6 +35,6 @@ class StateVector {
   std::vector<Complex> amplitudes_;
 };
 
-StateVector run(const Circuit& circuit);
+State run(const Circuit& circuit);
 
 }  // namespace ket
