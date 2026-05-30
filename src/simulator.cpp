@@ -45,6 +45,24 @@ void apply_z(StateVector& s, std::size_t q) {
   apply_single(s, q, 1.0, 0.0, 0.0, -1.0);
 }
 
+void apply_rx(StateVector& s, std::size_t q, double theta) {
+  const double c = std::cos(theta / 2.0);
+  const double sn = std::sin(theta / 2.0);
+  apply_single(s, q, c, Complex{0.0, -sn}, Complex{0.0, -sn}, c);
+}
+
+void apply_ry(StateVector& s, std::size_t q, double theta) {
+  const double c = std::cos(theta / 2.0);
+  const double sn = std::sin(theta / 2.0);
+  apply_single(s, q, c, -sn, sn, c);
+}
+
+void apply_rz(StateVector& s, std::size_t q, double theta) {
+  const double c = std::cos(theta / 2.0);
+  const double sn = std::sin(theta / 2.0);
+  apply_single(s, q, Complex{c, -sn}, 0.0, 0.0, Complex{c, sn});
+}
+
 void apply_cnot(StateVector& s, std::size_t control, std::size_t target) {
   const std::size_t cmask = std::size_t{1} << control;
   const std::size_t tmask = std::size_t{1} << target;
@@ -79,6 +97,18 @@ void apply_circuit(StateVector& state, const Circuit& circuit,
       case GateType::CNOT:
         assert(g.qubits.size() == 2);
         apply_cnot(state, wire[g.qubits[0].index], wire[g.qubits[1].index]);
+        break;
+      case GateType::Rx:
+        assert(g.qubits.size() == 1 && !g.params.empty());
+        apply_rx(state, wire[g.qubits[0].index], g.params[0]);
+        break;
+      case GateType::Ry:
+        assert(g.qubits.size() == 1 && !g.params.empty());
+        apply_ry(state, wire[g.qubits[0].index], g.params[0]);
+        break;
+      case GateType::Rz:
+        assert(g.qubits.size() == 1 && !g.params.empty());
+        apply_rz(state, wire[g.qubits[0].index], g.params[0]);
         break;
       case GateType::Barrier:
         break;  // no-op: barriers only affect ordering and rendering

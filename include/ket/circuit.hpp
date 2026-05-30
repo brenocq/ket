@@ -27,12 +27,20 @@ class Circuit {
   void z(Qubit q);
   void cnot(Qubit control, Qubit target);
 
+  // Single-qubit rotations by angle theta (radians) about the x/y/z axes.
+  void rx(Qubit q, double theta);
+  void ry(Qubit q, double theta);
+  void rz(Qubit q, double theta);
+
   void h(std::size_t i) { h(Qubit{i}); }
   void x(std::size_t i) { x(Qubit{i}); }
   void z(std::size_t i) { z(Qubit{i}); }
   void cnot(std::size_t control, std::size_t target) {
     cnot(Qubit{control}, Qubit{target});
   }
+  void rx(std::size_t i, double theta) { rx(Qubit{i}, theta); }
+  void ry(std::size_t i, double theta) { ry(Qubit{i}, theta); }
+  void rz(std::size_t i, double theta) { rz(Qubit{i}, theta); }
 
   // A barrier across all qubits, optionally labeled. Barriers are no-ops in
   // simulation but appear in the diagram and serialize the DAG across them.

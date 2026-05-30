@@ -4,8 +4,10 @@
 
 #include <algorithm>
 #include <cassert>
+#include <cmath>
 #include <cstddef>
 #include <memory>
+#include <sstream>
 #include <string>
 #include <utility>
 #include <vector>
@@ -40,6 +42,21 @@ void Circuit::cnot(Qubit control, Qubit target) {
   assert(target.index < n_qubits_);
   assert(control.index != target.index);
   dag_.add(Gate{GateType::CNOT, {control, target}});
+}
+
+void Circuit::rx(Qubit q, double theta) {
+  assert(q.index < n_qubits_);
+  dag_.add(Gate{.type = GateType::Rx, .qubits = {q}, .params = {theta}});
+}
+
+void Circuit::ry(Qubit q, double theta) {
+  assert(q.index < n_qubits_);
+  dag_.add(Gate{.type = GateType::Ry, .qubits = {q}, .params = {theta}});
+}
+
+void Circuit::rz(Qubit q, double theta) {
+  assert(q.index < n_qubits_);
+  dag_.add(Gate{.type = GateType::Rz, .qubits = {q}, .params = {theta}});
 }
 
 void Circuit::barrier(const std::string& label) {
@@ -132,6 +149,64 @@ std::vector<std::string> render_single(std::size_t n_qubits, std::size_t q,
   col[2 * q + 1] = std::string("┤ ") + label + " ├";
   col[2 * q + 2] = "└───┘";
   return col;
+}
+
+// Number of display columns in a UTF-8 string (counts everything except
+// continuation bytes, so e.g. "π" counts as 1, not its 2 bytes).
+std::size_t display_width(const std::string& s) {
+  std::size_t w = 0;
+  for (char c : s) {
+    if ((static_cast<unsigned char>(c) & 0xC0) != 0x80) ++w;
+  }
+  return w;
+}
+
+// A single-qubit box with a multi-character label (e.g. "Rx(π/2)").
+std::vector<std::string> render_box(std::size_t n_qubits, std::size_t q,
+                                    const std::string& label) {
+  const std::size_t height = 2 * n_qubits + 1;
+  const std::size_t inner = display_width(label) + 2;  // a space on each side
+  std::string dashes;
+  for (std::size_t k = 0; k < inner; ++k) dashes += "─";
+  std::string wire;
+  for (std::size_t k = 0; k < inner + 2; ++k) wire += "─";
+  const std::string blank(inner + 2, ' ');
+
+  std::vector<std::string> col(height);
+  for (std::size_t r = 0; r < height; ++r) {
+    if (r == 2 * q) {
+      col[r] = "┌" + dashes + "┐";
+    } else if (r == 2 * q + 1) {
+      col[r] = "┤ " + label + " ├";
+    } else if (r == 2 * q + 2) {
+      col[r] = "└" + dashes + "┘";
+    } else {
+      col[r] = (r % 2 == 1) ? wire : blank;
+    }
+  }
+  return col;
+}
+
+// Angle text for a gate label. Common rational multiples of π render
+// symbolically (π, π/2, 3π/4, -π, ...); anything else falls back to a decimal.
+std::string format_angle(double angle) {
+  if (std::fabs(angle) < 1e-12) return "0";
+  const double pi = std::acos(-1.0);
+  const double ratio = angle / pi;  // angle measured in units of π
+  for (int q = 1; q <= 12; ++q) {   // smallest denominator wins (already reduced)
+    const double scaled = ratio * static_cast<double>(q);
+    const long p = std::lround(scaled);
+    if (p != 0 && std::fabs(scaled - static_cast<double>(p)) < 1e-9) {
+      const bool negative = p < 0;
+      const long magnitude = negative ? -p : p;
+      std::string s = (magnitude == 1) ? "π" : std::to_string(magnitude) + "π";
+      if (q != 1) s += "/" + std::to_string(q);
+      return negative ? "-" + s : s;
+    }
+  }
+  std::ostringstream os;
+  os << angle;
+  return os.str();
 }
 
 std::vector<std::string> render_cnot(std::size_t n_qubits, std::size_t control,
@@ -351,6 +426,18 @@ std::string Circuit::print() const {
         columns.push_back(render_measure(n_qubits_, g.qubits[0].index, g.clbit));
         widths.push_back(5);
         break;
+      case GateType::Rx:
+      case GateType::Ry:
+      case GateType::Rz: {
+        const char axis = g.type == GateType::Rx   ? 'x'
+                          : g.type == GateType::Ry ? 'y'
+                                                   : 'z';
+        const std::string lbl =
+            std::string("R") + axis + "(" + format_angle(g.params[0]) + ")";
+        add_quantum(render_box(n_qubits_, g.qubits[0].index, lbl),
+                    display_width(lbl) + 4);
+        break;
+      }
     }
   }
 

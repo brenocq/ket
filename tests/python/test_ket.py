@@ -91,6 +91,25 @@ def test_measure_without_seed_is_valid():
         assert ket.measure(state) == 0
 
 
+def test_rotation_gates():
+    import math
+
+    c = ket.Circuit(1)
+    c.ry(0, math.pi / 2)  # |0> -> equal superposition
+    s = ket.run(c)
+    assert abs(s[0]) == pytest.approx(INV_SQRT2)
+    assert abs(s[1]) == pytest.approx(INV_SQRT2)
+    assert "Ry(" in c.print()
+
+    # Rz only changes phase: computational-basis probabilities are unchanged.
+    c2 = ket.Circuit(1)
+    c2.h(0)
+    c2.rz(0, math.pi / 2)
+    s2 = ket.run(c2)
+    assert abs(s2[0]) ** 2 == pytest.approx(0.5)
+    assert abs(s2[1]) ** 2 == pytest.approx(0.5)
+
+
 def test_measure_and_sample():
     c = ket.Circuit(2)
     c.h(0)

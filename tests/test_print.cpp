@@ -1,6 +1,9 @@
 #include <gtest/gtest.h>
 #include <ket/circuit.hpp>
 
+#include <cmath>
+#include <string>
+
 TEST(Print, EmptyOneQubit) {
   ket::Circuit c{1};
   EXPECT_EQ(c.print(),
@@ -127,6 +130,62 @@ TEST(Print, MeasureBellIntoClassicalRegister) {
             "          └───┘  ║  └─╥─┘\n"
             "c: 2/════════════╩════╩══\n"
             "                 0    1  \n");
+}
+
+TEST(Print, RotationGateBox) {
+  ket::Circuit c{1};
+  c.ry(0, 1.5);
+  EXPECT_EQ(c.print(),
+            "     ┌─────────┐\n"
+            "q_0: ┤ Ry(1.5) ├\n"
+            "     └─────────┘\n");
+}
+
+TEST(Print, RotationPiExactBox) {
+  const double pi = std::acos(-1.0);
+  ket::Circuit c{1};
+  c.rx(0, pi);
+  EXPECT_EQ(c.print(),
+            "     ┌───────┐\n"
+            "q_0: ┤ Rx(π) ├\n"
+            "     └───────┘\n");
+}
+
+TEST(Print, RotationAnglesUsePiSymbols) {
+  const double pi = std::acos(-1.0);
+  auto label_of = [](const ket::Circuit& c) { return c.print(); };
+
+  {
+    ket::Circuit c{1};
+    c.ry(0, pi / 2.0);
+    EXPECT_NE(label_of(c).find("Ry(π/2)"), std::string::npos);
+  }
+  {
+    ket::Circuit c{1};
+    c.rz(0, pi / 4.0);
+    EXPECT_NE(label_of(c).find("Rz(π/4)"), std::string::npos);
+  }
+  {
+    ket::Circuit c{1};
+    c.rx(0, 3.0 * pi / 4.0);
+    EXPECT_NE(label_of(c).find("Rx(3π/4)"), std::string::npos);
+  }
+  {
+    ket::Circuit c{1};
+    c.rz(0, 2.0 * pi);
+    EXPECT_NE(label_of(c).find("Rz(2π)"), std::string::npos);
+  }
+  {
+    ket::Circuit c{1};
+    c.rz(0, -pi / 2.0);
+    EXPECT_NE(label_of(c).find("Rz(-π/2)"), std::string::npos);
+  }
+  {
+    // A non-π angle keeps the decimal form.
+    ket::Circuit c{1};
+    c.rx(0, 1.5);
+    EXPECT_NE(label_of(c).find("Rx(1.5)"), std::string::npos);
+  }
 }
 
 TEST(Print, NoClassicalRowsWithoutMeasurement) {
