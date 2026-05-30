@@ -111,7 +111,8 @@ void apply_cphase(State& s, std::size_t qa, std::size_t qb, Complex phase) {
 // qubit that the circuit's qubit i maps to (identity at the top level, composed
 // for nested composite blocks).
 void apply_circuit(State& state, const Circuit& circuit,
-                   const std::vector<std::size_t>& wire) {
+                   const std::vector<std::size_t>& wire,
+                   std::vector<std::pair<std::string, State>>* probes) {
   for (const DagNode& node : circuit.dag().nodes()) {
     const Gate& g = node.gate;
     switch (g.type) {
@@ -177,13 +178,16 @@ void apply_circuit(State& state, const Circuit& circuit,
         break;  // no-op: barriers only affect ordering and rendering
       case GateType::Measure:
         break;  // no-op here: run() returns the pre-measurement state vector
+      case GateType::Probe:
+        if (probes) probes->emplace_back(g.label, state);  // capture a copy
+        break;
       case GateType::Composite: {
         assert(g.definition);
         std::vector<std::size_t> sub_wire(g.definition->n_qubits());
         for (std::size_t j = 0; j < g.qubits.size(); ++j) {
           sub_wire[j] = wire[g.qubits[j].index];
         }
-        apply_circuit(state, *g.definition, sub_wire);
+        apply_circuit(state, *g.definition, sub_wire, probes);
         break;
       }
     }
@@ -192,16 +196,33 @@ void apply_circuit(State& state, const Circuit& circuit,
 
 }  // namespace
 
-State run(const Circuit& circuit) {
-  const std::size_t dim = std::size_t{1} << circuit.n_qubits();
-  State state(dim, Complex{0.0, 0.0});
+namespace {
+
+std::vector<std::size_t> identity_wire(std::size_t n) {
+  std::vector<std::size_t> wire(n);
+  for (std::size_t i = 0; i < n; ++i) wire[i] = i;
+  return wire;
+}
+
+State ground_state(std::size_t n_qubits) {
+  State state(std::size_t{1} << n_qubits, Complex{0.0, 0.0});
   state[0] = Complex{1.0, 0.0};
-
-  std::vector<std::size_t> wire(circuit.n_qubits());
-  for (std::size_t i = 0; i < wire.size(); ++i) wire[i] = i;
-  apply_circuit(state, circuit, wire);
-
   return state;
+}
+
+}  // namespace
+
+State run(const Circuit& circuit) {
+  State state = ground_state(circuit.n_qubits());
+  apply_circuit(state, circuit, identity_wire(circuit.n_qubits()), nullptr);
+  return state;
+}
+
+ProbeRun run_with_probes(const Circuit& circuit) {
+  State state = ground_state(circuit.n_qubits());
+  std::vector<std::pair<std::string, State>> probes;
+  apply_circuit(state, circuit, identity_wire(circuit.n_qubits()), &probes);
+  return ProbeRun{std::move(state), std::move(probes)};
 }
 
 namespace {

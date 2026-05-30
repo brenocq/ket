@@ -5,6 +5,7 @@
 #include <complex>
 #include <cstddef>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace ket {
@@ -36,5 +37,14 @@ class State {
 };
 
 State run(const Circuit& circuit);
+
+// The result of a probed run: the final state plus the states captured at each
+// probe(), in circuit order.
+struct ProbeRun {
+  State final;
+  std::vector<std::pair<std::string, State>> probes;
+};
+
+ProbeRun run_with_probes(const Circuit& circuit);
 
 }  // namespace ket

@@ -154,6 +154,27 @@ def test_controlled_phase_gates():
     assert "P(" in c2.print()
 
 
+def test_probe_capture_and_render():
+    c = ket.Circuit(2)
+    c.h(0)
+    c.probe("a")
+    c.cnot(0, 1)
+    c.probe("b")
+
+    drawing = c.print()
+    assert "↑" in drawing
+    assert "a" in drawing and "b" in drawing
+
+    r = ket.run_with_probes(c)
+    assert [label for label, _ in r.probes] == ["a", "b"]
+    # ψ_a after H: (|00> + |01>)/sqrt(2)
+    s_a = r.probes[0][1]
+    assert s_a[0] == pytest.approx(complex(INV_SQRT2, 0.0))
+    assert s_a[1] == pytest.approx(complex(INV_SQRT2, 0.0))
+    # final is the Bell state
+    assert r.final[3] == pytest.approx(complex(INV_SQRT2, 0.0))
+
+
 def test_measure_and_sample():
     c = ket.Circuit(2)
     c.h(0)

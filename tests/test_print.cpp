@@ -211,6 +211,22 @@ TEST(Print, ControlledPhaseBox) {
             "     └────────┘\n");
 }
 
+TEST(Print, ProbeMarkersAtBottom) {
+  ket::Circuit c{2};
+  c.h(0);
+  c.probe();  // auto -> ψ0
+  c.cnot(0, 1);
+  c.probe();  // auto -> ψ1
+  EXPECT_EQ(c.print(),
+            "     ┌───┐       \n"
+            "q_0: ┤ H ├───■───\n"
+            "     └───┘ ┌─┴─┐ \n"
+            "q_1: ──────┤ X ├─\n"
+            "           └───┘ \n"
+            "          ↑     ↑\n"
+            "          ψ0    ψ1\n");
+}
+
 TEST(Print, NoClassicalRowsWithoutMeasurement) {
   // A circuit without measurements renders exactly as before (no bus row).
   ket::Circuit c{1};

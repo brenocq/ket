@@ -84,6 +84,8 @@ PYBIND11_MODULE(_ket, m) {
            py::arg("clbit"), "Measure a qubit into a classical bit.")
       .def("measure_all", &ket::Circuit::measure_all,
            "Measure every qubit i into classical bit i.")
+      .def("probe", &ket::Circuit::probe, py::arg("label") = "",
+           "Mark a point to capture the state (see run_with_probes).")
       .def("append", &ket::Circuit::append, py::arg("sub"), py::arg("qubits"),
            py::arg("name") = "",
            "Append a sub-circuit as a single composite block.")
@@ -97,6 +99,14 @@ PYBIND11_MODULE(_ket, m) {
 
   m.def("run", &ket::run, py::arg("circuit"),
         "Simulate the circuit and return the resulting state vector.");
+
+  py::class_<ket::ProbeRun>(m, "ProbeRun",
+                            "Result of a probed run: final state + captures.")
+      .def_readonly("final", &ket::ProbeRun::final)
+      .def_readonly("probes", &ket::ProbeRun::probes);
+
+  m.def("run_with_probes", &ket::run_with_probes, py::arg("circuit"),
+        "Simulate, capturing the state at each probe() (in circuit order).");
 
   m.def(
       "measure",

@@ -130,6 +130,23 @@ void Circuit::measure_all() {
   for (std::size_t q = 0; q < n_qubits_; ++q) measure(q, q);
 }
 
+void Circuit::probe(const std::string& label) {
+  std::string name = label;
+  if (name.empty()) {
+    std::size_t n = 0;
+    for (const DagNode& node : dag_.nodes()) {
+      if (node.gate.type == GateType::Probe) ++n;
+    }
+    name = "ψ" + std::to_string(n);
+  }
+  // Spans all qubits so it is a synchronization point in the DAG (the captured
+  // state is well-defined at exactly this stage).
+  std::vector<Qubit> qubits;
+  qubits.reserve(n_qubits_);
+  for (std::size_t i = 0; i < n_qubits_; ++i) qubits.push_back(Qubit{i});
+  dag_.add(Gate{GateType::Probe, std::move(qubits), name});
+}
+
 void Circuit::append(const Circuit& sub, const std::vector<std::size_t>& qubits,
                      const std::string& name) {
   assert(qubits.size() == sub.n_qubits());
@@ -195,6 +212,22 @@ std::size_t display_width(const std::string& s) {
     if ((static_cast<unsigned char>(c) & 0xC0) != 0x80) ++w;
   }
   return w;
+}
+
+// Split a UTF-8 string into its display characters (each a lead byte plus any
+// continuation bytes), e.g. "ψ0" -> {"ψ", "0"}.
+std::vector<std::string> to_chars(const std::string& s) {
+  std::vector<std::string> out;
+  for (std::size_t i = 0; i < s.size();) {
+    std::size_t len = 1;
+    while (i + len < s.size() &&
+           (static_cast<unsigned char>(s[i + len]) & 0xC0) == 0x80) {
+      ++len;
+    }
+    out.push_back(s.substr(i, len));
+    i += len;
+  }
+  return out;
 }
 
 // A single-qubit box with a multi-character label (e.g. "Rx(π/2)").
@@ -473,6 +506,8 @@ std::string Circuit::print() const {
   std::vector<std::size_t> widths;  // display width of each column
   // Top-row annotations for labeled barriers: (display offset, text).
   std::vector<std::pair<std::size_t, std::string>> top_labels;
+  // Bottom probe markers: (display offset, label) for the ↑ + name rows.
+  std::vector<std::pair<std::size_t, std::string>> probe_marks;
 
   auto current_offset = [&]() {
     std::size_t offset = prefix_width;
@@ -570,6 +605,17 @@ std::string Circuit::print() const {
                     display_width(lbl) + 4);
         break;
       }
+      case GateType::Probe: {
+        // A 1-wide transparent column (just wire); the ↑ + label go in the
+        // bottom rows, pointing at this column.
+        probe_marks.emplace_back(current_offset(), g.label);
+        std::vector<std::string> col(q_height);
+        for (std::size_t r = 0; r < q_height; ++r) {
+          col[r] = (r % 2 == 1) ? "─" : " ";
+        }
+        add_quantum(std::move(col), 1);
+        break;
+      }
     }
   }
 
@@ -601,6 +647,33 @@ std::string Circuit::print() const {
     }
     result += '\n';
   }
+
+  // Probe markers: an ↑ row and a label row, each placed at the probe's column.
+  // Built per display-column (cells are full UTF-8 glyphs) so the multibyte
+  // arrow and ψ labels stay aligned.
+  if (!probe_marks.empty()) {
+    std::vector<std::string> arrows;
+    std::vector<std::string> labels;
+    auto place = [](std::vector<std::string>& row, std::size_t col,
+                    const std::string& glyph) {
+      if (row.size() <= col) row.resize(col + 1, " ");
+      row[col] = glyph;
+    };
+    for (const auto& [offset, label] : probe_marks) {
+      place(arrows, offset, "↑");
+      const std::vector<std::string> chars = to_chars(label);
+      const std::size_t shift = (chars.size() - 1) / 2;  // center under arrow
+      const std::size_t start = offset >= shift ? offset - shift : 0;
+      for (std::size_t k = 0; k < chars.size(); ++k) {
+        place(labels, start + k, chars[k]);
+      }
+    }
+    for (const auto& cell : arrows) result += cell;
+    result += '\n';
+    for (const auto& cell : labels) result += cell;
+    result += '\n';
+  }
+
   return result;
 }
 

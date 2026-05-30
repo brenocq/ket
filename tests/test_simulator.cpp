@@ -216,6 +216,37 @@ TEST(Simulator, RzPreservesComputationalProbabilities) {
   EXPECT_NEAR(std::norm(s[1]), 0.5, 1e-12);
 }
 
+TEST(Simulator, RunWithProbesCapturesStages) {
+  ket::Circuit c{2};
+  c.h(0);
+  c.probe("a");
+  c.cnot(0, 1);
+  c.probe("b");
+
+  ket::ProbeRun r = ket::run_with_probes(c);
+  ASSERT_EQ(r.probes.size(), 2u);
+  EXPECT_EQ(r.probes[0].first, "a");
+  EXPECT_EQ(r.probes[1].first, "b");
+
+  const double inv_sqrt2 = 1.0 / std::sqrt(2.0);
+  // ψ_a, after H on q0: (|00> + |01>)/sqrt(2)
+  ExpectAmplitude(r.probes[0].second[0], {inv_sqrt2, 0.0});
+  ExpectAmplitude(r.probes[0].second[1], {inv_sqrt2, 0.0});
+  ExpectAmplitude(r.probes[0].second[3], {0.0, 0.0});
+  // ψ_b, after CNOT: the Bell state
+  ExpectAmplitude(r.probes[1].second[0], {inv_sqrt2, 0.0});
+  ExpectAmplitude(r.probes[1].second[3], {inv_sqrt2, 0.0});
+  // final state matches the last stage
+  ExpectAmplitude(r.final[3], {inv_sqrt2, 0.0});
+}
+
+TEST(Simulator, ProbeIsNoOpForRun) {
+  ket::Circuit c{1};
+  c.x(0);
+  c.probe();
+  ExpectAmplitude(ket::run(c)[1], {1.0, 0.0});
+}
+
 TEST(Simulator, BarrierIsNoOp) {
   ket::Circuit c{2};
   c.h(0);

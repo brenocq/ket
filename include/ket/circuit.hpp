@@ -77,6 +77,10 @@ class Circuit {
   // Measure every qubit i into classical bit i.
   void measure_all();
 
+  // Mark a point to capture the state vector (see run_with_probes). It is a
+  // no-op for an ordinary run; an empty label auto-numbers as ψ0, ψ1, ...
+  void probe(const std::string& label = "");
+
   // Append a sub-circuit as a single composite block acting on the given parent
   // qubits (sub-qubit i -> qubits[i]). It renders as one labeled box and can be
   // expanded with decompose(). `name` defaults to the sub-circuit's name.

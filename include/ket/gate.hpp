@@ -21,7 +21,7 @@ enum class GateType {
   // Two-qubit gates
   CNOT, CZ, CP,
   // Structural operations (non-unitary / rendering only)
-  Measure, Barrier, Composite,
+  Measure, Barrier, Composite, Probe,
 };
 // clang-format on
 

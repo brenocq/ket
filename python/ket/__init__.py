@@ -13,6 +13,22 @@ measurements.
     >>> outcome = ket.measure(state, seed=42)
 """
 
-from ._ket import Circuit, State, measure, run, sample
+from ._ket import (
+    Circuit,
+    ProbeRun,
+    State,
+    measure,
+    run,
+    run_with_probes,
+    sample,
+)
 
-__all__ = ["Circuit", "State", "measure", "run", "sample"]
+__all__ = [
+    "Circuit",
+    "ProbeRun",
+    "State",
+    "measure",
+    "run",
+    "run_with_probes",
+    "sample",
+]
