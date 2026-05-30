@@ -1,0 +1,37 @@
+name: 🎨 Format
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    name: Check formatting
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # Pinned to match the versions used locally, so CI and developers agree.
+      - name: Install formatters
+        run: pip install "clang-format~=21.1" "cmakelang==0.6.13" "ruff==0.15.15"
+
+      - name: clang-format (C++)
+        run: |
+          find include src bindings examples tests \
+            \( -name '*.cpp' -o -name '*.hpp' \) -print0 \
+            | xargs -0 clang-format --dry-run --Werror
+
+      - name: cmake-format (CMake)
+        run: >
+          cmake-format --check
+          CMakeLists.txt tests/CMakeLists.txt examples/CMakeLists.txt
+
+      - name: ruff (Python)
+        run: |
+          ruff format --check python tests/python
+          ruff check --select I python tests/python
