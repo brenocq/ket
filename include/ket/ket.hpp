@@ -10,3 +10,4 @@
 #include <ket/qubit.hpp>
 #include <ket/simulator.hpp>
 #include <ket/state.hpp>
+#include <ket/version.hpp>

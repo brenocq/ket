@@ -36,4 +36,11 @@ add_executable(
   test_print.cpp
   test_qasm.cpp)
 target_link_libraries(ket_tests PRIVATE ket ket_warnings GTest::gtest_main)
+
+# The CLI command tests are only buildable when the CLI core library is built.
+if(KET_CLI)
+  target_sources(ket_tests PRIVATE test_cli.cpp)
+  target_link_libraries(ket_tests PRIVATE ket_cli_core)
+endif()
+
 gtest_discover_tests(ket_tests)

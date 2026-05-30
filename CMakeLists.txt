@@ -8,6 +8,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 option(KET_TESTS "Build the C++ test suite" OFF)
 option(KET_PYTHON "Build the Python bindings" OFF)
 option(KET_EXAMPLES "Build the example programs" OFF)
+option(KET_CLI "Build the ket-cli command-line executable" OFF)
 
 # Strict warnings, applied only to our own targets (not fetched dependencies).
 add_library(ket_warnings INTERFACE)
@@ -58,6 +59,10 @@ if(KET_PYTHON)
   pybind11_add_module(_ket bindings/python/module.cpp)
   target_link_libraries(_ket PRIVATE ket)
   install(TARGETS _ket LIBRARY DESTINATION ket)
+endif()
+
+if(KET_CLI)
+  add_subdirectory(cli)
 endif()
 
 if(KET_TESTS)
