@@ -17,18 +17,22 @@ from ._ket import (
     Circuit,
     ProbeRun,
     State,
+    from_qasm,
     measure,
     run,
     run_with_probes,
     sample,
+    to_qasm,
 )
 
 __all__ = [
     "Circuit",
     "ProbeRun",
     "State",
+    "from_qasm",
     "measure",
     "run",
     "run_with_probes",
     "sample",
+    "to_qasm",
 ]

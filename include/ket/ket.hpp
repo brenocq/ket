@@ -6,6 +6,7 @@
 #include <ket/dag.hpp>
 #include <ket/gate.hpp>
 #include <ket/measurement.hpp>
+#include <ket/qasm.hpp>
 #include <ket/qubit.hpp>
 #include <ket/simulator.hpp>
 #include <ket/state.hpp>

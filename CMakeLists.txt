@@ -25,8 +25,15 @@ else()
               -Werror)
 endif()
 
-add_library(ket src/ket.cpp src/circuit.cpp src/dag.cpp src/state.cpp
-                src/simulator.cpp src/measurement.cpp)
+add_library(
+  ket
+  src/ket.cpp
+  src/circuit.cpp
+  src/dag.cpp
+  src/state.cpp
+  src/simulator.cpp
+  src/measurement.cpp
+  bindings/qasm/qasm.cpp)
 target_include_directories(ket PUBLIC include)
 target_link_libraries(ket PRIVATE ket_warnings)
 

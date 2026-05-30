@@ -107,6 +107,12 @@ PYBIND11_MODULE(_ket, m) {
   m.def("run_with_probes", &ket::run_with_probes, py::arg("circuit"),
         "Simulate, capturing the state at each probe() (in circuit order).");
 
+  m.def("from_qasm", &ket::from_qasm, py::arg("source"),
+        "Parse a subset of OpenQASM 2.0 into a Circuit.");
+
+  m.def("to_qasm", &ket::to_qasm, py::arg("circuit"),
+        "Serialize a Circuit to OpenQASM 2.0.");
+
   m.def(
       "measure",
       [](const ket::State& state, std::optional<std::uint32_t> seed) {

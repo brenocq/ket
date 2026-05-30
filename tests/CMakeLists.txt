@@ -33,6 +33,7 @@ add_executable(
   test_block.cpp
   test_simulator.cpp
   test_measurement.cpp
-  test_print.cpp)
+  test_print.cpp
+  test_qasm.cpp)
 target_link_libraries(ket_tests PRIVATE ket ket_warnings GTest::gtest_main)
 gtest_discover_tests(ket_tests)

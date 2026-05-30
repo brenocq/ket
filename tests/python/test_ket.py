@@ -175,6 +175,17 @@ def test_probe_capture_and_render():
     assert r.final[3] == pytest.approx(complex(INV_SQRT2, 0.0))
 
 
+def test_qasm_parse_and_serialize():
+    c = ket.from_qasm("OPENQASM 2.0;\nqreg q[2];\nh q[0];\ncx q[0],q[1];\n")
+    assert c.n_qubits == 2
+    s = ket.run(c)
+    assert s[0] == pytest.approx(complex(INV_SQRT2, 0.0))
+    assert s[3] == pytest.approx(complex(INV_SQRT2, 0.0))
+
+    qasm = ket.to_qasm(c)
+    assert "cx q[0],q[1];" in qasm
+
+
 def test_measure_and_sample():
     c = ket.Circuit(2)
     c.h(0)
