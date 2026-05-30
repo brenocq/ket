@@ -29,7 +29,7 @@ constexpr std::size_t kInputMask = (std::size_t{1} << kInputs) - 1;
 ket::Circuit oracle_block(std::size_t secret) {
   ket::Circuit f{kQubits, "f(x)"};
   for (std::size_t i = 0; i < kInputs; ++i) {
-    if ((secret >> i) & 1u) f.cnot(i, kAncilla);
+    if ((secret >> i) & 1u) f.cx(i, kAncilla);
   }
   return f;
 }

@@ -58,11 +58,10 @@ int main() {
   const std::vector<Case> cases = {
       {"constant  f(x) = 0", false, [](ket::Circuit&) {}},
       {"constant  f(x) = 1", false, [](ket::Circuit& c) { c.x(kAncilla); }},
-      {"balanced  f(x) = x0", true,
-       [](ket::Circuit& c) { c.cnot(0, kAncilla); }},
+      {"balanced  f(x) = x0", true, [](ket::Circuit& c) { c.cx(0, kAncilla); }},
       {"balanced  f(x) = x0^x1^x2", true,
        [](ket::Circuit& c) {
-         for (std::size_t q = 0; q < kInputs; ++q) c.cnot(q, kAncilla);
+         for (std::size_t q = 0; q < kInputs; ++q) c.cx(q, kAncilla);
        }},
   };
 

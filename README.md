@@ -24,7 +24,7 @@ out of a handful of basic gates and simulate them exactly.
 | `c.h(q)`                    | Hadamard            | 1      |
 | `c.x(q)`                    | Pauli-X (NOT)       | 1      |
 | `c.z(q)`                    | Pauli-Z             | 1      |
-| `c.cnot(control, target)`   | Controlled-NOT      | 2      |
+| `c.cx(control, target)`   | Controlled-NOT      | 2      |
 
 
 ## How the simulation works
@@ -60,7 +60,7 @@ int main() {
   // Build a Bell state: H on q0, then CNOT(q0 -> q1).
   ket::Circuit c{2};
   c.h(0);
-  c.cnot(0, 1);
+  c.cx(0, 1);
 
   std::cout << c.print();
 
@@ -156,7 +156,7 @@ from collections import Counter
 # Build a Bell state and measure both qubits into a classical register.
 c = ket.Circuit(2)
 c.h(0)
-c.cnot(0, 1)
+c.cx(0, 1)
 c.measure_all()
 print(c)
 

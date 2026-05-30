@@ -28,7 +28,7 @@ TEST(Measurement, AfterXAlwaysOne) {
 TEST(Measurement, BellCircuitOnlyCorrelatedOutcomes) {
   ket::Circuit c{2};
   c.h(0);
-  c.cnot(0, 1);
+  c.cx(0, 1);
   auto s = ket::run(c);
 
   std::mt19937 rng{42};

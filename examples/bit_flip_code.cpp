@@ -33,8 +33,8 @@ constexpr int kNoError = -1;
 // Spread the data qubit across two others: |ψ⟩|00⟩ -> α|000⟩ + β|111⟩.
 ket::Circuit encode_block() {
   ket::Circuit enc{3, "encode"};
-  enc.cnot(0, 1);
-  enc.cnot(0, 2);
+  enc.cx(0, 1);
+  enc.cx(0, 2);
   return enc;
 }
 
@@ -47,10 +47,10 @@ ket::Circuit bit_flip_code(int error_qubit) {
   if (error_qubit != kNoError) c.x(static_cast<std::size_t>(error_qubit));
 
   c.barrier("syndrome");
-  c.cnot(kData0, kAnc0);  // ancilla 0 = parity(data0, data1)
-  c.cnot(kData1, kAnc0);
-  c.cnot(kData1, kAnc1);  // ancilla 1 = parity(data1, data2)
-  c.cnot(kData2, kAnc1);
+  c.cx(kData0, kAnc0);  // ancilla 0 = parity(data0, data1)
+  c.cx(kData1, kAnc0);
+  c.cx(kData1, kAnc1);  // ancilla 1 = parity(data1, data2)
+  c.cx(kData2, kAnc1);
   c.measure(kAnc0, 0);
   c.measure(kAnc1, 1);
   return c;

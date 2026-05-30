@@ -9,8 +9,8 @@ TEST(Gate, ConstructHadamard) {
 }
 
 TEST(Gate, ConstructCNOT) {
-  ket::Gate g{ket::GateType::CNOT, {ket::Qubit{0}, ket::Qubit{1}}};
-  EXPECT_EQ(g.type, ket::GateType::CNOT);
+  ket::Gate g{ket::GateType::CX, {ket::Qubit{0}, ket::Qubit{1}}};
+  EXPECT_EQ(g.type, ket::GateType::CX);
   ASSERT_EQ(g.qubits.size(), 2u);
   EXPECT_EQ(g.qubits[0].index, 0u);
   EXPECT_EQ(g.qubits[1].index, 1u);

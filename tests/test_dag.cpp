@@ -11,7 +11,7 @@ TEST(Dag, EmptyCircuitHasNoNodes) {
 TEST(Dag, BellCircuitStructure) {
   ket::Circuit c{2};
   c.h(0);
-  c.cnot(0, 1);
+  c.cx(0, 1);
 
   const auto& nodes = c.dag().nodes();
   ASSERT_EQ(nodes.size(), 2u);
@@ -21,7 +21,7 @@ TEST(Dag, BellCircuitStructure) {
   ASSERT_EQ(nodes[0].successors.size(), 1u);
   EXPECT_EQ(nodes[0].successors[0], 1u);
 
-  EXPECT_EQ(nodes[1].gate.type, ket::GateType::CNOT);
+  EXPECT_EQ(nodes[1].gate.type, ket::GateType::CX);
   ASSERT_EQ(nodes[1].predecessors.size(), 1u);
   EXPECT_EQ(nodes[1].predecessors[0], 0u);
   EXPECT_TRUE(nodes[1].successors.empty());
@@ -42,8 +42,8 @@ TEST(Dag, IndependentGatesAreNotConnected) {
 
 TEST(Dag, ConsecutiveTwoQubitGatesDedupePredecessor) {
   ket::Circuit c{2};
-  c.cnot(0, 1);
-  c.cnot(0, 1);
+  c.cx(0, 1);
+  c.cx(0, 1);
 
   const auto& nodes = c.dag().nodes();
   ASSERT_EQ(nodes.size(), 2u);
@@ -57,7 +57,7 @@ TEST(Dag, WiresTrackNodesPerQubit) {
   ket::Circuit c{2};
   c.h(0);
   c.x(1);
-  c.cnot(0, 1);
+  c.cx(0, 1);
 
   EXPECT_EQ(c.dag().wire(0).size(), 2u);
   EXPECT_EQ(c.dag().wire(0)[0], 0u);

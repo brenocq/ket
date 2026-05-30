@@ -35,7 +35,7 @@ TEST(Print, SingleQubitSequence) {
 TEST(Print, BellCircuit) {
   ket::Circuit c{2};
   c.h(0);
-  c.cnot(0, 1);
+  c.cx(0, 1);
   EXPECT_EQ(c.print(),
             "     ┌───┐     \n"
             "q_0: ┤ H ├──■──\n"
@@ -46,7 +46,7 @@ TEST(Print, BellCircuit) {
 
 TEST(Print, CnotControlBelowTarget) {
   ket::Circuit c{2};
-  c.cnot(1, 0);
+  c.cx(1, 0);
   EXPECT_EQ(c.print(),
             "     ┌───┐\n"
             "q_0: ┤ X ├\n"
@@ -57,7 +57,7 @@ TEST(Print, CnotControlBelowTarget) {
 
 TEST(Print, CnotSpansIntermediateQubit) {
   ket::Circuit c{3};
-  c.cnot(0, 2);
+  c.cx(0, 2);
   EXPECT_EQ(c.print(),
             "          \n"
             "q_0: ──■──\n"
@@ -120,7 +120,7 @@ TEST(Print, MeasureSingleQubit) {
 TEST(Print, MeasureBellIntoClassicalRegister) {
   ket::Circuit c{2};
   c.h(0);
-  c.cnot(0, 1);
+  c.cx(0, 1);
   c.measure_all();
   EXPECT_EQ(c.print(),
             "     ┌───┐     ┌───┐     \n"
@@ -215,7 +215,7 @@ TEST(Print, ProbeMarkersAtBottom) {
   ket::Circuit c{2};
   c.h(0);
   c.probe();  // auto -> ψ0
-  c.cnot(0, 1);
+  c.cx(0, 1);
   c.probe();  // auto -> ψ1
   EXPECT_EQ(c.print(),
             "     ┌───┐       \n"

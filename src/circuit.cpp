@@ -62,11 +62,11 @@ void Circuit::tdg(Qubit q) {
   dag_.add(Gate{GateType::Tdg, {q}});
 }
 
-void Circuit::cnot(Qubit control, Qubit target) {
+void Circuit::cx(Qubit control, Qubit target) {
   assert(control.index < n_qubits_);
   assert(target.index < n_qubits_);
   assert(control.index != target.index);
-  dag_.add(Gate{GateType::CNOT, {control, target}});
+  dag_.add(Gate{GateType::CX, {control, target}});
 }
 
 void Circuit::rx(Qubit q, double theta) {
@@ -279,8 +279,8 @@ std::string format_angle(double angle) {
   return os.str();
 }
 
-std::vector<std::string> render_cnot(std::size_t n_qubits, std::size_t control,
-                                     std::size_t target) {
+std::vector<std::string> render_cx(std::size_t n_qubits, std::size_t control,
+                                   std::size_t target) {
   auto col = default_column(n_qubits);
   if (control < target) {
     col[2 * control + 1] = "──■──";
@@ -559,9 +559,9 @@ std::string Circuit::print() const {
         add_quantum(render_box(n_qubits_, g.qubits[0].index, "T†"),
                     display_width("T†") + 4);
         break;
-      case GateType::CNOT:
-        add_quantum(
-            render_cnot(n_qubits_, g.qubits[0].index, g.qubits[1].index), 5);
+      case GateType::CX:
+        add_quantum(render_cx(n_qubits_, g.qubits[0].index, g.qubits[1].index),
+                    5);
         break;
       case GateType::Barrier:
         if (!g.label.empty())

@@ -84,7 +84,7 @@ void apply_rz(State& s, std::size_t q, double theta) {
   apply_single(s, q, Complex{c, -sn}, 0.0, 0.0, Complex{c, sn});
 }
 
-void apply_cnot(State& s, std::size_t control, std::size_t target) {
+void apply_cx(State& s, std::size_t control, std::size_t target) {
   const std::size_t cmask = std::size_t{1} << control;
   const std::size_t tmask = std::size_t{1} << target;
   const std::size_t n = s.size();
@@ -147,9 +147,9 @@ void apply_circuit(State& state, const Circuit& circuit,
         assert(g.qubits.size() == 1);
         apply_tdg(state, wire[g.qubits[0].index]);
         break;
-      case GateType::CNOT:
+      case GateType::CX:
         assert(g.qubits.size() == 2);
-        apply_cnot(state, wire[g.qubits[0].index], wire[g.qubits[1].index]);
+        apply_cx(state, wire[g.qubits[0].index], wire[g.qubits[1].index]);
         break;
       case GateType::CZ:
         assert(g.qubits.size() == 2);

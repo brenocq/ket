@@ -12,7 +12,7 @@ TEST(Circuit, BellCircuit) {
   auto q0 = c.qubit(0);
   auto q1 = c.qubit(1);
   c.h(q0);
-  c.cnot(q0, q1);
+  c.cx(q0, q1);
 
   const auto& nodes = c.dag().nodes();
   ASSERT_EQ(nodes.size(), 2u);
@@ -21,7 +21,7 @@ TEST(Circuit, BellCircuit) {
   ASSERT_EQ(nodes[0].gate.qubits.size(), 1u);
   EXPECT_EQ(nodes[0].gate.qubits[0].index, 0u);
 
-  EXPECT_EQ(nodes[1].gate.type, ket::GateType::CNOT);
+  EXPECT_EQ(nodes[1].gate.type, ket::GateType::CX);
   ASSERT_EQ(nodes[1].gate.qubits.size(), 2u);
   EXPECT_EQ(nodes[1].gate.qubits[0].index, 0u);
   EXPECT_EQ(nodes[1].gate.qubits[1].index, 1u);
@@ -30,13 +30,13 @@ TEST(Circuit, BellCircuit) {
 TEST(Circuit, AcceptsSizeTOverloads) {
   ket::Circuit c{2};
   c.h(0);
-  c.cnot(0, 1);
+  c.cx(0, 1);
   const auto& nodes = c.dag().nodes();
   ASSERT_EQ(nodes.size(), 2u);
   EXPECT_EQ(nodes[0].gate.type, ket::GateType::H);
   ASSERT_EQ(nodes[0].gate.qubits.size(), 1u);
   EXPECT_EQ(nodes[0].gate.qubits[0].index, 0u);
-  EXPECT_EQ(nodes[1].gate.type, ket::GateType::CNOT);
+  EXPECT_EQ(nodes[1].gate.type, ket::GateType::CX);
   ASSERT_EQ(nodes[1].gate.qubits.size(), 2u);
   EXPECT_EQ(nodes[1].gate.qubits[0].index, 0u);
   EXPECT_EQ(nodes[1].gate.qubits[1].index, 1u);

@@ -14,14 +14,14 @@ def test_circuit_basics():
     c = ket.Circuit(2)
     assert c.n_qubits == 2
     c.h(0)
-    c.cnot(0, 1)
+    c.cx(0, 1)
     assert "Circuit" in repr(c)
 
 
 def test_bell_state_amplitudes():
     c = ket.Circuit(2)
     c.h(0)
-    c.cnot(0, 1)
+    c.cx(0, 1)
     state = ket.run(c)
 
     assert len(state) == 4
@@ -34,7 +34,7 @@ def test_bell_state_amplitudes():
 def test_statevector_print():
     c = ket.Circuit(2)
     c.h(0)
-    c.cnot(0, 1)
+    c.cx(0, 1)
     state = ket.run(c)
     assert state.print() == ("|00⟩: 0.707107\n|01⟩: 0\n|10⟩: 0\n|11⟩: 0.707107\n")
     assert str(state) == state.print()
@@ -43,7 +43,7 @@ def test_statevector_print():
 def test_circuit_print():
     c = ket.Circuit(2)
     c.h(0)
-    c.cnot(0, 1)
+    c.cx(0, 1)
     assert c.print() == (
         "     ┌───┐     \n"
         "q_0: ┤ H ├──■──\n"
@@ -62,7 +62,7 @@ def test_index_out_of_range():
 def test_measure_is_reproducible_with_seed():
     c = ket.Circuit(2)
     c.h(0)
-    c.cnot(0, 1)
+    c.cx(0, 1)
     state = ket.run(c)
     a = [ket.measure(state, seed=42) for _ in range(5)]
     b = [ket.measure(state, seed=42) for _ in range(5)]
@@ -72,7 +72,7 @@ def test_measure_is_reproducible_with_seed():
 def test_measure_bell_only_correlated_outcomes():
     c = ket.Circuit(2)
     c.h(0)
-    c.cnot(0, 1)
+    c.cx(0, 1)
     state = ket.run(c)
     outcomes = {ket.measure(state, seed=s) for s in range(200)}
     # Bell state collapses only to |00> (0) or |11> (3).
@@ -158,7 +158,7 @@ def test_probe_capture_and_render():
     c = ket.Circuit(2)
     c.h(0)
     c.probe("a")
-    c.cnot(0, 1)
+    c.cx(0, 1)
     c.probe("b")
 
     drawing = c.print()
@@ -178,7 +178,7 @@ def test_probe_capture_and_render():
 def test_measure_and_sample():
     c = ket.Circuit(2)
     c.h(0)
-    c.cnot(0, 1)
+    c.cx(0, 1)
     c.measure_all()
 
     assert c.n_clbits == 2
@@ -210,7 +210,7 @@ def test_sample_size_matches_clbits_not_qubits():
 def test_composite_block_append_decompose_and_simulate():
     bell = ket.Circuit(2, "bell")
     bell.h(0)
-    bell.cnot(0, 1)
+    bell.cx(0, 1)
 
     c = ket.Circuit(2)
     c.append(bell, [0, 1])
@@ -235,7 +235,7 @@ def test_barrier_renders_and_is_noop():
     c = ket.Circuit(2)
     c.h(0)
     c.barrier("sync")  # all qubits, labeled
-    c.cnot(0, 1)
+    c.cx(0, 1)
     c.barrier([1])  # subset
 
     drawing = c.print()

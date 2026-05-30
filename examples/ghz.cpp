@@ -15,8 +15,8 @@
 int main() {
   ket::Circuit circuit{3};
   circuit.h(0);
-  circuit.cnot(0, 1);
-  circuit.cnot(1, 2);
+  circuit.cx(0, 1);
+  circuit.cx(1, 2);
   circuit.measure_all();  // measure qubit i into classical bit i
 
   std::cout << "Circuit:\n" << circuit.print() << '\n';

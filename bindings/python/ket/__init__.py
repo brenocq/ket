@@ -8,7 +8,7 @@ measurements.
     >>> import ket
     >>> c = ket.Circuit(2)
     >>> c.h(0)
-    >>> c.cnot(0, 1)
+    >>> c.cx(0, 1)
     >>> state = ket.run(c)
     >>> outcome = ket.measure(state, seed=42)
 """

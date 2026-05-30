@@ -10,7 +10,7 @@ namespace {
 ket::Circuit make_bell() {
   ket::Circuit bell{2, "bell"};
   bell.h(0);
-  bell.cnot(0, 1);
+  bell.cx(0, 1);
   return bell;
 }
 
@@ -38,7 +38,7 @@ TEST(Block, DecomposeExpandsOneLevel) {
   ASSERT_EQ(nodes.size(), 2u);
   EXPECT_EQ(nodes[0].gate.type, ket::GateType::H);
   EXPECT_EQ(nodes[0].gate.qubits[0].index, 0u);
-  EXPECT_EQ(nodes[1].gate.type, ket::GateType::CNOT);
+  EXPECT_EQ(nodes[1].gate.type, ket::GateType::CX);
   EXPECT_EQ(nodes[1].gate.qubits[0].index, 0u);
   EXPECT_EQ(nodes[1].gate.qubits[1].index, 1u);
 }
@@ -101,7 +101,7 @@ TEST(Block, NestedComposite) {
   ket::Circuit d2 = d1.decompose();
   ASSERT_EQ(d2.dag().nodes().size(), 2u);
   EXPECT_EQ(d2.dag().nodes()[0].gate.type, ket::GateType::H);
-  EXPECT_EQ(d2.dag().nodes()[1].gate.type, ket::GateType::CNOT);
+  EXPECT_EQ(d2.dag().nodes()[1].gate.type, ket::GateType::CX);
 }
 
 TEST(Block, NameFallsBackToSubCircuitName) {

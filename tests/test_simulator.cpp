@@ -63,7 +63,7 @@ TEST(Simulator, ZIntroducesMinusSignOnOne) {
 TEST(Simulator, CNOTFlipsTargetWhenControlIsOne) {
   ket::Circuit c{2};
   c.x(0);
-  c.cnot(0, 1);
+  c.cx(0, 1);
   auto s = ket::run(c);
   ExpectAmplitude(s[0], {0.0, 0.0});
   ExpectAmplitude(s[1], {0.0, 0.0});
@@ -73,7 +73,7 @@ TEST(Simulator, CNOTFlipsTargetWhenControlIsOne) {
 
 TEST(Simulator, CNOTDoesNothingWhenControlIsZero) {
   ket::Circuit c{2};
-  c.cnot(0, 1);
+  c.cx(0, 1);
   auto s = ket::run(c);
   ExpectAmplitude(s[0], {1.0, 0.0});
   ExpectAmplitude(s[1], {0.0, 0.0});
@@ -84,7 +84,7 @@ TEST(Simulator, CNOTDoesNothingWhenControlIsZero) {
 TEST(Simulator, PrintRendersBasisStatesAndAmplitudes) {
   ket::Circuit c{2};
   c.h(0);
-  c.cnot(0, 1);
+  c.cx(0, 1);
   auto s = ket::run(c);
   EXPECT_EQ(s.print(),
             "|00⟩: 0.707107\n"
@@ -106,7 +106,7 @@ TEST(Simulator, PrintShowsNegativeRealAmplitude) {
 TEST(Simulator, BellCircuitProducesEntangledState) {
   ket::Circuit c{2};
   c.h(0);
-  c.cnot(0, 1);
+  c.cx(0, 1);
   auto s = ket::run(c);
   const double inv_sqrt2 = 1.0 / std::sqrt(2.0);
   ExpectAmplitude(s[0], {inv_sqrt2, 0.0});
@@ -220,7 +220,7 @@ TEST(Simulator, RunWithProbesCapturesStages) {
   ket::Circuit c{2};
   c.h(0);
   c.probe("a");
-  c.cnot(0, 1);
+  c.cx(0, 1);
   c.probe("b");
 
   ket::ProbeRun r = ket::run_with_probes(c);
@@ -251,7 +251,7 @@ TEST(Simulator, BarrierIsNoOp) {
   ket::Circuit c{2};
   c.h(0);
   c.barrier();
-  c.cnot(0, 1);
+  c.cx(0, 1);
   c.barrier({1}, "done");
   auto s = ket::run(c);
   const double inv_sqrt2 = 1.0 / std::sqrt(2.0);

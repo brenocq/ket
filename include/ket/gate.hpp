@@ -19,7 +19,7 @@ enum class GateType {
   S, Sdg, T, Tdg,
   Rx, Ry, Rz,
   // Two-qubit gates
-  CNOT, CZ, CP,
+  CX, CZ, CP,
   // Structural operations (non-unitary / rendering only)
   Measure, Barrier, Composite, Probe,
 };
