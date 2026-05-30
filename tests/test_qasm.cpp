@@ -54,7 +54,7 @@ TEST(Qasm, RoundTripsStably) {
   EXPECT_NE(out.find("rz(pi/2) q[1];"), std::string::npos);
 }
 
-TEST(Qasm, CompositeBlocksAreFlattened) {
+TEST(Qasm, CompositeBlocksEmitGateDefinitions) {
   ket::Circuit bell{2, "bell"};
   bell.h(0);
   bell.cx(0, 1);
@@ -62,9 +62,42 @@ TEST(Qasm, CompositeBlocksAreFlattened) {
   c.append(bell, {0, 1});
 
   const std::string out = ket::to_qasm(c);
-  EXPECT_NE(out.find("h q[0];"), std::string::npos);
-  EXPECT_NE(out.find("cx q[0],q[1];"), std::string::npos);
-  EXPECT_EQ(out.find("bell"), std::string::npos);  // no composite leaks
+  EXPECT_NE(out.find("gate bell q0,q1"), std::string::npos);  // definition
+  EXPECT_NE(out.find("bell q[0],q[1];"), std::string::npos);  // invocation
+  // The definition precedes its use.
+  EXPECT_LT(out.find("gate bell"), out.find("bell q[0],q[1];"));
+
+  // Re-parsing and re-serializing is a fixed point, and still the Bell state.
+  EXPECT_EQ(ket::to_qasm(ket::from_qasm(out)), out);
+  auto s = ket::run(ket::from_qasm(out));
+  EXPECT_NEAR(s[0].real(), kInvSqrt2, 1e-12);
+  EXPECT_NEAR(s[3].real(), kInvSqrt2, 1e-12);
+}
+
+TEST(Qasm, NestedAndRepeatedCompositesEmitOneDefinitionEach) {
+  ket::Circuit inner{1, "myh"};
+  inner.h(0);
+  ket::Circuit bell{2, "bell"};
+  bell.append(inner, {0});  // bell's body uses myh
+  bell.cx(0, 1);
+
+  ket::Circuit c{2};
+  c.append(bell, {0, 1});
+  c.append(bell, {0, 1});  // the same gate, invoked twice
+
+  const std::string out = ket::to_qasm(c);
+  // A dependency (myh) is defined before the gate that uses it (bell).
+  EXPECT_LT(out.find("gate myh"), out.find("gate bell"));
+  // Each gate is declared exactly once despite the repeated call.
+  EXPECT_EQ(out.find("gate bell", out.find("gate bell") + 1),
+            std::string::npos);
+  // ...but invoked twice.
+  const std::size_t first = out.find("bell q[0],q[1];");
+  ASSERT_NE(first, std::string::npos);
+  EXPECT_NE(out.find("bell q[0],q[1];", first + 1), std::string::npos);
+
+  // Round-trips as a fixed point.
+  EXPECT_EQ(ket::to_qasm(ket::from_qasm(out)), out);
 }
 
 TEST(Qasm, ParsesUFamily) {
@@ -179,11 +212,10 @@ TEST(Qasm, UserDefinedGate) {
 
   // The call renders as a labeled composite block...
   EXPECT_NE(c.print().find("bell"), std::string::npos);
-  // ...and to_qasm flattens it back into primitive gates.
+  // ...and to_qasm preserves it as a gate definition plus an invocation.
   const std::string out = ket::to_qasm(c);
-  EXPECT_NE(out.find("h q[0];"), std::string::npos);
-  EXPECT_NE(out.find("cx q[0],q[1];"), std::string::npos);
-  EXPECT_EQ(out.find("bell"), std::string::npos);
+  EXPECT_NE(out.find("gate bell q0,q1"), std::string::npos);
+  EXPECT_NE(out.find("bell q[0],q[1];"), std::string::npos);
 }
 
 TEST(Qasm, UserDefinedParameterizedGate) {

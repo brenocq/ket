@@ -9,6 +9,8 @@
 #include <cstddef>
 #include <functional>
 #include <map>
+#include <ostream>
+#include <set>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -590,121 +592,190 @@ std::string single_qubit_name(GateType type) {
   }
 }
 
-bool has_composite(const Circuit& c) {
-  for (const DagNode& node : c.dag().nodes()) {
-    if (node.gate.type == GateType::Composite) return true;
+// Renders a qubit operand: "q[i]" at the top level, or a gate definition's
+// formal parameter name "qi" inside a gate body.
+using QRef = std::function<std::string(std::size_t)>;
+
+struct GateRegistry;
+void emit_gate(std::ostream& os, const Gate& g, const QRef& qref,
+               GateRegistry& reg);
+
+// Collects the `gate name qubits { body }` definitions for composite blocks.
+// Each distinct definition is emitted once, with nested definitions emitted
+// before the gates that use them.
+struct GateRegistry {
+  std::ostringstream defs;
+  std::map<std::string, std::string> by_signature;  // body signature -> name
+  std::set<std::string> used_names;
+
+  // Returns the unique QASM gate name assigned to this composite definition,
+  // emitting its `gate ... { ... }` declaration (and any nested ones) on first
+  // sight.
+  std::string ensure(const Circuit& def, const std::string& wanted) {
+    // Body written with formal qubit names q0, q1, ... — this also registers
+    // any nested composites, so their definitions precede this one.
+    std::ostringstream body;
+    const QRef formal = [](std::size_t i) { return "q" + std::to_string(i); };
+    for (const DagNode& node : def.dag().nodes()) {
+      emit_gate(body, node.gate, formal, *this);
+    }
+    const std::string text = body.str();
+
+    const std::string sig =
+        wanted + "#" + std::to_string(def.n_qubits()) + "\x1f" + text;
+    const auto found = by_signature.find(sig);
+    if (found != by_signature.end()) return found->second;
+
+    std::string name = wanted.empty() ? "block" : wanted;
+    if (used_names.count(name) != 0) {  // same name, different body: suffix it
+      int k = 2;
+      while (used_names.count(name + "_" + std::to_string(k)) != 0) ++k;
+      name += "_" + std::to_string(k);
+    }
+    used_names.insert(name);
+    by_signature.emplace(sig, name);
+
+    defs << "gate " << name;
+    for (std::size_t i = 0; i < def.n_qubits(); ++i) {
+      defs << (i == 0 ? " " : ",") << "q" << i;
+    }
+    defs << " {\n";
+    std::istringstream lines(text);
+    std::string line;
+    while (std::getline(lines, line)) {
+      if (!line.empty()) defs << "  " << line << "\n";
+    }
+    defs << "}\n";
+    return name;
   }
-  return false;
+};
+
+void emit_gate(std::ostream& os, const Gate& g, const QRef& qref,
+               GateRegistry& reg) {
+  switch (g.type) {
+    case GateType::H:
+    case GateType::X:
+    case GateType::Y:
+    case GateType::Z:
+    case GateType::S:
+    case GateType::Sdg:
+    case GateType::T:
+    case GateType::Tdg:
+      os << single_qubit_name(g.type) << " " << qref(g.qubits[0].index)
+         << ";\n";
+      break;
+    case GateType::Rx:
+    case GateType::Ry:
+    case GateType::Rz: {
+      const char axis = g.type == GateType::Rx   ? 'x'
+                        : g.type == GateType::Ry ? 'y'
+                                                 : 'z';
+      os << "r" << axis << "(" << qasm_angle(g.params[0]) << ") "
+         << qref(g.qubits[0].index) << ";\n";
+      break;
+    }
+    case GateType::U:
+      os << "U(" << qasm_angle(g.params[0]) << "," << qasm_angle(g.params[1])
+         << "," << qasm_angle(g.params[2]) << ") " << qref(g.qubits[0].index)
+         << ";\n";
+      break;
+    case GateType::CH:
+      os << "ch " << qref(g.qubits[0].index) << "," << qref(g.qubits[1].index)
+         << ";\n";
+      break;
+    case GateType::CX:
+      os << "cx " << qref(g.qubits[0].index) << "," << qref(g.qubits[1].index)
+         << ";\n";
+      break;
+    case GateType::CY:
+      os << "cy " << qref(g.qubits[0].index) << "," << qref(g.qubits[1].index)
+         << ";\n";
+      break;
+    case GateType::CZ:
+      os << "cz " << qref(g.qubits[0].index) << "," << qref(g.qubits[1].index)
+         << ";\n";
+      break;
+    case GateType::CRx:
+      os << "crx(" << qasm_angle(g.params[0]) << ") " << qref(g.qubits[0].index)
+         << "," << qref(g.qubits[1].index) << ";\n";
+      break;
+    case GateType::CRy:
+      os << "cry(" << qasm_angle(g.params[0]) << ") " << qref(g.qubits[0].index)
+         << "," << qref(g.qubits[1].index) << ";\n";
+      break;
+    case GateType::CRz:
+      os << "crz(" << qasm_angle(g.params[0]) << ") " << qref(g.qubits[0].index)
+         << "," << qref(g.qubits[1].index) << ";\n";
+      break;
+    case GateType::CU:
+      // Emitted as the unambiguous 3-parameter qelib1 spelling `cu3`.
+      os << "cu3(" << qasm_angle(g.params[0]) << "," << qasm_angle(g.params[1])
+         << "," << qasm_angle(g.params[2]) << ") " << qref(g.qubits[0].index)
+         << "," << qref(g.qubits[1].index) << ";\n";
+      break;
+    case GateType::CP:
+      os << "cp(" << qasm_angle(g.params[0]) << ") " << qref(g.qubits[0].index)
+         << "," << qref(g.qubits[1].index) << ";\n";
+      break;
+    case GateType::Swap:
+      os << "swap " << qref(g.qubits[0].index) << "," << qref(g.qubits[1].index)
+         << ";\n";
+      break;
+    case GateType::CCX:
+      os << "ccx " << qref(g.qubits[0].index) << "," << qref(g.qubits[1].index)
+         << "," << qref(g.qubits[2].index) << ";\n";
+      break;
+    case GateType::CSwap:
+      os << "cswap " << qref(g.qubits[0].index) << ","
+         << qref(g.qubits[1].index) << "," << qref(g.qubits[2].index) << ";\n";
+      break;
+    case GateType::Measure:
+      os << "measure " << qref(g.qubits[0].index) << " -> c[" << g.clbit
+         << "];\n";
+      break;
+    case GateType::Barrier: {
+      os << "barrier ";
+      for (std::size_t k = 0; k < g.qubits.size(); ++k) {
+        os << (k ? "," : "") << qref(g.qubits[k].index);
+      }
+      os << ";\n";
+      break;
+    }
+    case GateType::Composite: {
+      if (!g.definition) break;
+      const std::string name = reg.ensure(*g.definition, g.label);
+      os << name;
+      for (std::size_t k = 0; k < g.qubits.size(); ++k) {
+        os << (k == 0 ? " " : ",") << qref(g.qubits[k].index);
+      }
+      os << ";\n";
+      break;
+    }
+    case GateType::Probe:  // ket-only, no QASM equivalent
+      break;
+  }
 }
 
 }  // namespace
 
 std::string to_qasm(const Circuit& circuit) {
-  Circuit flat = circuit;
-  while (has_composite(flat)) flat = flat.decompose();
+  // Emit the body first so the registry collects every composite definition.
+  GateRegistry reg;
+  std::ostringstream body;
+  const QRef topref = [](std::size_t i) {
+    return "q[" + std::to_string(i) + "]";
+  };
+  for (const DagNode& node : circuit.dag().nodes()) {
+    emit_gate(body, node.gate, topref, reg);
+  }
 
   std::ostringstream os;
   os << "OPENQASM 2.0;\n";
   os << "include \"qelib1.inc\";\n";
-  os << "qreg q[" << flat.n_qubits() << "];\n";
-  if (flat.n_clbits() > 0) os << "creg c[" << flat.n_clbits() << "];\n";
-
-  for (const DagNode& node : flat.dag().nodes()) {
-    const Gate& g = node.gate;
-    switch (g.type) {
-      case GateType::H:
-      case GateType::X:
-      case GateType::Y:
-      case GateType::Z:
-      case GateType::S:
-      case GateType::Sdg:
-      case GateType::T:
-      case GateType::Tdg:
-        os << single_qubit_name(g.type) << " q[" << g.qubits[0].index << "];\n";
-        break;
-      case GateType::Rx:
-      case GateType::Ry:
-      case GateType::Rz: {
-        const char axis = g.type == GateType::Rx   ? 'x'
-                          : g.type == GateType::Ry ? 'y'
-                                                   : 'z';
-        os << "r" << axis << "(" << qasm_angle(g.params[0]) << ") q["
-           << g.qubits[0].index << "];\n";
-        break;
-      }
-      case GateType::U:
-        os << "U(" << qasm_angle(g.params[0]) << "," << qasm_angle(g.params[1])
-           << "," << qasm_angle(g.params[2]) << ") q[" << g.qubits[0].index
-           << "];\n";
-        break;
-      case GateType::CH:
-        os << "ch q[" << g.qubits[0].index << "],q[" << g.qubits[1].index
-           << "];\n";
-        break;
-      case GateType::CX:
-        os << "cx q[" << g.qubits[0].index << "],q[" << g.qubits[1].index
-           << "];\n";
-        break;
-      case GateType::CY:
-        os << "cy q[" << g.qubits[0].index << "],q[" << g.qubits[1].index
-           << "];\n";
-        break;
-      case GateType::CZ:
-        os << "cz q[" << g.qubits[0].index << "],q[" << g.qubits[1].index
-           << "];\n";
-        break;
-      case GateType::CRx:
-        os << "crx(" << qasm_angle(g.params[0]) << ") q[" << g.qubits[0].index
-           << "],q[" << g.qubits[1].index << "];\n";
-        break;
-      case GateType::CRy:
-        os << "cry(" << qasm_angle(g.params[0]) << ") q[" << g.qubits[0].index
-           << "],q[" << g.qubits[1].index << "];\n";
-        break;
-      case GateType::CRz:
-        os << "crz(" << qasm_angle(g.params[0]) << ") q[" << g.qubits[0].index
-           << "],q[" << g.qubits[1].index << "];\n";
-        break;
-      case GateType::CU:
-        // Emitted as the unambiguous 3-parameter qelib1 spelling `cu3`.
-        os << "cu3(" << qasm_angle(g.params[0]) << ","
-           << qasm_angle(g.params[1]) << "," << qasm_angle(g.params[2])
-           << ") q[" << g.qubits[0].index << "],q[" << g.qubits[1].index
-           << "];\n";
-        break;
-      case GateType::CP:
-        os << "cp(" << qasm_angle(g.params[0]) << ") q[" << g.qubits[0].index
-           << "],q[" << g.qubits[1].index << "];\n";
-        break;
-      case GateType::Swap:
-        os << "swap q[" << g.qubits[0].index << "],q[" << g.qubits[1].index
-           << "];\n";
-        break;
-      case GateType::CCX:
-        os << "ccx q[" << g.qubits[0].index << "],q[" << g.qubits[1].index
-           << "],q[" << g.qubits[2].index << "];\n";
-        break;
-      case GateType::CSwap:
-        os << "cswap q[" << g.qubits[0].index << "],q[" << g.qubits[1].index
-           << "],q[" << g.qubits[2].index << "];\n";
-        break;
-      case GateType::Measure:
-        os << "measure q[" << g.qubits[0].index << "] -> c[" << g.clbit
-           << "];\n";
-        break;
-      case GateType::Barrier: {
-        os << "barrier ";
-        for (std::size_t k = 0; k < g.qubits.size(); ++k) {
-          os << (k ? "," : "") << "q[" << g.qubits[k].index << "]";
-        }
-        os << ";\n";
-        break;
-      }
-      case GateType::Probe:      // ket-only, no QASM equivalent
-      case GateType::Composite:  // already flattened
-        break;
-    }
-  }
+  os << reg.defs.str();  // gate definitions must precede their use
+  os << "qreg q[" << circuit.n_qubits() << "];\n";
+  if (circuit.n_clbits() > 0) os << "creg c[" << circuit.n_clbits() << "];\n";
+  os << body.str();
   return os.str();
 }
 
