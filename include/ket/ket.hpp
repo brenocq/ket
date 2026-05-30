@@ -8,3 +8,4 @@
 #include <ket/measurement.hpp>
 #include <ket/qubit.hpp>
 #include <ket/simulator.hpp>
+#include <ket/state.hpp>
