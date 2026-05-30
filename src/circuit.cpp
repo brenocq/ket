@@ -143,6 +143,14 @@ void Circuit::swap(Qubit a, Qubit b) {
   dag_.add(Gate{GateType::Swap, {a, b}});
 }
 
+void Circuit::ccx(Qubit control1, Qubit control2, Qubit target) {
+  assert(control1.index < n_qubits_ && control2.index < n_qubits_ &&
+         target.index < n_qubits_);
+  assert(control1.index != control2.index && control1.index != target.index &&
+         control2.index != target.index);
+  dag_.add(Gate{GateType::CCX, {control1, control2, target}});
+}
+
 void Circuit::barrier(const std::string& label) {
   std::vector<Qubit> qubits;
   qubits.reserve(n_qubits_);
@@ -375,6 +383,27 @@ std::vector<std::string> render_swap(std::size_t n_qubits, std::size_t a,
   for (std::size_t i = 2 * lo + 2; i < 2 * hi + 1; ++i) {
     col[i] = (i % 2 == 1) ? "──┼──" : "  │  ";
   }
+  return col;
+}
+
+// Toffoli (CCX): a control dot on each control wired to an X box on the target.
+// One vertical line spans from the topmost to the bottommost of the three
+// qubits, passing through any intervening wires with ┼.
+std::vector<std::string> render_ccx(std::size_t n_qubits, std::size_t c1,
+                                    std::size_t c2, std::size_t target) {
+  auto col = default_column(n_qubits);
+  const std::size_t lo = std::min({c1, c2, target});
+  const std::size_t hi = std::max({c1, c2, target});
+
+  // The full vertical connector first, then the dots and box overwrite it.
+  for (std::size_t i = 2 * lo + 1; i <= 2 * hi + 1; ++i) {
+    col[i] = (i % 2 == 1) ? "──┼──" : "  │  ";
+  }
+  col[2 * c1 + 1] = "──■──";
+  col[2 * c2 + 1] = "──■──";
+  col[2 * target] = (lo < target) ? "┌─┴─┐" : "┌───┐";
+  col[2 * target + 1] = "┤ X ├";
+  col[2 * target + 2] = (hi > target) ? "└─┬─┘" : "└───┘";
   return col;
 }
 
@@ -700,6 +729,11 @@ std::string Circuit::print() const {
       case GateType::Swap:
         add_quantum(
             render_swap(n_qubits_, g.qubits[0].index, g.qubits[1].index), 5);
+        break;
+      case GateType::CCX:
+        add_quantum(render_ccx(n_qubits_, g.qubits[0].index, g.qubits[1].index,
+                               g.qubits[2].index),
+                    5);
         break;
       case GateType::Probe: {
         // A 1-wide transparent column (just wire); the ↑ + label go in the

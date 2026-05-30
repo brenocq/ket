@@ -215,6 +215,23 @@ def test_cy_gate():
     assert s[3] == pytest.approx(complex(0.0, 1.0))
 
 
+def test_ccx_gate():
+    # Both controls set -> target flips: |011> -> |111> (index 7).
+    c = ket.Circuit(3)
+    c.x(0)
+    c.x(1)
+    c.ccx(0, 1, 2)
+    s = ket.run(c)
+    assert s[7] == pytest.approx(complex(1.0, 0.0))
+
+    # Only one control set -> no flip; renders with two control dots.
+    c2 = ket.Circuit(3)
+    c2.x(0)
+    c2.ccx(0, 1, 2)
+    assert ket.run(c2)[1] == pytest.approx(complex(1.0, 0.0))
+    assert c2.print().count("■") == 2
+
+
 def test_swap_gate():
     c = ket.Circuit(2)
     c.x(0)  # |01>

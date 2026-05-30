@@ -249,6 +249,24 @@ TEST(Simulator, ControlledRotationsActOnlyWhenControlIsOne) {
   }
 }
 
+TEST(Simulator, CcxFlipsTargetOnlyWhenBothControlsAreOne) {
+  {  // only one control set -> no flip
+    ket::Circuit c{3};
+    c.x(0);  // |001>
+    c.ccx(0, 1, 2);
+    ExpectAmplitude(ket::run(c)[1], {1.0, 0.0});  // still |001>
+  }
+  {  // both controls set -> target flips: |011> -> |111>
+    ket::Circuit c{3};
+    c.x(0);
+    c.x(1);  // |011>
+    c.ccx(0, 1, 2);
+    auto s = ket::run(c);
+    ExpectAmplitude(s[3], {0.0, 0.0});  // |011> emptied
+    ExpectAmplitude(s[7], {1.0, 0.0});  // |111>
+  }
+}
+
 TEST(Simulator, ChAppliesHWhenControlIsOne) {
   const double inv_sqrt2 = 1.0 / std::sqrt(2.0);
   {  // control=0: no-op

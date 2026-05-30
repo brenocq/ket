@@ -188,6 +188,20 @@ void apply_swap(State& s, std::size_t qa, std::size_t qb) {
   }
 }
 
+// Toffoli (CCX): flip the target on basis states where both controls are 1.
+void apply_ccx(State& s, std::size_t control1, std::size_t control2,
+               std::size_t target) {
+  const std::size_t c1mask = std::size_t{1} << control1;
+  const std::size_t c2mask = std::size_t{1} << control2;
+  const std::size_t tmask = std::size_t{1} << target;
+  const std::size_t n = s.size();
+  for (std::size_t k = 0; k < n; ++k) {
+    if ((k & c1mask) == 0 || (k & c2mask) == 0) continue;  // both controls = 1
+    if ((k & tmask) != 0) continue;                        // target = 0
+    std::swap(s[k], s[k | tmask]);
+  }
+}
+
 // Controlled phase: multiply by `phase` exactly when both qubits are 1.
 // Symmetric in qa/qb (CZ uses phase = -1, CP uses e^{i lambda}).
 void apply_cphase(State& s, std::size_t qa, std::size_t qb, Complex phase) {
@@ -280,6 +294,11 @@ void apply_circuit(State& state, const Circuit& circuit,
       case GateType::Swap:
         assert(g.qubits.size() == 2);
         apply_swap(state, wire[g.qubits[0].index], wire[g.qubits[1].index]);
+        break;
+      case GateType::CCX:
+        assert(g.qubits.size() == 3);
+        apply_ccx(state, wire[g.qubits[0].index], wire[g.qubits[1].index],
+                  wire[g.qubits[2].index]);
         break;
       case GateType::Rx:
         assert(g.qubits.size() == 1 && !g.params.empty());

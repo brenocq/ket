@@ -270,6 +270,32 @@ TEST(Print, SwapGate) {
             "          \n");
 }
 
+TEST(Print, ToffoliTwoControls) {
+  ket::Circuit c{3};
+  c.ccx(0, 1, 2);
+  EXPECT_EQ(c.print(),
+            "          \n"
+            "q_0: ──■──\n"
+            "       │  \n"
+            "q_1: ──■──\n"
+            "     ┌─┴─┐\n"
+            "q_2: ┤ X ├\n"
+            "     └───┘\n");
+}
+
+TEST(Print, ToffoliTargetInMiddle) {
+  ket::Circuit c{3};
+  c.ccx(0, 2, 1);  // controls straddle the target
+  EXPECT_EQ(c.print(),
+            "          \n"
+            "q_0: ──■──\n"
+            "     ┌─┴─┐\n"
+            "q_1: ┤ X ├\n"
+            "     └─┬─┘\n"
+            "q_2: ──■──\n"
+            "          \n");
+}
+
 TEST(Print, UGateBox) {
   const double pi = std::acos(-1.0);
   ket::Circuit c{1};

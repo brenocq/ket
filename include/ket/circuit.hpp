@@ -59,6 +59,9 @@ class Circuit {
   void cp(Qubit a, Qubit b, double lambda);
   void swap(Qubit a, Qubit b);
 
+  // Three-qubit gate: ccx (Toffoli) flips the target when both controls are 1.
+  void ccx(Qubit control1, Qubit control2, Qubit target);
+
   // size_t overloads of the gates above.
   void h(std::size_t i) { h(Qubit{i}); }
   void x(std::size_t i) { x(Qubit{i}); }
@@ -97,6 +100,9 @@ class Circuit {
     cp(Qubit{a}, Qubit{b}, lambda);
   }
   void swap(std::size_t a, std::size_t b) { swap(Qubit{a}, Qubit{b}); }
+  void ccx(std::size_t control1, std::size_t control2, std::size_t target) {
+    ccx(Qubit{control1}, Qubit{control2}, Qubit{target});
+  }
 
   // A barrier across all qubits, optionally labeled. Barriers are no-ops in
   // simulation but appear in the diagram and serialize the DAG across them.
