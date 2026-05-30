@@ -330,6 +330,19 @@ def test_expval():
     assert ket.expval(s2, "IZ") == pytest.approx(1.0)  # Z on qubit 0
 
 
+def test_invalid_input_raises():
+    c = ket.Circuit(2)
+    with pytest.raises(IndexError):
+        c.h(5)  # qubit out of range
+    with pytest.raises(IndexError):
+        c.measure(2, 0)
+    with pytest.raises(ValueError):
+        c.cx(0, 0)  # a gate cannot act on the same qubit twice
+    sub = ket.Circuit(2)
+    with pytest.raises(ValueError):
+        c.append(sub, [0, 1, 0])  # wrong number of qubits
+
+
 def test_expval_hamiltonian():
     c = ket.Circuit(2)
     c.h(0)

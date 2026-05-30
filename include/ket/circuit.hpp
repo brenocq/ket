@@ -149,6 +149,12 @@ class Circuit {
   std::string print() const;
 
  private:
+  // Throws std::out_of_range if `qubit` is not a valid index for this circuit.
+  void require_in_range(std::size_t qubit) const;
+  // Validates the gate's qubit operands (in range and distinct) and records it
+  // in the DAG; throws on invalid input.
+  void add(Gate gate);
+
   std::size_t n_qubits_;
   std::size_t n_clbits_ = 0;
   std::string name_;

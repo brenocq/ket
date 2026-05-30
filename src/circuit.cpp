@@ -3,11 +3,11 @@
 #include <ket/circuit.hpp>
 
 #include <algorithm>
-#include <cassert>
 #include <cmath>
 #include <cstddef>
 #include <memory>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
@@ -17,162 +17,120 @@ namespace ket {
 Circuit::Circuit(std::size_t n_qubits, std::string name)
     : n_qubits_(n_qubits), name_(std::move(name)), dag_(n_qubits) {}
 
+void Circuit::require_in_range(std::size_t qubit) const {
+  if (qubit >= n_qubits_) {
+    throw std::out_of_range("ket: qubit index " + std::to_string(qubit) +
+                            " is out of range for a " +
+                            std::to_string(n_qubits_) + "-qubit circuit");
+  }
+}
+
+void Circuit::add(Gate gate) {
+  for (const Qubit& q : gate.qubits) require_in_range(q.index);
+  for (std::size_t i = 0; i < gate.qubits.size(); ++i) {
+    for (std::size_t j = i + 1; j < gate.qubits.size(); ++j) {
+      if (gate.qubits[i].index == gate.qubits[j].index) {
+        throw std::invalid_argument("ket: a gate cannot act on qubit " +
+                                    std::to_string(gate.qubits[i].index) +
+                                    " more than once");
+      }
+    }
+  }
+  dag_.add(std::move(gate));
+}
+
 Qubit Circuit::qubit(std::size_t i) const {
-  assert(i < n_qubits_);
+  require_in_range(i);
   return Qubit{i};
 }
 
-void Circuit::h(Qubit q) {
-  assert(q.index < n_qubits_);
-  dag_.add(Gate{GateType::H, {q}});
-}
+void Circuit::h(Qubit q) { add(Gate{GateType::H, {q}}); }
 
-void Circuit::x(Qubit q) {
-  assert(q.index < n_qubits_);
-  dag_.add(Gate{GateType::X, {q}});
-}
+void Circuit::x(Qubit q) { add(Gate{GateType::X, {q}}); }
 
-void Circuit::y(Qubit q) {
-  assert(q.index < n_qubits_);
-  dag_.add(Gate{GateType::Y, {q}});
-}
+void Circuit::y(Qubit q) { add(Gate{GateType::Y, {q}}); }
 
-void Circuit::z(Qubit q) {
-  assert(q.index < n_qubits_);
-  dag_.add(Gate{GateType::Z, {q}});
-}
+void Circuit::z(Qubit q) { add(Gate{GateType::Z, {q}}); }
 
-void Circuit::s(Qubit q) {
-  assert(q.index < n_qubits_);
-  dag_.add(Gate{GateType::S, {q}});
-}
+void Circuit::s(Qubit q) { add(Gate{GateType::S, {q}}); }
 
-void Circuit::sdg(Qubit q) {
-  assert(q.index < n_qubits_);
-  dag_.add(Gate{GateType::Sdg, {q}});
-}
+void Circuit::sdg(Qubit q) { add(Gate{GateType::Sdg, {q}}); }
 
-void Circuit::t(Qubit q) {
-  assert(q.index < n_qubits_);
-  dag_.add(Gate{GateType::T, {q}});
-}
+void Circuit::t(Qubit q) { add(Gate{GateType::T, {q}}); }
 
-void Circuit::tdg(Qubit q) {
-  assert(q.index < n_qubits_);
-  dag_.add(Gate{GateType::Tdg, {q}});
-}
+void Circuit::tdg(Qubit q) { add(Gate{GateType::Tdg, {q}}); }
 
 void Circuit::rx(Qubit q, double theta) {
-  assert(q.index < n_qubits_);
-  dag_.add(Gate{.type = GateType::Rx, .qubits = {q}, .params = {theta}});
+  add(Gate{.type = GateType::Rx, .qubits = {q}, .params = {theta}});
 }
 
 void Circuit::ry(Qubit q, double theta) {
-  assert(q.index < n_qubits_);
-  dag_.add(Gate{.type = GateType::Ry, .qubits = {q}, .params = {theta}});
+  add(Gate{.type = GateType::Ry, .qubits = {q}, .params = {theta}});
 }
 
 void Circuit::rz(Qubit q, double theta) {
-  assert(q.index < n_qubits_);
-  dag_.add(Gate{.type = GateType::Rz, .qubits = {q}, .params = {theta}});
+  add(Gate{.type = GateType::Rz, .qubits = {q}, .params = {theta}});
 }
 
 void Circuit::u(Qubit q, double theta, double phi, double lambda) {
-  assert(q.index < n_qubits_);
-  dag_.add(
-      Gate{.type = GateType::U, .qubits = {q}, .params = {theta, phi, lambda}});
+  add(Gate{.type = GateType::U, .qubits = {q}, .params = {theta, phi, lambda}});
 }
 
 void Circuit::ch(Qubit control, Qubit target) {
-  assert(control.index < n_qubits_);
-  assert(target.index < n_qubits_);
-  assert(control.index != target.index);
-  dag_.add(Gate{GateType::CH, {control, target}});
+  add(Gate{GateType::CH, {control, target}});
 }
 
 void Circuit::cx(Qubit control, Qubit target) {
-  assert(control.index < n_qubits_);
-  assert(target.index < n_qubits_);
-  assert(control.index != target.index);
-  dag_.add(Gate{GateType::CX, {control, target}});
+  add(Gate{GateType::CX, {control, target}});
 }
 
 void Circuit::cy(Qubit control, Qubit target) {
-  assert(control.index < n_qubits_);
-  assert(target.index < n_qubits_);
-  assert(control.index != target.index);
-  dag_.add(Gate{GateType::CY, {control, target}});
+  add(Gate{GateType::CY, {control, target}});
 }
 
-void Circuit::cz(Qubit a, Qubit b) {
-  assert(a.index < n_qubits_ && b.index < n_qubits_);
-  assert(a.index != b.index);
-  dag_.add(Gate{GateType::CZ, {a, b}});
-}
+void Circuit::cz(Qubit a, Qubit b) { add(Gate{GateType::CZ, {a, b}}); }
 
 void Circuit::crx(Qubit control, Qubit target, double theta) {
-  assert(control.index < n_qubits_ && target.index < n_qubits_);
-  assert(control.index != target.index);
-  dag_.add(Gate{
+  add(Gate{
       .type = GateType::CRx, .qubits = {control, target}, .params = {theta}});
 }
 
 void Circuit::cry(Qubit control, Qubit target, double theta) {
-  assert(control.index < n_qubits_ && target.index < n_qubits_);
-  assert(control.index != target.index);
-  dag_.add(Gate{
+  add(Gate{
       .type = GateType::CRy, .qubits = {control, target}, .params = {theta}});
 }
 
 void Circuit::crz(Qubit control, Qubit target, double theta) {
-  assert(control.index < n_qubits_ && target.index < n_qubits_);
-  assert(control.index != target.index);
-  dag_.add(Gate{
+  add(Gate{
       .type = GateType::CRz, .qubits = {control, target}, .params = {theta}});
 }
 
 void Circuit::cu(Qubit control, Qubit target, double theta, double phi,
                  double lambda) {
-  assert(control.index < n_qubits_ && target.index < n_qubits_);
-  assert(control.index != target.index);
-  dag_.add(Gate{.type = GateType::CU,
-                .qubits = {control, target},
-                .params = {theta, phi, lambda}});
+  add(Gate{.type = GateType::CU,
+           .qubits = {control, target},
+           .params = {theta, phi, lambda}});
 }
 
 void Circuit::cp(Qubit a, Qubit b, double lambda) {
-  assert(a.index < n_qubits_ && b.index < n_qubits_);
-  assert(a.index != b.index);
-  dag_.add(Gate{.type = GateType::CP, .qubits = {a, b}, .params = {lambda}});
+  add(Gate{.type = GateType::CP, .qubits = {a, b}, .params = {lambda}});
 }
 
-void Circuit::swap(Qubit a, Qubit b) {
-  assert(a.index < n_qubits_ && b.index < n_qubits_);
-  assert(a.index != b.index);
-  dag_.add(Gate{GateType::Swap, {a, b}});
-}
+void Circuit::swap(Qubit a, Qubit b) { add(Gate{GateType::Swap, {a, b}}); }
 
 void Circuit::ccx(Qubit control1, Qubit control2, Qubit target) {
-  assert(control1.index < n_qubits_ && control2.index < n_qubits_ &&
-         target.index < n_qubits_);
-  assert(control1.index != control2.index && control1.index != target.index &&
-         control2.index != target.index);
-  dag_.add(Gate{GateType::CCX, {control1, control2, target}});
+  add(Gate{GateType::CCX, {control1, control2, target}});
 }
 
 void Circuit::cswap(Qubit control, Qubit a, Qubit b) {
-  assert(control.index < n_qubits_ && a.index < n_qubits_ &&
-         b.index < n_qubits_);
-  assert(control.index != a.index && control.index != b.index &&
-         a.index != b.index);
-  dag_.add(Gate{GateType::CSwap, {control, a, b}});
+  add(Gate{GateType::CSwap, {control, a, b}});
 }
 
 void Circuit::barrier(const std::string& label) {
   std::vector<Qubit> qubits;
   qubits.reserve(n_qubits_);
   for (std::size_t i = 0; i < n_qubits_; ++i) qubits.push_back(Qubit{i});
-  dag_.add(Gate{GateType::Barrier, std::move(qubits), label});
+  add(Gate{GateType::Barrier, std::move(qubits), label});
 }
 
 void Circuit::barrier(std::initializer_list<std::size_t> qubits,
@@ -184,17 +142,14 @@ void Circuit::barrier(const std::vector<std::size_t>& qubits,
                       const std::string& label) {
   std::vector<Qubit> qs;
   qs.reserve(qubits.size());
-  for (std::size_t i : qubits) {
-    assert(i < n_qubits_);
-    qs.push_back(Qubit{i});
-  }
-  dag_.add(Gate{GateType::Barrier, std::move(qs), label});
+  for (std::size_t i : qubits) qs.push_back(Qubit{i});
+  add(Gate{GateType::Barrier, std::move(qs), label});
 }
 
 void Circuit::measure(std::size_t qubit, std::size_t clbit) {
-  assert(qubit < n_qubits_);
+  require_in_range(qubit);
   n_clbits_ = std::max(n_clbits_, clbit + 1);
-  dag_.add(Gate{
+  add(Gate{
       .type = GateType::Measure, .qubits = {Qubit{qubit}}, .clbit = clbit});
 }
 
@@ -216,23 +171,24 @@ void Circuit::probe(const std::string& label) {
   std::vector<Qubit> qubits;
   qubits.reserve(n_qubits_);
   for (std::size_t i = 0; i < n_qubits_; ++i) qubits.push_back(Qubit{i});
-  dag_.add(Gate{GateType::Probe, std::move(qubits), name});
+  add(Gate{GateType::Probe, std::move(qubits), name});
 }
 
 void Circuit::append(const Circuit& sub, const std::vector<std::size_t>& qubits,
                      const std::string& name) {
-  assert(qubits.size() == sub.n_qubits());
+  if (qubits.size() != sub.n_qubits()) {
+    throw std::invalid_argument(
+        "ket: append expects " + std::to_string(sub.n_qubits()) +
+        " qubits, got " + std::to_string(qubits.size()));
+  }
   std::vector<Qubit> qs;
   qs.reserve(qubits.size());
-  for (std::size_t i : qubits) {
-    assert(i < n_qubits_);
-    qs.push_back(Qubit{i});
-  }
+  for (std::size_t i : qubits) qs.push_back(Qubit{i});
   std::string block_name = !name.empty()        ? name
                            : !sub.name_.empty() ? sub.name_
                                                 : "circ";
-  dag_.add(Gate{GateType::Composite, std::move(qs), std::move(block_name),
-                std::make_shared<const Circuit>(sub)});
+  add(Gate{GateType::Composite, std::move(qs), std::move(block_name),
+           std::make_shared<const Circuit>(sub)});
 }
 
 Circuit Circuit::decompose() const {

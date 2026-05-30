@@ -1,6 +1,8 @@
 #include <gtest/gtest.h>
 #include <ket/circuit.hpp>
 
+#include <stdexcept>
+
 TEST(Circuit, EmptyHasNoGates) {
   ket::Circuit c{2};
   EXPECT_EQ(c.n_qubits(), 2u);
@@ -53,4 +55,30 @@ TEST(Circuit, AllSingleQubitGates) {
   EXPECT_EQ(nodes[0].gate.type, ket::GateType::H);
   EXPECT_EQ(nodes[1].gate.type, ket::GateType::X);
   EXPECT_EQ(nodes[2].gate.type, ket::GateType::Z);
+}
+
+TEST(Circuit, OutOfRangeQubitThrows) {
+  ket::Circuit c{2};
+  EXPECT_THROW(c.h(5), std::out_of_range);
+  EXPECT_THROW(c.cx(0, 5), std::out_of_range);
+  EXPECT_THROW(c.qubit(2), std::out_of_range);
+  EXPECT_THROW(c.measure(2, 0), std::out_of_range);
+  EXPECT_NO_THROW(c.cx(0, 1));  // valid input is unaffected
+}
+
+TEST(Circuit, RepeatedQubitThrows) {
+  ket::Circuit c{3};
+  EXPECT_THROW(c.cx(1, 1), std::invalid_argument);
+  EXPECT_THROW(c.ccx(0, 1, 1), std::invalid_argument);
+  EXPECT_THROW(c.cswap(0, 2, 2), std::invalid_argument);
+}
+
+TEST(Circuit, AppendArityMismatchThrows) {
+  ket::Circuit sub{2};
+  sub.h(0);
+  ket::Circuit c{3};
+  EXPECT_THROW(c.append(sub, {0, 1, 2}), std::invalid_argument);  // too many
+  EXPECT_THROW(c.append(sub, {0}), std::invalid_argument);        // too few
+  EXPECT_THROW(c.append(sub, {0, 5}), std::out_of_range);  // bad target qubit
+  EXPECT_NO_THROW(c.append(sub, {0, 2}));
 }
