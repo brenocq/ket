@@ -134,6 +134,49 @@ void apply_ch(State& s, std::size_t control, std::size_t target) {
   }
 }
 
+// Apply a 2x2 matrix to the target qubit only on basis states where the
+// control is 1 (the controlled analogue of apply_single).
+void apply_controlled_single(State& s, std::size_t control, std::size_t target,
+                             Complex m00, Complex m01, Complex m10,
+                             Complex m11) {
+  const std::size_t cmask = std::size_t{1} << control;
+  const std::size_t tmask = std::size_t{1} << target;
+  const std::size_t n = s.size();
+  for (std::size_t k = 0; k < n; ++k) {
+    if ((k & cmask) == 0 || (k & tmask) != 0) continue;  // control=1, target=0
+    const std::size_t k1 = k | tmask;
+    const Complex a = s[k];
+    const Complex b = s[k1];
+    s[k] = m00 * a + m01 * b;
+    s[k1] = m10 * a + m11 * b;
+  }
+}
+
+// Controlled rotations: the rotation matrix is applied to the target only when
+// the control is 1 (same matrices as apply_rx/apply_ry/apply_rz).
+void apply_crx(State& s, std::size_t control, std::size_t target,
+               double theta) {
+  const double c = std::cos(theta / 2.0);
+  const double sn = std::sin(theta / 2.0);
+  apply_controlled_single(s, control, target, c, Complex{0.0, -sn},
+                          Complex{0.0, -sn}, c);
+}
+
+void apply_cry(State& s, std::size_t control, std::size_t target,
+               double theta) {
+  const double c = std::cos(theta / 2.0);
+  const double sn = std::sin(theta / 2.0);
+  apply_controlled_single(s, control, target, c, -sn, sn, c);
+}
+
+void apply_crz(State& s, std::size_t control, std::size_t target,
+               double theta) {
+  const double c = std::cos(theta / 2.0);
+  const double sn = std::sin(theta / 2.0);
+  apply_controlled_single(s, control, target, Complex{c, -sn}, 0.0, 0.0,
+                          Complex{c, sn});
+}
+
 // SWAP: exchange amplitudes of basis states that differ in exactly the two
 // qubits (|..1..0..> <-> |..0..1..>).
 void apply_swap(State& s, std::size_t qa, std::size_t qb) {
@@ -213,6 +256,21 @@ void apply_circuit(State& state, const Circuit& circuit,
         assert(g.qubits.size() == 2);
         apply_cphase(state, wire[g.qubits[0].index], wire[g.qubits[1].index],
                      Complex{-1.0, 0.0});
+        break;
+      case GateType::CRx:
+        assert(g.qubits.size() == 2 && !g.params.empty());
+        apply_crx(state, wire[g.qubits[0].index], wire[g.qubits[1].index],
+                  g.params[0]);
+        break;
+      case GateType::CRy:
+        assert(g.qubits.size() == 2 && !g.params.empty());
+        apply_cry(state, wire[g.qubits[0].index], wire[g.qubits[1].index],
+                  g.params[0]);
+        break;
+      case GateType::CRz:
+        assert(g.qubits.size() == 2 && !g.params.empty());
+        apply_crz(state, wire[g.qubits[0].index], wire[g.qubits[1].index],
+                  g.params[0]);
         break;
       case GateType::CP:
         assert(g.qubits.size() == 2 && !g.params.empty());

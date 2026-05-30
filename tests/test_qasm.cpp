@@ -107,6 +107,18 @@ TEST(Qasm, ParsesAndEmitsCh) {
   EXPECT_NE(ket::to_qasm(c).find("ch q[0],q[1];"), std::string::npos);
 }
 
+TEST(Qasm, ParsesAndEmitsControlledRotations) {
+  // crx(pi) with the control set acts like rx(pi) on the target: |01> ->
+  // -i|11>.
+  ket::Circuit c = ket::from_qasm("qreg q[2]; x q[0]; crx(pi) q[0],q[1];");
+  EXPECT_NEAR(ket::run(c)[3].imag(), -1.0, 1e-12);
+  EXPECT_NE(ket::to_qasm(c).find("crx(pi) q[0],q[1];"), std::string::npos);
+
+  // crz round-trips through a re-parse.
+  ket::Circuit z = ket::from_qasm("qreg q[2]; crz(pi/2) q[0],q[1];");
+  EXPECT_NE(ket::to_qasm(z).find("crz(pi/2) q[0],q[1];"), std::string::npos);
+}
+
 TEST(Qasm, ParsesAndEmitsCy) {
   ket::Circuit c = ket::from_qasm("qreg q[2]; x q[0]; cy q[0],q[1];");
   EXPECT_NEAR(ket::run(c)[3].imag(), 1.0, 1e-12);  // i|11>

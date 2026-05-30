@@ -184,6 +184,29 @@ def test_ch_gate():
     assert s[3] == pytest.approx(complex(INV_SQRT2, 0.0))
 
 
+def test_controlled_rotation_gates():
+    import math
+
+    # crx(pi) with control set acts like rx(pi) on the target: |01> -> -i|11>.
+    c = ket.Circuit(2)
+    c.x(0)  # |01>
+    c.crx(0, 1, math.pi)
+    assert ket.run(c)[3] == pytest.approx(complex(0.0, -1.0))
+
+    # cry(pi/2) makes an equal real superposition on the target.
+    c2 = ket.Circuit(2)
+    c2.x(0)
+    c2.cry(0, 1, math.pi / 2)
+    s2 = ket.run(c2)
+    assert s2[1] == pytest.approx(complex(INV_SQRT2, 0.0))
+    assert s2[3] == pytest.approx(complex(INV_SQRT2, 0.0))
+
+    # crz only adds a relative phase; it renders as an Rz(...) box.
+    c3 = ket.Circuit(2)
+    c3.crz(0, 1, math.pi / 2)
+    assert "Rz(" in c3.print()
+
+
 def test_cy_gate():
     c = ket.Circuit(2)
     c.x(0)  # |01>

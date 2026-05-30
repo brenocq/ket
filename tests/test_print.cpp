@@ -211,6 +211,16 @@ TEST(Print, ControlledPhaseBox) {
             "     └────────┘\n");
 }
 
+TEST(Print, ControlledRotationBox) {
+  const double pi = std::acos(-1.0);
+  ket::Circuit c{2};
+  c.crz(0, 1, pi / 2.0);
+  const std::string drawing = c.print();
+  EXPECT_NE(drawing.find("Rz(π/2)"), std::string::npos);  // labeled box
+  EXPECT_NE(drawing.find("■"), std::string::npos);        // control dot
+  EXPECT_NE(drawing.find("┴"), std::string::npos);        // wired to target
+}
+
 TEST(Print, ProbeMarkersAtBottom) {
   ket::Circuit c{2};
   c.h(0);

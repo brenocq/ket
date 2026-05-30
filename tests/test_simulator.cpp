@@ -216,6 +216,39 @@ TEST(Simulator, RzPreservesComputationalProbabilities) {
   EXPECT_NEAR(std::norm(s[1]), 0.5, 1e-12);
 }
 
+TEST(Simulator, ControlledRotationsActOnlyWhenControlIsOne) {
+  const double pi = std::acos(-1.0);
+  {  // control=0: crx is a no-op
+    ket::Circuit c{2};
+    c.crx(0, 1, pi);
+    ExpectAmplitude(ket::run(c)[0], {1.0, 0.0});
+  }
+  {  // control=1: crx(pi) acts like rx(pi) on the target -> -i|11>
+    ket::Circuit c{2};
+    c.x(0);  // |01>
+    c.crx(0, 1, pi);
+    ExpectAmplitude(ket::run(c)[3], {0.0, -1.0});
+  }
+  {  // control=1: cry(pi/2) makes an equal real superposition on the target
+    const double inv_sqrt2 = 1.0 / std::sqrt(2.0);
+    ket::Circuit c{2};
+    c.x(0);  // |01>
+    c.cry(0, 1, pi / 2.0);
+    auto s = ket::run(c);
+    ExpectAmplitude(s[1], {inv_sqrt2, 0.0});  // |01>
+    ExpectAmplitude(s[3], {inv_sqrt2, 0.0});  // |11>
+  }
+  {  // crz only adds a relative phase; probabilities are unchanged
+    ket::Circuit c{2};
+    c.x(0);  // control=1
+    c.h(1);  // target in superposition
+    c.crz(0, 1, pi / 2.0);
+    auto s = ket::run(c);
+    EXPECT_NEAR(std::norm(s[1]), 0.5, 1e-12);  // |01>
+    EXPECT_NEAR(std::norm(s[3]), 0.5, 1e-12);  // |11>
+  }
+}
+
 TEST(Simulator, ChAppliesHWhenControlIsOne) {
   const double inv_sqrt2 = 1.0 / std::sqrt(2.0);
   {  // control=0: no-op

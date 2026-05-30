@@ -110,6 +110,27 @@ void Circuit::cz(Qubit a, Qubit b) {
   dag_.add(Gate{GateType::CZ, {a, b}});
 }
 
+void Circuit::crx(Qubit control, Qubit target, double theta) {
+  assert(control.index < n_qubits_ && target.index < n_qubits_);
+  assert(control.index != target.index);
+  dag_.add(Gate{
+      .type = GateType::CRx, .qubits = {control, target}, .params = {theta}});
+}
+
+void Circuit::cry(Qubit control, Qubit target, double theta) {
+  assert(control.index < n_qubits_ && target.index < n_qubits_);
+  assert(control.index != target.index);
+  dag_.add(Gate{
+      .type = GateType::CRy, .qubits = {control, target}, .params = {theta}});
+}
+
+void Circuit::crz(Qubit control, Qubit target, double theta) {
+  assert(control.index < n_qubits_ && target.index < n_qubits_);
+  assert(control.index != target.index);
+  dag_.add(Gate{
+      .type = GateType::CRz, .qubits = {control, target}, .params = {theta}});
+}
+
 void Circuit::cp(Qubit a, Qubit b, double lambda) {
   assert(a.index < n_qubits_ && b.index < n_qubits_);
   assert(a.index != b.index);
@@ -656,6 +677,19 @@ std::string Circuit::print() const {
         add_quantum(render_cz(n_qubits_, g.qubits[0].index, g.qubits[1].index),
                     5);
         break;
+      case GateType::CRx:
+      case GateType::CRy:
+      case GateType::CRz: {
+        const char axis = g.type == GateType::CRx   ? 'x'
+                          : g.type == GateType::CRy ? 'y'
+                                                    : 'z';
+        const std::string lbl =
+            std::string("R") + axis + "(" + format_angle(g.params[0]) + ")";
+        add_quantum(render_controlled_box(n_qubits_, g.qubits[0].index,
+                                          g.qubits[1].index, lbl),
+                    display_width(lbl) + 4);
+        break;
+      }
       case GateType::CP: {
         const std::string lbl = "P(" + format_angle(g.params[0]) + ")";
         add_quantum(render_controlled_box(n_qubits_, g.qubits[0].index,

@@ -291,6 +291,15 @@ void apply_gate(Circuit& c, const std::string& statement,
   } else if (name == "rz") {
     need(1);
     c.rz(q[0], eval_angle(params));
+  } else if (name == "crx") {
+    need(2);
+    c.crx(q[0], q[1], eval_angle(params));
+  } else if (name == "cry") {
+    need(2);
+    c.cry(q[0], q[1], eval_angle(params));
+  } else if (name == "crz") {
+    need(2);
+    c.crz(q[0], q[1], eval_angle(params));
   } else if (name == "cp" || name == "cu1") {
     need(2);
     c.cp(q[0], q[1], eval_angle(params));
@@ -481,6 +490,18 @@ std::string to_qasm(const Circuit& circuit) {
       case GateType::CZ:
         os << "cz q[" << g.qubits[0].index << "],q[" << g.qubits[1].index
            << "];\n";
+        break;
+      case GateType::CRx:
+        os << "crx(" << qasm_angle(g.params[0]) << ") q[" << g.qubits[0].index
+           << "],q[" << g.qubits[1].index << "];\n";
+        break;
+      case GateType::CRy:
+        os << "cry(" << qasm_angle(g.params[0]) << ") q[" << g.qubits[0].index
+           << "],q[" << g.qubits[1].index << "];\n";
+        break;
+      case GateType::CRz:
+        os << "crz(" << qasm_angle(g.params[0]) << ") q[" << g.qubits[0].index
+           << "],q[" << g.qubits[1].index << "];\n";
         break;
       case GateType::CP:
         os << "cp(" << qasm_angle(g.params[0]) << ") q[" << g.qubits[0].index
