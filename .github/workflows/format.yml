@@ -25,7 +25,7 @@ jobs:
 
       - name: clang-format (C++)
         run: |
-          find include src bindings examples tests \
+          find include src python examples tests \
             \( -name '*.cpp' -o -name '*.hpp' \) -print0 \
             | xargs -0 clang-format --dry-run --Werror
 

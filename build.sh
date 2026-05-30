@@ -76,7 +76,7 @@ done
 if [[ $FORMAT == 1 ]]; then
   if command -v clang-format >/dev/null 2>&1; then
     step "clang-format (C++)"
-    find include src bindings examples tests \
+    find include src python examples tests \
       \( -name '*.cpp' -o -name '*.hpp' \) -print0 | xargs -0 clang-format -i
   else
     err "clang-format not found, skipping C++"
