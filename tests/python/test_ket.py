@@ -312,6 +312,24 @@ def test_qasm_user_defined_gate():
     assert "bell" in c.print()
 
 
+def test_expval():
+    c = ket.Circuit(2)
+    c.h(0)
+    c.cx(0, 1)  # Bell state
+    s = ket.run(c)
+    assert ket.expval(s, "ZZ") == pytest.approx(1.0)
+    assert ket.expval(s, "XX") == pytest.approx(1.0)
+    assert ket.expval(s, "YY") == pytest.approx(-1.0)
+    assert ket.expval(s, "ZI") == pytest.approx(0.0)
+
+    # Right-to-left ordering: |10> has qubit 1 = 1, qubit 0 = 0.
+    c2 = ket.Circuit(2)
+    c2.x(1)
+    s2 = ket.run(c2)
+    assert ket.expval(s2, "ZI") == pytest.approx(-1.0)  # Z on qubit 1
+    assert ket.expval(s2, "IZ") == pytest.approx(1.0)  # Z on qubit 0
+
+
 def test_measure_and_sample():
     c = ket.Circuit(2)
     c.h(0)
