@@ -14,17 +14,19 @@ add_library(ket_warnings INTERFACE)
 if(MSVC)
   target_compile_options(ket_warnings INTERFACE /W4 /WX /permissive-)
 else()
-  target_compile_options(ket_warnings INTERFACE
-    -Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion -Werror)
+  target_compile_options(
+    ket_warnings
+    INTERFACE -Wall
+              -Wextra
+              -Wpedantic
+              -Wshadow
+              -Wconversion
+              -Wsign-conversion
+              -Werror)
 endif()
 
-add_library(ket
-  src/ket.cpp
-  src/circuit.cpp
-  src/dag.cpp
-  src/simulator.cpp
-  src/measurement.cpp
-)
+add_library(ket src/ket.cpp src/circuit.cpp src/dag.cpp src/simulator.cpp
+                src/measurement.cpp)
 target_include_directories(ket PUBLIC include)
 target_link_libraries(ket PRIVATE ket_warnings)
 
@@ -42,8 +44,7 @@ if(KET_PYTHON)
     FetchContent_Declare(
       pybind11
       GIT_REPOSITORY https://github.com/pybind/pybind11.git
-      GIT_TAG        v2.13.6
-    )
+      GIT_TAG v2.13.6)
     FetchContent_MakeAvailable(pybind11)
   endif()
 

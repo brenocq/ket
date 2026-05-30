@@ -26,6 +26,7 @@ KET_EXAMPLES=OFF
 RUN_CPP_TESTS=0
 RUN_PY_TESTS=0
 CLEAN=0
+FORMAT=0
 
 usage() {
   cat <<EOF
@@ -41,6 +42,7 @@ ${BOLD}${BLUE}Test options${RESET} (build, then run):
   ${GREEN}-pt, --py-tests${RESET}       Run the Python tests with pytest ${DIM}(implies --python)${RESET}
 
 ${BOLD}${BLUE}Other${RESET}:
+  ${GREEN}-f,  --format${RESET}         Format sources (clang-format, cmake-format, ruff) and exit
        ${GREEN}--clean${RESET}          Remove the build directory before configuring
   ${GREEN}-B,  --build-dir DIR${RESET}  Build directory ${DIM}(default: build)${RESET}
   ${GREEN}-h,  --help${RESET}           Show this help
@@ -62,6 +64,7 @@ while [[ $# -gt 0 ]]; do
     -e|--examples)   KET_EXAMPLES=ON ;;
     -ct|--cpp-tests) RUN_CPP_TESTS=1 ;;
     -pt|--py-tests)  RUN_PY_TESTS=1 ;;
+    -f|--format)     FORMAT=1 ;;
     --clean)         CLEAN=1 ;;
     -B|--build-dir)  shift; BUILD_DIR="${1:?--build-dir requires an argument}" ;;
     -h|--help)       usage; exit 0 ;;
@@ -69,6 +72,40 @@ while [[ $# -gt 0 ]]; do
   esac
   shift
 done
+
+if [[ $FORMAT == 1 ]]; then
+  if command -v clang-format >/dev/null 2>&1; then
+    step "clang-format (C++)"
+    find include src bindings examples tests \
+      \( -name '*.cpp' -o -name '*.hpp' \) -print0 | xargs -0 clang-format -i
+  else
+    err "clang-format not found, skipping C++"
+  fi
+
+  if command -v cmake-format >/dev/null 2>&1; then
+    step "cmake-format (CMake)"
+    cmake-format -i CMakeLists.txt tests/CMakeLists.txt examples/CMakeLists.txt
+  else
+    err "cmake-format not found, skipping CMake"
+  fi
+
+  RUFF=""
+  if [[ -x .venv/bin/ruff ]]; then
+    RUFF=.venv/bin/ruff
+  elif command -v ruff >/dev/null 2>&1; then
+    RUFF=ruff
+  fi
+  if [[ -n "$RUFF" ]]; then
+    step "ruff (Python)"
+    "$RUFF" format python tests/python
+    "$RUFF" check --select I --fix python tests/python || true
+  else
+    err "ruff not found (pip install -e \".[dev]\"), skipping Python"
+  fi
+
+  ok "Formatted"
+  exit 0
+fi
 
 # Running a suite forces the relevant part of the build on.
 [[ $RUN_CPP_TESTS == 1 ]] && KET_TESTS=ON

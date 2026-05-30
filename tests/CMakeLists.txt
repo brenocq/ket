@@ -2,9 +2,10 @@ include(FetchContent)
 FetchContent_Declare(
   googletest
   GIT_REPOSITORY https://github.com/google/googletest.git
-  GIT_TAG        v1.15.2
-)
-set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+  GIT_TAG v1.15.2)
+set(gtest_force_shared_crt
+    ON
+    CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
 # Treat GoogleTest headers as system includes so our strict -Werror build is
@@ -13,15 +14,17 @@ foreach(_gtest_target gtest gtest_main gmock gmock_main)
   if(TARGET ${_gtest_target})
     get_target_property(_dirs ${_gtest_target} INTERFACE_INCLUDE_DIRECTORIES)
     if(_dirs)
-      set_target_properties(${_gtest_target} PROPERTIES
-        INTERFACE_SYSTEM_INCLUDE_DIRECTORIES "${_dirs}")
+      set_target_properties(
+        ${_gtest_target} PROPERTIES INTERFACE_SYSTEM_INCLUDE_DIRECTORIES
+                                    "${_dirs}")
     endif()
   endif()
 endforeach()
 
 include(GoogleTest)
 
-add_executable(ket_tests
+add_executable(
+  ket_tests
   test_sanity.cpp
   test_qubit.cpp
   test_gate.cpp
@@ -30,7 +33,6 @@ add_executable(ket_tests
   test_block.cpp
   test_simulator.cpp
   test_measurement.cpp
-  test_print.cpp
-)
+  test_print.cpp)
 target_link_libraries(ket_tests PRIVATE ket ket_warnings GTest::gtest_main)
 gtest_discover_tests(ket_tests)

@@ -32,8 +32,8 @@ class Circuit {
   void ry(Qubit q, double theta);
   void rz(Qubit q, double theta);
 
-  // Controlled-Z, and controlled-phase by angle lambda (CZ = cp with lambda=pi).
-  // Both are symmetric in their two qubits.
+  // Controlled-Z, and controlled-phase by angle lambda (CZ = cp with
+  // lambda=pi). Both are symmetric in their two qubits.
   void cz(Qubit a, Qubit b);
   void cp(Qubit a, Qubit b, double lambda);
 

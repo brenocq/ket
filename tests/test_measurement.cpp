@@ -71,9 +71,12 @@ TEST(Measurement, HadamardGivesFiftyFifty) {
   constexpr int shots = 10000;
   for (int i = 0; i < shots; ++i) {
     const auto out = ket::measure(s, rng);
-    if (out == 0u) ++zeros;
-    else if (out == 1u) ++ones;
-    else FAIL() << "unexpected outcome " << out;
+    if (out == 0u)
+      ++zeros;
+    else if (out == 1u)
+      ++ones;
+    else
+      FAIL() << "unexpected outcome " << out;
   }
   EXPECT_GT(zeros, 4800);
   EXPECT_LT(zeros, 5200);

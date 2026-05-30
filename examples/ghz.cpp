@@ -29,8 +29,8 @@ int main() {
   std::array<int, 8> counts{};
   for (int i = 0; i < shots; ++i) {
     const std::vector<int> creg = ket::sample(circuit);
-    const std::size_t outcome = static_cast<std::size_t>(
-        creg[0] | (creg[1] << 1) | (creg[2] << 2));
+    const std::size_t outcome =
+        static_cast<std::size_t>(creg[0] | (creg[1] << 1) | (creg[2] << 2));
     counts[outcome]++;
   }
 

@@ -14,12 +14,20 @@ class Circuit;  // forward declaration for composite-gate definitions
 
 enum class GateType {
   // Single-qubit gates
-  H, X, Z,
-  Rx, Ry, Rz,
+  H,
+  X,
+  Z,
+  Rx,
+  Ry,
+  Rz,
   // Two-qubit gates
-  CNOT, CZ, CP,
+  CNOT,
+  CZ,
+  CP,
   // Structural operations (non-unitary / rendering only)
-  Measure, Barrier, Composite,
+  Measure,
+  Barrier,
+  Composite,
 };
 
 struct Gate {
@@ -29,8 +37,8 @@ struct Gate {
   // Non-null only for Composite: the sub-circuit this block expands to. Shared
   // so the same definition can back several appended blocks.
   std::shared_ptr<const Circuit> definition = nullptr;
-  std::size_t clbit = 0;             // target classical bit, for Measure
-  std::vector<double> params = {};   // gate parameters, e.g. a rotation angle
+  std::size_t clbit = 0;            // target classical bit, for Measure
+  std::vector<double> params = {};  // gate parameters, e.g. a rotation angle
 };
 
 }  // namespace ket

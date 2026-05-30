@@ -7,9 +7,9 @@
 // a classical algorithm may need up to 2^(n-1)+1 queries.
 //
 // The circuit puts the n input qubits in a uniform superposition and the
-// ancilla in |1⟩. With the ancilla in |−⟩, the oracle U_f: |x⟩|y⟩ -> |x⟩|y⊕f(x)⟩
-// kicks a phase (−1)^f(x) back onto the inputs. A final layer of Hadamards then
-// concentrates the inputs onto |0…0⟩ exactly when f is constant.
+// ancilla in |1⟩. With the ancilla in |−⟩, the oracle U_f: |x⟩|y⟩ ->
+// |x⟩|y⊕f(x)⟩ kicks a phase (−1)^f(x) back onto the inputs. A final layer of
+// Hadamards then concentrates the inputs onto |0…0⟩ exactly when f is constant.
 #include <cstddef>
 #include <functional>
 #include <iomanip>
@@ -21,8 +21,8 @@
 
 namespace {
 
-constexpr std::size_t kInputs = 3;                          // input qubits
-constexpr std::size_t kAncilla = kInputs;                   // ancilla index
+constexpr std::size_t kInputs = 3;         // input qubits
+constexpr std::size_t kAncilla = kInputs;  // ancilla index
 constexpr std::size_t kQubits = kInputs + 1;
 constexpr std::size_t kInputMask = (std::size_t{1} << kInputs) - 1;
 
@@ -39,10 +39,10 @@ ket::Circuit deutsch_jozsa(const Oracle& oracle) {
   for (std::size_t q = 0; q < kQubits; ++q) all[q] = q;
 
   ket::Circuit c{kQubits};
-  c.x(kAncilla);                                            // ancilla -> |1⟩
-  for (std::size_t q = 0; q < kQubits; ++q) c.h(q);         // H on all qubits
-  c.append(f, all);                                         // U_f as a block
-  for (std::size_t q = 0; q < kInputs; ++q) c.h(q);         // H on inputs
+  c.x(kAncilla);                                     // ancilla -> |1⟩
+  for (std::size_t q = 0; q < kQubits; ++q) c.h(q);  // H on all qubits
+  c.append(f, all);                                  // U_f as a block
+  for (std::size_t q = 0; q < kInputs; ++q) c.h(q);  // H on inputs
   return c;
 }
 

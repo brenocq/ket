@@ -19,8 +19,8 @@
 
 namespace {
 
-constexpr std::size_t kInputs = 3;                          // input qubits
-constexpr std::size_t kAncilla = kInputs;                   // ancilla index
+constexpr std::size_t kInputs = 3;         // input qubits
+constexpr std::size_t kAncilla = kInputs;  // ancilla index
 constexpr std::size_t kQubits = kInputs + 1;
 constexpr std::size_t kInputMask = (std::size_t{1} << kInputs) - 1;
 
@@ -39,10 +39,10 @@ ket::Circuit bernstein_vazirani(std::size_t secret) {
   for (std::size_t q = 0; q < kQubits; ++q) all[q] = q;
 
   ket::Circuit c{kQubits};
-  c.x(kAncilla);                                            // ancilla -> |1⟩
-  for (std::size_t q = 0; q < kQubits; ++q) c.h(q);         // H on all qubits
-  c.append(oracle_block(secret), all);                      // U_f as a block
-  for (std::size_t q = 0; q < kInputs; ++q) c.h(q);         // H on inputs
+  c.x(kAncilla);                                     // ancilla -> |1⟩
+  for (std::size_t q = 0; q < kQubits; ++q) c.h(q);  // H on all qubits
+  c.append(oracle_block(secret), all);               // U_f as a block
+  for (std::size_t q = 0; q < kInputs; ++q) c.h(q);  // H on inputs
   return c;
 }
 
@@ -59,9 +59,9 @@ std::string to_bits(std::size_t value) {
 }  // namespace
 
 int main() {
-  std::cout << "Bernstein-Vazirani with " << kInputs
-            << " input qubits + 1 ancilla.\n"
-            << "Recovers a hidden s where f(x) = s.x (mod 2), in one query.\n\n";
+  std::cout
+      << "Bernstein-Vazirani with " << kInputs << " input qubits + 1 ancilla.\n"
+      << "Recovers a hidden s where f(x) = s.x (mod 2), in one query.\n\n";
 
   // Show the circuit and state for one secret. The oracle is an f(x) block;
   // decompose() reveals the CNOTs inside it.

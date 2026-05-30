@@ -4,9 +4,8 @@
 
 import math
 
-import pytest
-
 import ket
+import pytest
 
 INV_SQRT2 = 1.0 / math.sqrt(2.0)
 
@@ -37,12 +36,7 @@ def test_statevector_print():
     c.h(0)
     c.cnot(0, 1)
     state = ket.run(c)
-    assert state.print() == (
-        "|00⟩: 0.707107\n"
-        "|01⟩: 0\n"
-        "|10⟩: 0\n"
-        "|11⟩: 0.707107\n"
-    )
+    assert state.print() == ("|00⟩: 0.707107\n|01⟩: 0\n|10⟩: 0\n|11⟩: 0.707107\n")
     assert str(state) == state.print()
 
 
@@ -190,9 +184,9 @@ def test_composite_block_append_decompose_and_simulate():
 def test_barrier_renders_and_is_noop():
     c = ket.Circuit(2)
     c.h(0)
-    c.barrier("sync")       # all qubits, labeled
+    c.barrier("sync")  # all qubits, labeled
     c.cnot(0, 1)
-    c.barrier([1])          # subset
+    c.barrier([1])  # subset
 
     drawing = c.print()
     assert "░" in drawing

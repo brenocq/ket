@@ -17,7 +17,7 @@ PYBIND11_MODULE(_ket, m) {
   m.doc() = "Ket: a quantum computing library";
 
   py::class_<ket::State>(m, "State",
-                               "A quantum state vector of 2^n complex amplitudes.")
+                         "A quantum state vector of 2^n complex amplitudes.")
       .def("__len__", &ket::State::size)
       .def(
           "__getitem__",
@@ -45,8 +45,10 @@ PYBIND11_MODULE(_ket, m) {
            py::arg("qubit"), "Apply a Pauli-X gate.")
       .def("z", py::overload_cast<std::size_t>(&ket::Circuit::z),
            py::arg("qubit"), "Apply a Pauli-Z gate.")
-      .def("cnot", py::overload_cast<std::size_t, std::size_t>(&ket::Circuit::cnot),
-           py::arg("control"), py::arg("target"), "Apply a controlled-NOT gate.")
+      .def("cnot",
+           py::overload_cast<std::size_t, std::size_t>(&ket::Circuit::cnot),
+           py::arg("control"), py::arg("target"),
+           "Apply a controlled-NOT gate.")
       .def("rx", py::overload_cast<std::size_t, double>(&ket::Circuit::rx),
            py::arg("qubit"), py::arg("theta"), "Rotate about the x-axis.")
       .def("ry", py::overload_cast<std::size_t, double>(&ket::Circuit::ry),
@@ -56,19 +58,20 @@ PYBIND11_MODULE(_ket, m) {
       .def("cz", py::overload_cast<std::size_t, std::size_t>(&ket::Circuit::cz),
            py::arg("a"), py::arg("b"), "Apply a controlled-Z gate.")
       .def("cp",
-           py::overload_cast<std::size_t, std::size_t, double>(&ket::Circuit::cp),
+           py::overload_cast<std::size_t, std::size_t, double>(
+               &ket::Circuit::cp),
            py::arg("a"), py::arg("b"), py::arg("lam"),
            "Apply a controlled-phase gate by angle lam.")
       .def("barrier",
            py::overload_cast<const std::string&>(&ket::Circuit::barrier),
            py::arg("label") = "", "Add a barrier across all qubits.")
       .def("barrier",
-           py::overload_cast<const std::vector<std::size_t>&, const std::string&>(
-               &ket::Circuit::barrier),
+           py::overload_cast<const std::vector<std::size_t>&,
+                             const std::string&>(&ket::Circuit::barrier),
            py::arg("qubits"), py::arg("label") = "",
            "Add a barrier across a subset of qubits.")
-      .def("measure", &ket::Circuit::measure, py::arg("qubit"), py::arg("clbit"),
-           "Measure a qubit into a classical bit.")
+      .def("measure", &ket::Circuit::measure, py::arg("qubit"),
+           py::arg("clbit"), "Measure a qubit into a classical bit.")
       .def("measure_all", &ket::Circuit::measure_all,
            "Measure every qubit i into classical bit i.")
       .def("append", &ket::Circuit::append, py::arg("sub"), py::arg("qubits"),

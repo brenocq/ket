@@ -16,6 +16,7 @@ keywords = ["quantum", "quantum-computing", "simulator"]
 
 [project.optional-dependencies]
 test = ["pytest"]
+dev = ["pytest", "ruff>=0.6"]
 
 [tool.scikit-build]
 minimum-version = "0.10"
@@ -32,3 +33,10 @@ editable.rebuild = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests/python"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py39"
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]  # pycodestyle, pyflakes, import sorting

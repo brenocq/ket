@@ -97,9 +97,8 @@ void Circuit::barrier(const std::vector<std::size_t>& qubits,
 void Circuit::measure(std::size_t qubit, std::size_t clbit) {
   assert(qubit < n_qubits_);
   n_clbits_ = std::max(n_clbits_, clbit + 1);
-  dag_.add(Gate{.type = GateType::Measure,
-                .qubits = {Qubit{qubit}},
-                .clbit = clbit});
+  dag_.add(Gate{
+      .type = GateType::Measure, .qubits = {Qubit{qubit}}, .clbit = clbit});
 }
 
 void Circuit::measure_all() {
@@ -115,7 +114,7 @@ void Circuit::append(const Circuit& sub, const std::vector<std::size_t>& qubits,
     assert(i < n_qubits_);
     qs.push_back(Qubit{i});
   }
-  std::string block_name = !name.empty() ? name
+  std::string block_name = !name.empty()        ? name
                            : !sub.name_.empty() ? sub.name_
                                                 : "circ";
   dag_.add(Gate{GateType::Composite, std::move(qs), std::move(block_name),
@@ -205,7 +204,8 @@ std::string format_angle(double angle) {
   if (std::fabs(angle) < 1e-12) return "0";
   const double pi = std::acos(-1.0);
   const double ratio = angle / pi;  // angle measured in units of π
-  for (int q = 1; q <= 12; ++q) {   // smallest denominator wins (already reduced)
+  // Smallest denominator wins, so the fraction comes out already reduced.
+  for (int q = 1; q <= 12; ++q) {
     const double scaled = ratio * static_cast<double>(q);
     const long p = std::lround(scaled);
     if (p != 0 && std::fabs(scaled - static_cast<double>(p)) < 1e-9) {
@@ -277,7 +277,8 @@ std::vector<std::string> render_controlled_box(std::size_t n_qubits,
   auto border = [&](const std::string& left, const std::string& right,
                     bool connector, const std::string& joint) {
     std::string s = left;
-    for (std::size_t i = 1; i + 1 < w; ++i) s += (connector && i == mid) ? joint : "─";
+    for (std::size_t i = 1; i + 1 < w; ++i)
+      s += (connector && i == mid) ? joint : "─";
     s += right;
     return s;
   };
@@ -365,7 +366,8 @@ std::vector<std::string> render_composite(std::size_t n_qubits, const Gate& g,
       std::string inner(inner_w, ' ');
       if (r == center) {  // name, right-justified
         const std::size_t start = inner_w - name.size();
-        for (std::size_t k = 0; k < name.size(); ++k) inner[start + k] = name[k];
+        for (std::size_t k = 0; k < name.size(); ++k)
+          inner[start + k] = name[k];
       }
       if (r % 2 == 1) {  // wire row: prepend the sub-qubit index
         const int j = sub_index[(r - 1) / 2];
@@ -438,7 +440,8 @@ std::string Circuit::print() const {
     prefix[2 * q + 1] = std::move(label);
   }
   if (has_clbits) {  // classical register label, right-aligned so '/' meets bus
-    prefix[q_height] = std::string(prefix_width - c_label.size(), ' ') + c_label;
+    prefix[q_height] =
+        std::string(prefix_width - c_label.size(), ' ') + c_label;
   }
 
   std::vector<std::vector<std::string>> columns;
@@ -484,7 +487,8 @@ std::string Circuit::print() const {
             render_cnot(n_qubits_, g.qubits[0].index, g.qubits[1].index), 5);
         break;
       case GateType::Barrier:
-        if (!g.label.empty()) top_labels.emplace_back(current_offset(), g.label);
+        if (!g.label.empty())
+          top_labels.emplace_back(current_offset(), g.label);
         add_quantum(render_barrier(n_qubits_, g.qubits), 1);
         break;
       case GateType::Composite: {
@@ -497,7 +501,8 @@ std::string Circuit::print() const {
       }
       case GateType::Measure:
         // render_measure already spans the classical rows.
-        columns.push_back(render_measure(n_qubits_, g.qubits[0].index, g.clbit));
+        columns.push_back(
+            render_measure(n_qubits_, g.qubits[0].index, g.clbit));
         widths.push_back(5);
         break;
       case GateType::Rx:

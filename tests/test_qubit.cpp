@@ -11,6 +11,4 @@ TEST(Qubit, Equality) {
   EXPECT_NE((ket::Qubit{1}), (ket::Qubit{2}));
 }
 
-TEST(Qubit, Ordering) {
-  EXPECT_LT((ket::Qubit{1}), (ket::Qubit{2}));
-}
+TEST(Qubit, Ordering) { EXPECT_LT((ket::Qubit{1}), (ket::Qubit{2})); }
