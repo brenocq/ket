@@ -7,10 +7,12 @@
 #include <cctype>
 #include <cmath>
 #include <cstddef>
+#include <functional>
 #include <map>
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <ket/circuit.hpp>
@@ -84,8 +86,11 @@ std::string strip_comments(const std::string& src) {
 // --- Angle expressions: pi, numbers, + - * /, unary signs, parentheses -------
 struct ExprParser {
   const std::string& s;
+  const std::map<std::string, double>* syms;  // bound gate parameters, or null
   std::size_t pos = 0;
-  explicit ExprParser(const std::string& str) : s(str) {}
+  ExprParser(const std::string& str,
+             const std::map<std::string, double>* symbols)
+      : s(str), syms(symbols) {}
 
   void skip() {
     while (pos < s.size() && is_space(s[pos])) ++pos;
@@ -138,9 +143,18 @@ struct ExprParser {
       if (!eat(')')) fail("missing ')' in angle: " + s);
       return v;
     }
-    if (pos + 2 <= s.size() && s.compare(pos, 2, "pi") == 0) {
-      pos += 2;
-      return std::acos(-1.0);
+    // An identifier: the constant `pi`, or a bound gate parameter.
+    if (pos < s.size() &&
+        (std::isalpha(static_cast<unsigned char>(s[pos])) || s[pos] == '_')) {
+      const std::size_t start = pos;
+      while (pos < s.size() && is_ident(s[pos])) ++pos;
+      const std::string id = s.substr(start, pos - start);
+      if (id == "pi") return std::acos(-1.0);
+      if (syms != nullptr) {
+        const auto it = syms->find(id);
+        if (it != syms->end()) return it->second;
+      }
+      fail("unknown identifier in angle: " + id);
     }
     try {
       std::size_t used = 0;
@@ -154,9 +168,10 @@ struct ExprParser {
   }
 };
 
-double eval_angle(const std::string& s) {
+double eval_angle(const std::string& s,
+                  const std::map<std::string, double>& syms) {
   if (trim(s).empty()) fail("missing angle parameter");
-  ExprParser parser(s);
+  ExprParser parser(s, &syms);
   return parser.parse();
 }
 
@@ -208,8 +223,90 @@ void parse_decl(const std::string& statement, const std::string& keyword,
   regs.add(name, n);
 }
 
+// A user-defined gate (`gate name(params) qubits { body }`): the formal
+// parameter names, the formal qubit names, and the body statements (each a gate
+// application referencing those names).
+struct GateDef {
+  std::vector<std::string> params;
+  std::vector<std::string> qubits;
+  std::vector<std::string> body;
+};
+
+// Split QASM source into top-level statements. A `{ ... }` block (a gate-
+// definition body) is kept with its statement so the `;` inside it are not
+// split on; the matching `}` ends that statement.
+std::vector<std::string> split_statements(const std::string& s) {
+  std::vector<std::string> out;
+  std::string cur;
+  int depth = 0;
+  auto flush = [&]() {
+    std::string t = trim(cur);
+    if (!t.empty()) out.push_back(t);
+    cur.clear();
+  };
+  for (char ch : s) {
+    if (ch == '{') {
+      ++depth;
+      cur += ch;
+    } else if (ch == '}') {
+      if (depth > 0) --depth;
+      cur += ch;
+      if (depth == 0) flush();
+    } else if (ch == ';' && depth == 0) {
+      flush();
+    } else {
+      cur += ch;
+    }
+  }
+  flush();
+  return out;
+}
+
+// Parse a `gate name(p1,p2) a,b { body }` definition into its name and GateDef.
+std::pair<std::string, GateDef> parse_gate_def(const std::string& stmt) {
+  std::size_t i = first_word(stmt).size();  // past the "gate" keyword
+  while (i < stmt.size() && is_space(stmt[i])) ++i;
+  const std::size_t nstart = i;
+  while (i < stmt.size() && is_ident(stmt[i])) ++i;
+  const std::string name = stmt.substr(nstart, i - nstart);
+  if (name.empty()) fail("gate: missing name");
+
+  GateDef def;
+  while (i < stmt.size() && is_space(stmt[i])) ++i;
+  if (i < stmt.size() && stmt[i] == '(') {
+    const std::size_t close = stmt.find(')', i);
+    if (close == std::string::npos) fail("gate: missing ')' in " + name);
+    def.params = split(stmt.substr(i + 1, close - i - 1), ',');
+    i = close + 1;
+  }
+  const std::size_t brace = stmt.find('{', i);
+  if (brace == std::string::npos) fail("gate: missing '{' in " + name);
+  def.qubits = split(stmt.substr(i, brace - i), ',');
+  if (def.qubits.empty()) fail("gate: " + name + " has no qubit arguments");
+
+  const std::size_t end = stmt.rfind('}');
+  if (end == std::string::npos || end < brace) {
+    fail("gate: missing '}' in " + name);
+  }
+  def.body = split(stmt.substr(brace + 1, end - brace - 1), ';');
+  return {name, def};
+}
+
+// Mutually recursive: a gate body may invoke other user gates, and applying a
+// user-gate call instantiates its body.
 void apply_gate(Circuit& c, const std::string& statement,
-                const Registers& qreg) {
+                const std::function<std::size_t(const std::string&)>& resolve,
+                const std::map<std::string, double>& syms,
+                const std::map<std::string, GateDef>& gates);
+
+Circuit instantiate_gate(const std::string& name, const GateDef& def,
+                         const std::vector<double>& args,
+                         const std::map<std::string, GateDef>& gates);
+
+void apply_gate(Circuit& c, const std::string& statement,
+                const std::function<std::size_t(const std::string&)>& resolve,
+                const std::map<std::string, double>& syms,
+                const std::map<std::string, GateDef>& gates) {
   const std::string name = first_word(statement);
   std::size_t i = name.size();
   while (i < statement.size() && is_space(statement[i])) ++i;
@@ -224,7 +321,7 @@ void apply_gate(Circuit& c, const std::string& statement,
 
   std::vector<std::size_t> q;
   for (const std::string& arg : split(trim(statement.substr(i)), ',')) {
-    q.push_back(qreg.resolve(arg));
+    q.push_back(resolve(arg));
   }
 
   auto need = [&](std::size_t n) {
@@ -233,7 +330,9 @@ void apply_gate(Circuit& c, const std::string& statement,
   };
   auto angles = [&]() {
     std::vector<double> a;
-    for (const std::string& p : split(params, ',')) a.push_back(eval_angle(p));
+    for (const std::string& p : split(params, ',')) {
+      a.push_back(eval_angle(p, syms));
+    }
     return a;
   };
   auto u_gate = [&](double theta, double phi, double lambda) {
@@ -290,25 +389,25 @@ void apply_gate(Circuit& c, const std::string& statement,
     c.cswap(q[0], q[1], q[2]);
   } else if (name == "rx") {
     need(1);
-    c.rx(q[0], eval_angle(params));
+    c.rx(q[0], eval_angle(params, syms));
   } else if (name == "ry") {
     need(1);
-    c.ry(q[0], eval_angle(params));
+    c.ry(q[0], eval_angle(params, syms));
   } else if (name == "rz") {
     need(1);
-    c.rz(q[0], eval_angle(params));
+    c.rz(q[0], eval_angle(params, syms));
   } else if (name == "crx") {
     need(2);
-    c.crx(q[0], q[1], eval_angle(params));
+    c.crx(q[0], q[1], eval_angle(params, syms));
   } else if (name == "cry") {
     need(2);
-    c.cry(q[0], q[1], eval_angle(params));
+    c.cry(q[0], q[1], eval_angle(params, syms));
   } else if (name == "crz") {
     need(2);
-    c.crz(q[0], q[1], eval_angle(params));
+    c.crz(q[0], q[1], eval_angle(params, syms));
   } else if (name == "cp" || name == "cu1") {
     need(2);
-    c.cp(q[0], q[1], eval_angle(params));
+    c.cp(q[0], q[1], eval_angle(params, syms));
   } else if (name == "cu3" || name == "cu") {
     // Our 3-parameter controlled-U. (OpenQASM 3.0's `cu` adds a 4th global-
     // phase parameter; we accept the 3-arg form under both spellings.)
@@ -329,29 +428,79 @@ void apply_gate(Circuit& c, const std::string& statement,
     if (a.size() != 1) fail(name + ": expected 1 angle");
     u_gate(0.0, 0.0, a[0]);  // U(0, 0, lambda)
   } else {
-    fail("unsupported gate: " + name);
+    // A user-defined gate: instantiate its body and append as a labeled block.
+    const auto it = gates.find(name);
+    if (it == gates.end()) fail("unsupported gate: " + name);
+    const GateDef& def = it->second;
+    const std::vector<double> a =
+        params.empty() ? std::vector<double>{} : angles();
+    if (a.size() != def.params.size()) {
+      fail(name + ": expected " + std::to_string(def.params.size()) +
+           " parameters");
+    }
+    if (q.size() != def.qubits.size()) {
+      fail(name + ": expected " + std::to_string(def.qubits.size()) +
+           " qubits");
+    }
+    c.append(instantiate_gate(name, def, a, gates), q, name);
   }
+}
+
+// Build a concrete sub-circuit for a user gate call, binding its formal qubit
+// names to 0..n-1 and its formal parameters to the supplied angle values.
+Circuit instantiate_gate(const std::string& name, const GateDef& def,
+                         const std::vector<double>& args,
+                         const std::map<std::string, GateDef>& gates) {
+  Circuit sub{def.qubits.size(), name};
+
+  std::map<std::string, std::size_t> qindex;
+  for (std::size_t i = 0; i < def.qubits.size(); ++i) qindex[def.qubits[i]] = i;
+  const auto resolve = [&](const std::string& tok) -> std::size_t {
+    const auto it = qindex.find(trim(tok));
+    if (it == qindex.end()) fail(name + ": unknown qubit " + tok);
+    return it->second;
+  };
+
+  std::map<std::string, double> syms;
+  for (std::size_t i = 0; i < def.params.size(); ++i) {
+    syms[def.params[i]] = args[i];
+  }
+
+  for (const std::string& stmt : def.body) {
+    apply_gate(sub, stmt, resolve, syms, gates);
+  }
+  return sub;
 }
 
 }  // namespace
 
 Circuit from_qasm(const std::string& source) {
   const std::vector<std::string> statements =
-      split(strip_comments(source), ';');
+      split_statements(strip_comments(source));
 
-  // Pass 1: register declarations (so the qubit count is known up front).
+  // Pass 1: register declarations (so the qubit count is known up front) and
+  // user gate definitions (collected before any of them are invoked).
   Registers qreg;
   Registers creg;
+  std::map<std::string, GateDef> gates;
   for (const std::string& raw : statements) {
     const std::string st = trim(raw);
     const std::string head = first_word(st);
-    if (head == "qreg")
+    if (head == "qreg") {
       parse_decl(st, "qreg", qreg);
-    else if (head == "creg")
+    } else if (head == "creg") {
       parse_decl(st, "creg", creg);
+    } else if (head == "gate") {
+      std::pair<std::string, GateDef> def = parse_gate_def(st);
+      gates.emplace(std::move(def.first), std::move(def.second));
+    }
   }
 
   Circuit c{qreg.total};
+  const std::map<std::string, double> no_syms;
+  const auto resolve = [&](const std::string& tok) {
+    return qreg.resolve(tok);
+  };
 
   // Pass 2: operations.
   for (const std::string& raw : statements) {
@@ -360,10 +509,10 @@ Circuit from_qasm(const std::string& source) {
     const std::string head = first_word(st);
 
     if (head == "OPENQASM" || head == "include" || head == "qreg" ||
-        head == "creg") {
-      continue;
+        head == "creg" || head == "gate") {
+      continue;  // gate definitions were collected in pass 1
     }
-    if (head == "gate" || head == "opaque" || head == "if") {
+    if (head == "opaque" || head == "if") {
       fail("unsupported construct: " + head);
     }
     if (head == "measure") {
@@ -385,7 +534,7 @@ Circuit from_qasm(const std::string& source) {
       }
       c.barrier(qubits);
     } else {
-      apply_gate(c, st, qreg);
+      apply_gate(c, st, resolve, no_syms, gates);
     }
   }
 

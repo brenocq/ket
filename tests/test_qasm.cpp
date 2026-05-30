@@ -163,6 +163,64 @@ TEST(Qasm, ParsesAndEmitsSwap) {
   EXPECT_NE(ket::to_qasm(c).find("swap q[0],q[1];"), std::string::npos);
 }
 
+TEST(Qasm, UserDefinedGate) {
+  ket::Circuit c = ket::from_qasm(R"(
+    OPENQASM 2.0;
+    qreg q[2];
+    gate bell a, b {
+      h a;
+      cx a, b;
+    }
+    bell q[0], q[1];
+  )");
+  auto s = ket::run(c);
+  EXPECT_NEAR(s[0].real(), kInvSqrt2, 1e-12);
+  EXPECT_NEAR(s[3].real(), kInvSqrt2, 1e-12);
+
+  // The call renders as a labeled composite block...
+  EXPECT_NE(c.print().find("bell"), std::string::npos);
+  // ...and to_qasm flattens it back into primitive gates.
+  const std::string out = ket::to_qasm(c);
+  EXPECT_NE(out.find("h q[0];"), std::string::npos);
+  EXPECT_NE(out.find("cx q[0],q[1];"), std::string::npos);
+  EXPECT_EQ(out.find("bell"), std::string::npos);
+}
+
+TEST(Qasm, UserDefinedParameterizedGate) {
+  // gate myrz(theta) a { rz(theta) a; }  -- the formal parameter is bound at
+  // the call site. rz(pi) on |1> yields i|1>.
+  ket::Circuit c = ket::from_qasm(R"(
+    qreg q[1];
+    gate myrz(theta) a { rz(theta) a; }
+    x q[0];
+    myrz(pi) q[0];
+  )");
+  auto s = ket::run(c);
+  EXPECT_NEAR(s[1].real(), 0.0, 1e-12);
+  EXPECT_NEAR(s[1].imag(), 1.0, 1e-12);
+}
+
+TEST(Qasm, UserDefinedGateNesting) {
+  // A user gate (bell) whose body invokes another user gate (myh).
+  ket::Circuit c = ket::from_qasm(R"(
+    qreg q[2];
+    gate myh a { h a; }
+    gate bell a, b { myh a; cx a, b; }
+    bell q[0], q[1];
+  )");
+  auto s = ket::run(c);
+  EXPECT_NEAR(s[0].real(), kInvSqrt2, 1e-12);
+  EXPECT_NEAR(s[3].real(), kInvSqrt2, 1e-12);
+}
+
+TEST(Qasm, UserGateArityMismatchThrows) {
+  EXPECT_THROW(ket::from_qasm("qreg q[2]; gate g a, b { cx a,b; } g q[0];"),
+               std::runtime_error);
+  EXPECT_THROW(ket::from_qasm(
+                   "qreg q[1]; gate g(t) a { rz(t) a; } g q[0];"),  // no param
+               std::runtime_error);
+}
+
 TEST(Qasm, ThrowsOnUnsupported) {
   EXPECT_THROW(ket::from_qasm("qreg q[2]; rzz(0) q[0],q[1];"),
                std::runtime_error);

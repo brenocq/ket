@@ -301,6 +301,17 @@ def test_qasm_parse_and_serialize():
     assert "cx q[0],q[1];" in qasm
 
 
+def test_qasm_user_defined_gate():
+    c = ket.from_qasm(
+        "qreg q[2];\ngate bell a, b { h a; cx a, b; }\nbell q[0], q[1];\n"
+    )
+    s = ket.run(c)
+    assert s[0] == pytest.approx(complex(INV_SQRT2, 0.0))
+    assert s[3] == pytest.approx(complex(INV_SQRT2, 0.0))
+    # The custom gate renders as a labeled block, like an appended sub-circuit.
+    assert "bell" in c.print()
+
+
 def test_measure_and_sample():
     c = ket.Circuit(2)
     c.h(0)
