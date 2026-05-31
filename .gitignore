@@ -1,6 +1,7 @@
 # Build
 build/
 build-py/
+build-web/
 
 # Cache
 .cache/

@@ -1,25 +1,29 @@
 include(FetchContent)
 
-find_package(OpenGL REQUIRED)
+# Native builds use a fetched GLFW + the system OpenGL. Emscripten instead uses
+# its own GLFW port and WebGL/GLES (no fetch, no find_package).
+if(NOT EMSCRIPTEN)
+  find_package(OpenGL REQUIRED)
+
+  FetchContent_Declare(
+    glfw
+    GIT_REPOSITORY https://github.com/glfw/glfw.git
+    GIT_TAG 3.4)
+  set(GLFW_BUILD_DOCS
+      OFF
+      CACHE BOOL "" FORCE)
+  set(GLFW_BUILD_TESTS
+      OFF
+      CACHE BOOL "" FORCE)
+  set(GLFW_BUILD_EXAMPLES
+      OFF
+      CACHE BOOL "" FORCE)
+  set(GLFW_INSTALL
+      OFF
+      CACHE BOOL "" FORCE)
+endif()
 
 # --- Pinned third-party UI dependencies ------------------------------------
-FetchContent_Declare(
-  glfw
-  GIT_REPOSITORY https://github.com/glfw/glfw.git
-  GIT_TAG 3.4)
-set(GLFW_BUILD_DOCS
-    OFF
-    CACHE BOOL "" FORCE)
-set(GLFW_BUILD_TESTS
-    OFF
-    CACHE BOOL "" FORCE)
-set(GLFW_BUILD_EXAMPLES
-    OFF
-    CACHE BOOL "" FORCE)
-set(GLFW_INSTALL
-    OFF
-    CACHE BOOL "" FORCE)
-
 FetchContent_Declare(
   imgui
   GIT_REPOSITORY https://github.com/ocornut/imgui.git
@@ -35,7 +39,11 @@ FetchContent_Declare(
 
 # glfw ships CMake (add_subdirectory); the others are source-only and are just
 # populated, then compiled into static libraries below.
-FetchContent_MakeAvailable(glfw imgui implot implot3d)
+if(EMSCRIPTEN)
+  FetchContent_MakeAvailable(imgui implot implot3d)
+else()
+  FetchContent_MakeAvailable(glfw imgui implot implot3d)
+endif()
 
 # Dear ImGui: core + GLFW/OpenGL3 backends. Headers are marked SYSTEM so their
 # warnings do not leak into our targets.
@@ -52,7 +60,13 @@ add_library(
 target_include_directories(
   imgui SYSTEM PUBLIC ${imgui_SOURCE_DIR} ${imgui_SOURCE_DIR}/backends
                       ${imgui_SOURCE_DIR}/misc/cpp)
-target_link_libraries(imgui PUBLIC glfw OpenGL::GL)
+if(EMSCRIPTEN)
+  # Activate Emscripten's GLFW port so <GLFW/glfw3.h> is available when compiling
+  # the backends (and, propagated PUBLIC, app.cpp). WebGL/GLES come from sysroot.
+  target_compile_options(imgui PUBLIC "-sUSE_GLFW=3")
+else()
+  target_link_libraries(imgui PUBLIC glfw OpenGL::GL)
+endif()
 
 # ImPlot (2D) and ImPlot3D, both built against ImGui.
 add_library(
@@ -76,22 +90,41 @@ target_link_libraries(implot3d PUBLIC imgui)
 add_library(ket_gui_core STATIC app.cpp)
 target_link_libraries(ket_gui_core PUBLIC ket imgui implot implot3d)
 target_include_directories(ket_gui_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-# Absolute paths to the font assets, resolved at runtime: the in-tree copy for
-# dev builds, and the installed copy (share/ket) for an installed binary.
-target_compile_definitions(
-  ket_gui_core
-  PRIVATE KET_GUI_ASSETS_DIR="${CMAKE_CURRENT_SOURCE_DIR}/assets"
-          KET_GUI_INSTALL_ASSETS_DIR="${CMAKE_INSTALL_FULL_DATADIR}/ket")
+# Where the fonts are found at runtime. Native: the in-tree copy (dev) or the
+# installed copy (share/ket). Emscripten: the preloaded virtual FS at /assets.
+if(EMSCRIPTEN)
+  target_compile_definitions(ket_gui_core PRIVATE KET_GUI_ASSETS_DIR="/assets")
+else()
+  target_compile_definitions(
+    ket_gui_core
+    PRIVATE KET_GUI_ASSETS_DIR="${CMAKE_CURRENT_SOURCE_DIR}/assets"
+            KET_GUI_INSTALL_ASSETS_DIR="${CMAKE_INSTALL_FULL_DATADIR}/ket")
+endif()
 
 add_executable(ket_gui main.cpp)
 set_target_properties(ket_gui PROPERTIES OUTPUT_NAME ket-gui)
 target_link_libraries(ket_gui PRIVATE ket_gui_core)
 
-install(TARGETS ket_gui RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
-install(
-  FILES ${CMAKE_CURRENT_SOURCE_DIR}/assets/Inter-Regular.ttf
-        ${CMAKE_CURRENT_SOURCE_DIR}/assets/Inter-Bold.ttf
-        ${CMAKE_CURRENT_SOURCE_DIR}/assets/Inter-OFL.txt
-        ${CMAKE_CURRENT_SOURCE_DIR}/assets/JetBrainsMono-Regular.ttf
-        ${CMAKE_CURRENT_SOURCE_DIR}/assets/JetBrainsMono-OFL.txt
-  DESTINATION ${CMAKE_INSTALL_DATADIR}/ket)
+if(EMSCRIPTEN)
+  # Emit a self-contained page; bundle the fonts and example circuits into the
+  # virtual FS so the existing file lookups and the File dialog work in-browser.
+  set_target_properties(ket_gui PROPERTIES SUFFIX ".html")
+  target_link_options(
+    ket_gui
+    PRIVATE
+    -sUSE_GLFW=3
+    -sFULL_ES3
+    -sMAX_WEBGL_VERSION=2
+    -sALLOW_MEMORY_GROWTH=1
+    "SHELL:--preload-file ${CMAKE_CURRENT_SOURCE_DIR}/assets@/assets"
+    "SHELL:--preload-file ${PROJECT_SOURCE_DIR}/examples@/examples")
+else()
+  install(TARGETS ket_gui RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+  install(
+    FILES ${CMAKE_CURRENT_SOURCE_DIR}/assets/Inter-Regular.ttf
+          ${CMAKE_CURRENT_SOURCE_DIR}/assets/Inter-Bold.ttf
+          ${CMAKE_CURRENT_SOURCE_DIR}/assets/Inter-OFL.txt
+          ${CMAKE_CURRENT_SOURCE_DIR}/assets/JetBrainsMono-Regular.ttf
+          ${CMAKE_CURRENT_SOURCE_DIR}/assets/JetBrainsMono-OFL.txt
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/ket)
+endif()

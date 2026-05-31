@@ -13,6 +13,13 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 include(GNUInstallDirs)
 
+# Emscripten/WebAssembly: enable C++ exceptions (the library throws and the GUI
+# catches) across every translation unit and the final link.
+if(EMSCRIPTEN)
+  add_compile_options(-fexceptions)
+  add_link_options(-fexceptions)
+endif()
+
 option(KET_TESTS "Build the C++ test suite" OFF)
 option(KET_PYTHON "Build the Python bindings" OFF)
 option(KET_EXAMPLES "Build the example programs" OFF)

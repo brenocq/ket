@@ -43,6 +43,19 @@ void usage(std::ostream& os) {
 }  // namespace
 
 int main(int argc, char** argv) {
+#ifdef __EMSCRIPTEN__
+  (void)argc;
+  (void)argv;
+  // No CLI args in the browser: open an example preloaded into the virtual FS.
+  const std::string web_path = "/examples/grover.qasm";
+  bool web_ok = false;
+  const std::string web_source = read_file(web_path, web_ok);
+  if (web_ok) return ket::gui::run(web_source, web_path);
+  return ket::gui::run(
+      "OPENQASM 2.0;\ninclude \"qelib1.inc\";\nqreg q[2];\n"
+      "h q[0];\ncx q[0],q[1];\n",
+      "");
+#else
   const std::vector<std::string> args(argv + 1, argv + argc);
   if (args.empty()) {
     usage(std::cerr);
@@ -75,4 +88,5 @@ int main(int argc, char** argv) {
   }
 
   return ket::gui::run(source, arg);
+#endif
 }

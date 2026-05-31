@@ -35,6 +35,10 @@
 
 #include <GLFW/glfw3.h>
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#endif
+
 #include "icon.hpp"  // embedded RGBA window icon
 
 #include <ket/ket.hpp>
@@ -1087,87 +1091,32 @@ void render_circuit(const Circuit& circuit, std::size_t current_step) {
   ImPlot::PopStyleVar(2);
 }
 
-}  // namespace
+std::string window_title(const std::string& path) {
+  return path.empty() ? std::string("ket-gui") : "ket-gui — " + path;
+}
 
-int run(const std::string& qasm_source, const std::string& path) {
-  glfwSetErrorCallback(glfw_error_callback);
-  if (glfwInit() == 0) {
-    std::fprintf(stderr, "error: failed to initialize GLFW\n");
-    return 1;
-  }
-
-  auto make_title = [](const std::string& p) {
-    return p.empty() ? std::string("ket-gui") : "ket-gui — " + p;
-  };
-  std::string current_path = path;
-
-  // OpenGL 3.0 + GLSL 130.
-  const char* glsl_version = "#version 130";
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
-
-  GLFWwindow* window = glfwCreateWindow(
-      1280, 720, make_title(current_path).c_str(), nullptr, nullptr);
-  if (window == nullptr) {
-    std::fprintf(stderr, "error: failed to create window\n");
-    glfwTerminate();
-    return 1;
-  }
-  set_window_icon(window);
-  glfwMakeContextCurrent(window);
-  glfwSwapInterval(1);  // vsync
-
-  IMGUI_CHECKVERSION();
-  ImGui::CreateContext();
-  ImPlot::CreateContext();
-  ImPlot3D::CreateContext();
-
-  ImGuiIO& io = ImGui::GetIO();
-  io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-  io.IniFilename = nullptr;  // rebuild the default layout each launch
-
+// All per-frame GUI state, heap-allocated so it survives across frames driven
+// by the browser event loop under Emscripten (where run() unwinds its own
+// stack). frame() renders one frame; the native and web entry points both call
+// it.
+struct Gui {
+  GLFWwindow* window = nullptr;
   ImFont* mono_font = nullptr;
-#if defined(KET_GUI_ASSETS_DIR) || defined(KET_GUI_INSTALL_ASSETS_DIR)
-  // Inter for the UI and JetBrains Mono for the code editor, looking in the
-  // source tree (dev builds) first and then in the install location. The first
-  // font added becomes ImGui's default; a missing file falls back to the
-  // built-in font.
-  auto load_font = [&](const char* file) -> ImFont* {
-    for (const char* dir : {
-#ifdef KET_GUI_ASSETS_DIR
-             KET_GUI_ASSETS_DIR,
-#endif
-#ifdef KET_GUI_INSTALL_ASSETS_DIR
-             KET_GUI_INSTALL_ASSETS_DIR,
-#endif
-         }) {
-      const std::string path = std::string(dir) + "/" + file;
-      if (std::ifstream(path).good())
-        return io.Fonts->AddFontFromFileTTF(path.c_str(), 16.0f);
-    }
-    return nullptr;
-  };
-  load_font("Inter-Regular.ttf");  // default UI font (added first)
-  mono_font = load_font("JetBrainsMono-Regular.ttf");
-#endif
-
-  ImGui::StyleColorsDark();
-  setup_dark_style();
-  ImGui_ImplGlfw_InitForOpenGL(window, true);
-  ImGui_ImplOpenGL3_Init(glsl_version);
-
-  // The editable QASM and the circuit parsed from it (kept across edits; a
-  // parse failure leaves the previous circuit on screen alongside the error).
-  std::string code = qasm_source;
+  std::string code;
   Circuit circuit{0};
   std::string parse_error;
-  // Step-through state: a Stepper over the current circuit, driven by the
-  // transport controls. Editing the circuit rebuilds it (resetting to step 0).
   std::optional<Stepper> stepper;
   bool playing = false;
   float play_accum = 0.0f;      // seconds accumulated toward the next auto-step
   float play_interval = 0.20f;  // seconds per gate while playing
-  auto reparse = [&]() {
+  std::string current_path;
+  FileDialog dialog;
+  bool layout_done = false;
+
+  void retitle() {
+    glfwSetWindowTitle(window, window_title(current_path).c_str());
+  }
+  void reparse() {
     try {
       circuit = from_qasm(code);
       parse_error.clear();
@@ -1176,11 +1125,8 @@ int run(const std::string& qasm_source, const std::string& path) {
     }
     stepper.emplace(circuit);
     playing = false;
-  };
-  reparse();
-
-  FileDialog dialog;
-  auto load_path = [&](const std::string& p) {
+  }
+  void load_path(const std::string& p) {
     std::ifstream file(p);
     if (!file) {
       parse_error = "cannot open file: " + p;
@@ -1191,9 +1137,9 @@ int run(const std::string& qasm_source, const std::string& path) {
     code = ss.str();
     current_path = p;
     reparse();
-    glfwSetWindowTitle(window, make_title(current_path).c_str());
-  };
-  auto save_path = [&](const std::string& p) {
+    retitle();
+  }
+  void save_path(const std::string& p) {
     std::ofstream file(p);
     if (!file) {
       parse_error = "cannot write file: " + p;
@@ -1201,12 +1147,10 @@ int run(const std::string& qasm_source, const std::string& path) {
     }
     file << code;
     current_path = p;
-    glfwSetWindowTitle(window, make_title(current_path).c_str());
-  };
+    retitle();
+  }
 
-  bool layout_done = false;
-
-  while (glfwWindowShouldClose(window) == 0) {
+  void frame() {
     glfwPollEvents();
 
     ImGui_ImplOpenGL3_NewFrame();
@@ -1427,16 +1371,101 @@ int run(const std::string& qasm_source, const std::string& path) {
 
     glfwSwapBuffers(window);
   }
+};
+
+}  // namespace
+
+int run(const std::string& qasm_source, const std::string& path) {
+  glfwSetErrorCallback(glfw_error_callback);
+  if (glfwInit() == 0) {
+    std::fprintf(stderr, "error: failed to initialize GLFW\n");
+    return 1;
+  }
+
+#ifdef __EMSCRIPTEN__
+  const char* glsl_version = "#version 300 es";  // WebGL2 / GLES3
+#else
+  const char* glsl_version = "#version 130";  // OpenGL 3.0
+#endif
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+
+  GLFWwindow* window =
+      glfwCreateWindow(1280, 720, window_title(path).c_str(), nullptr, nullptr);
+  if (window == nullptr) {
+    std::fprintf(stderr, "error: failed to create window\n");
+    glfwTerminate();
+    return 1;
+  }
+  set_window_icon(window);
+  glfwMakeContextCurrent(window);
+  glfwSwapInterval(1);  // vsync
+
+  IMGUI_CHECKVERSION();
+  ImGui::CreateContext();
+  ImPlot::CreateContext();
+  ImPlot3D::CreateContext();
+
+  ImGuiIO& io = ImGui::GetIO();
+  io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+  io.IniFilename = nullptr;  // rebuild the default layout each launch
+
+  ImFont* mono_font = nullptr;
+#if defined(KET_GUI_ASSETS_DIR) || defined(KET_GUI_INSTALL_ASSETS_DIR)
+  // Inter for the UI and JetBrains Mono for the code editor, looking in the
+  // source tree (dev builds) first and then in the install location. The first
+  // font added becomes ImGui's default; a missing file falls back to the
+  // built-in font.
+  auto load_font = [&](const char* file) -> ImFont* {
+    for (const char* dir : {
+#ifdef KET_GUI_ASSETS_DIR
+             KET_GUI_ASSETS_DIR,
+#endif
+#ifdef KET_GUI_INSTALL_ASSETS_DIR
+             KET_GUI_INSTALL_ASSETS_DIR,
+#endif
+         }) {
+      const std::string path = std::string(dir) + "/" + file;
+      if (std::ifstream(path).good())
+        return io.Fonts->AddFontFromFileTTF(path.c_str(), 16.0f);
+    }
+    return nullptr;
+  };
+  load_font("Inter-Regular.ttf");  // default UI font (added first)
+  mono_font = load_font("JetBrainsMono-Regular.ttf");
+#endif
+
+  ImGui::StyleColorsDark();
+  setup_dark_style();
+  ImGui_ImplGlfw_InitForOpenGL(window, true);
+  ImGui_ImplOpenGL3_Init(glsl_version);
+
+  Gui* gui = new Gui();
+  gui->window = window;
+  gui->mono_font = mono_font;
+  gui->code = qasm_source;
+  gui->current_path = path;
+  gui->reparse();
+
+#ifdef __EMSCRIPTEN__
+  // The browser drives the loop; this never returns (the C stack unwinds but
+  // `gui` lives on the heap), so the teardown below is native-only.
+  emscripten_set_main_loop_arg(
+      [](void* arg) { static_cast<Gui*>(arg)->frame(); }, gui, 0, true);
+  return 0;
+#else
+  while (glfwWindowShouldClose(gui->window) == 0) gui->frame();
 
   ImGui_ImplOpenGL3_Shutdown();
   ImGui_ImplGlfw_Shutdown();
   ImPlot3D::DestroyContext();
   ImPlot::DestroyContext();
   ImGui::DestroyContext();
-
   glfwDestroyWindow(window);
   glfwTerminate();
+  delete gui;
   return 0;
+#endif
 }
 
 }  // namespace ket::gui
