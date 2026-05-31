@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2026 Breno Cunha Queiroz
 #pragma once
 
+#include <ket/backends/backend.hpp>
 #include <ket/circuit.hpp>
 #include <ket/dag.hpp>
 #include <ket/gate.hpp>

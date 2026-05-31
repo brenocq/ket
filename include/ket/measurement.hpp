@@ -6,6 +6,7 @@
 #include <random>
 #include <vector>
 
+#include <ket/backends/backend.hpp>
 #include <ket/simulator.hpp>
 
 namespace ket {
@@ -19,7 +20,11 @@ std::size_t measure(const State& state);
 // classical register: a vector of size circuit.n_clbits() where entry i is the
 // sampled value of whichever qubit was measured into classical bit i. Any
 // classical bit that no Measure writes to stays 0.
-std::vector<int> sample(const Circuit& circuit, std::mt19937& rng);
-std::vector<int> sample(const Circuit& circuit);
+//
+// `method` selects the backend: Auto (the default) uses the stabilizer engine
+// for Clifford circuits and the dense state vector otherwise.
+std::vector<int> sample(const Circuit& circuit, std::mt19937& rng,
+                        Method method = Method::Auto);
+std::vector<int> sample(const Circuit& circuit, Method method = Method::Auto);
 
 }  // namespace ket

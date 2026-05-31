@@ -48,6 +48,9 @@ add_library(
   src/simulator.cpp
   src/measurement.cpp
   src/observable.cpp
+  src/backends/backend.cpp
+  src/backends/statevector.cpp
+  src/backends/stabilizer.cpp
   bindings/qasm/qasm.cpp)
 # Include dirs differ between the build tree and an install: consumers in this
 # build see the source + generated headers; installed consumers see the

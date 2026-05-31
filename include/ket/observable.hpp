@@ -6,9 +6,12 @@
 #include <utility>
 #include <vector>
 
+#include <ket/backends/backend.hpp>
 #include <ket/state.hpp>
 
 namespace ket {
+
+class Circuit;
 
 // Expectation value <psi|P|psi> of a Pauli-string observable P over `state`.
 //
@@ -27,5 +30,13 @@ using PauliSum = std::vector<std::pair<double, std::string>>;
 // Expectation value <psi|H|psi> of a Hamiltonian H, the coefficient-weighted
 // sum of its per-term expectation values.
 double expval(const State& state, const PauliSum& hamiltonian);
+
+// Expectation value over a circuit's final state, choosing a backend (see
+// Method). For Clifford circuits the stabilizer engine computes this without
+// ever forming a 2^n state vector; the result matches expval(run(circuit), ...).
+double expval(const Circuit& circuit, const std::string& pauli,
+              Method method = Method::Auto);
+double expval(const Circuit& circuit, const PauliSum& hamiltonian,
+              Method method = Method::Auto);
 
 }  // namespace ket

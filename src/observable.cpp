@@ -5,9 +5,12 @@
 #include <bit>
 #include <complex>
 #include <cstddef>
+#include <memory>
 #include <stdexcept>
 #include <string>
 
+#include <ket/backends/backend.hpp>
+#include <ket/circuit.hpp>
 #include <ket/state.hpp>
 
 namespace ket {
@@ -83,6 +86,21 @@ double expval(const State& state, const PauliSum& hamiltonian) {
   double total = 0.0;
   for (const auto& [coeff, pauli] : hamiltonian) {
     total += coeff * expval(state, pauli);
+  }
+  return total;
+}
+
+double expval(const Circuit& circuit, const std::string& pauli, Method method) {
+  return simulate(circuit, method)->expval(pauli);
+}
+
+double expval(const Circuit& circuit, const PauliSum& hamiltonian,
+              Method method) {
+  // Evolve once, then query every term against the same prepared simulation.
+  const std::unique_ptr<Simulation> sim = simulate(circuit, method);
+  double total = 0.0;
+  for (const auto& [coeff, pauli] : hamiltonian) {
+    total += coeff * sim->expval(pauli);
   }
   return total;
 }

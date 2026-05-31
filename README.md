@@ -18,6 +18,9 @@ explicit and leaves room for future analysis and optimization passes.
   (including controlled rotations and controlled-phase), `SWAP`, and the
   three-qubit Toffoli (`CCX`) and Fredkin (`CSWAP`).
 - **Exact state-vector simulation** of the full `2ⁿ` amplitude vector.
+- **Automatic backend selection** — Clifford circuits are routed to an `O(n²)`
+  stabilizer simulator (scaling to thousands of qubits), everything else to the
+  state vector. The choice is automatic but overridable.
 - **Measurement and sampling** into a classical register, for shot experiments.
 - **Composite gates** — package a sub-circuit into a reusable, labeled block,
   and `decompose()` it back into primitives.
@@ -150,12 +153,22 @@ Because the state vector stores all `2ⁿ` amplitudes, simulation is exact but
 bounded by memory — practical up to roughly 25 qubits. There is no noise
 modeling.
 
+**Backends.** `sample` and `expval` go through `simulate(circuit, method)`,
+which picks an engine: a **Clifford** circuit (only `H`/`S`/`Sdg`/`X`/`Y`/`Z`/
+`CX`/`CY`/`CZ`/`SWAP`) is run on a stabilizer tableau in `O(n²)` time and memory
+— thousands of qubits — while anything else uses the state vector. `method`
+defaults to `auto` but can be forced to `statevector` or `stabilizer`
+(`is_clifford(circuit)` / `chosen_method(circuit)` report the decision). The
+stabilizer engine never forms a `2ⁿ` vector, so `run()` — which returns the full
+state vector — is always the dense path.
+
 ## Roadmap
 
 - DAG optimization passes (gate cancellation, commutation, fusion) and a
   scheduler that no longer relies on insertion order.
 - A state panel in the GUI (amplitudes / Bloch-style plots via ImPlot3D).
-- Alternative backends (e.g. stabilizer or tensor-network simulators).
+- More backends behind `simulate()` — e.g. tensor-network (MPS) or a
+  multithreaded state vector.
 
 ## Benchmark
 

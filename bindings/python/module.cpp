@@ -8,10 +8,32 @@
 #include <cstdint>
 #include <optional>
 #include <random>
+#include <string>
 
 #include <ket/ket.hpp>
 
 namespace py = pybind11;
+
+namespace {
+
+ket::Method method_from_string(const std::string& method) {
+  if (method == "auto") return ket::Method::Auto;
+  if (method == "statevector") return ket::Method::StateVector;
+  if (method == "stabilizer") return ket::Method::Stabilizer;
+  throw py::value_error(
+      "method must be 'auto', 'statevector', or 'stabilizer'");
+}
+
+const char* method_to_string(ket::Method method) {
+  switch (method) {
+    case ket::Method::Auto: return "auto";
+    case ket::Method::StateVector: return "statevector";
+    case ket::Method::Stabilizer: return "stabilizer";
+  }
+  return "auto";
+}
+
+}  // namespace
 
 PYBIND11_MODULE(_ket, m) {
   m.doc() = "Ket: a quantum computing library";
@@ -158,6 +180,40 @@ PYBIND11_MODULE(_ket, m) {
       "Expectation value <psi|H|psi> of a Hamiltonian: a list of "
       "(coefficient, Pauli) terms, e.g. [(0.5, \"ZZ\"), (0.3, \"XI\")].");
 
+  m.def(
+      "expval",
+      [](const ket::Circuit& circuit, const std::string& pauli,
+         const std::string& method) {
+        return ket::expval(circuit, pauli, method_from_string(method));
+      },
+      py::arg("circuit"), py::arg("pauli"), py::arg("method") = "auto",
+      "Expectation value of a Pauli string over a circuit's final state. "
+      "`method` is 'auto' (default), 'statevector', or 'stabilizer'; Clifford "
+      "circuits use the stabilizer engine without forming a 2^n state vector.");
+
+  m.def(
+      "expval",
+      [](const ket::Circuit& circuit, const ket::PauliSum& hamiltonian,
+         const std::string& method) {
+        return ket::expval(circuit, hamiltonian, method_from_string(method));
+      },
+      py::arg("circuit"), py::arg("hamiltonian"), py::arg("method") = "auto",
+      "Expectation value of a Hamiltonian over a circuit's final state "
+      "(see the Pauli-string overload for `method`).");
+
+  m.def("is_clifford", &ket::is_clifford, py::arg("circuit"),
+        "True if the circuit uses only Clifford gates, so the stabilizer "
+        "backend can simulate it.");
+
+  m.def(
+      "chosen_method",
+      [](const ket::Circuit& circuit) {
+        return std::string(method_to_string(ket::chosen_method(circuit)));
+      },
+      py::arg("circuit"),
+      "The backend 'auto' picks for this circuit: 'stabilizer' for Clifford "
+      "circuits, 'statevector' otherwise.");
+
   py::class_<ket::ProbeRun>(m, "ProbeRun",
                             "Result of a probed run: final state + captures.")
       .def_readonly("final", &ket::ProbeRun::final)
@@ -187,14 +243,18 @@ PYBIND11_MODULE(_ket, m) {
 
   m.def(
       "sample",
-      [](const ket::Circuit& circuit, std::optional<std::uint32_t> seed) {
+      [](const ket::Circuit& circuit, std::optional<std::uint32_t> seed,
+         const std::string& method) {
+        const ket::Method m = method_from_string(method);
         if (seed.has_value()) {
           std::mt19937 rng{*seed};
-          return ket::sample(circuit, rng);
+          return ket::sample(circuit, rng, m);
         }
-        return ket::sample(circuit);
+        return ket::sample(circuit, m);
       },
       py::arg("circuit"), py::arg("seed") = py::none(),
+      py::arg("method") = "auto",
       "Run the circuit and sample one shot of its measurements, returning the "
-      "classical register. Pass `seed` for a reproducible result.");
+      "classical register. `method` is 'auto' (default), 'statevector', or "
+      "'stabilizer'. Pass `seed` for a reproducible result.");
 }

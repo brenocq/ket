@@ -429,3 +429,61 @@ def test_barrier_renders_and_is_noop():
     assert state[3] == pytest.approx(complex(INV_SQRT2, 0.0))
     assert state[1] == pytest.approx(0.0)
     assert state[2] == pytest.approx(0.0)
+
+
+def test_backend_selection():
+    clifford = ket.Circuit(2)
+    clifford.h(0)
+    clifford.cx(0, 1)
+    assert ket.is_clifford(clifford)
+    assert ket.chosen_method(clifford) == "stabilizer"
+
+    with_t = ket.Circuit(1)
+    with_t.t(0)
+    assert not ket.is_clifford(with_t)
+    assert ket.chosen_method(with_t) == "statevector"
+
+
+def test_expval_over_circuit_matches_backends():
+    c = ket.Circuit(2)
+    c.h(0)
+    c.cx(0, 1)  # Bell state
+    for pauli in ("ZZ", "XX", "YY", "ZI", "IX"):
+        dense = ket.expval(ket.run(c), pauli)
+        assert ket.expval(c, pauli) == pytest.approx(dense)  # auto -> stabilizer
+        assert ket.expval(c, pauli, method="stabilizer") == pytest.approx(dense)
+        assert ket.expval(c, pauli, method="statevector") == pytest.approx(dense)
+
+
+def test_stabilizer_on_non_clifford_raises():
+    c = ket.Circuit(1)
+    c.t(0)
+    with pytest.raises(ValueError):
+        ket.expval(c, "Z", method="stabilizer")
+    with pytest.raises(ValueError):
+        ket.sample(c, method="stabilizer")
+    # Auto falls back to the dense backend; T|0> = |0>, so <Z> = 1.
+    assert ket.expval(c, "Z") == pytest.approx(1.0)
+
+
+def test_invalid_method_name_raises():
+    c = ket.Circuit(1)
+    c.h(0)
+    with pytest.raises(ValueError):
+        ket.sample(c, method="nope")
+
+
+def test_clifford_sampling_correlations():
+    # GHZ: every measured qubit agrees; both 0...0 and 1...1 occur.
+    c = ket.Circuit(3)
+    c.h(0)
+    c.cx(0, 1)
+    c.cx(1, 2)
+    c.measure_all()
+    assert ket.chosen_method(c) == "stabilizer"
+    seen = set()
+    for seed in range(60):
+        creg = ket.sample(c, seed=seed)
+        assert len(set(creg)) == 1  # all equal
+        seen.add(creg[0])
+    assert seen == {0, 1}
