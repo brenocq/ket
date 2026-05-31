@@ -38,19 +38,24 @@ otherwise (Cirq's `CliffordSimulator`, PennyLane's `default.clifford`). Only the
 sampling call is timed (parsing and setup are excluded), reported as the
 **median** over several runs after a warm-up, on the same thread count.
 
-The circuits ([`circuits.py`](circuits.py)) cover three regimes, kept small
-enough that the whole run finishes in a few seconds:
+The circuits ([`circuits.py`](circuits.py)) cover four regimes:
 
 - **Bell (2q)** — per-call overhead, not the kernel.
 - **Dense (16-qubit QFT and random)** — every library pays the `2ⁿ` cost, so
   this is state-vector throughput.
+- **Deep dense (22-qubit)** — bandwidth-bound, so this is where **gate fusion**
+  pays off: a fusing simulator (Aer) collapses several gates into one pass over
+  the amplitudes and pulls ahead of ket's one-pass-per-gate kernel. Cirq (pure
+  Python) and Quantum++ (no fusion) take minutes per shot here, so they're
+  skipped.
 - **Clifford (16- and 64-qubit)** — a stabilizer simulator runs these in `O(n²)`.
   The 64-qubit case is out of reach for any state vector, so libraries without a
   stabilizer engine (Quantum++) are skipped — exactly the point of the
   circuit-specific optimization.
 
-A library declares which `(n, clifford)` circuits it can handle via
-`supports()`, so the harness skips cells it can't reach instead of crashing.
+A library declares which `(n, clifford)` circuits it can handle via `supports()`,
+and each circuit may name libraries to `skip`, so the harness leaves out cells a
+library can't reach (or would be hopelessly slow on) instead of crashing.
 
 ## Correctness
 

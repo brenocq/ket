@@ -112,6 +112,29 @@ unsigned hardware_threads() {
   return hc != 0 ? hc : 1;
 }
 
+// KET_NUM_THREADS as a positive count, or 0 if unset/invalid. Uses _dupenv_s on
+// MSVC, where std::getenv raises a deprecation warning our -Werror build
+// rejects.
+unsigned env_num_threads() {
+#ifdef _MSC_VER
+  char* buf = nullptr;
+  std::size_t len = 0;
+  unsigned result = 0;
+  if (_dupenv_s(&buf, &len, "KET_NUM_THREADS") == 0 && buf != nullptr) {
+    const int v = std::atoi(buf);
+    if (v > 0) result = static_cast<unsigned>(v);
+  }
+  std::free(buf);  // free(nullptr) is a no-op
+  return result;
+#else
+  if (const char* env = std::getenv("KET_NUM_THREADS")) {
+    const int v = std::atoi(env);
+    if (v > 0) return static_cast<unsigned>(v);
+  }
+  return 0;
+#endif
+}
+
 // 0 means "not yet resolved"; resolved lazily from KET_NUM_THREADS or to 1.
 std::atomic<unsigned> g_requested{0};
 std::unique_ptr<ThreadPool> g_pool;
@@ -119,11 +142,8 @@ std::unique_ptr<ThreadPool> g_pool;
 unsigned effective_threads() {
   unsigned r = g_requested.load();
   if (r == 0) {
-    r = 1;  // serial, deterministic default
-    if (const char* env = std::getenv("KET_NUM_THREADS")) {
-      const int v = std::atoi(env);
-      if (v > 0) r = static_cast<unsigned>(v);
-    }
+    const unsigned env = env_num_threads();
+    r = env != 0 ? env : 1;  // serial, deterministic default
     g_requested.store(r);
   }
   return r;

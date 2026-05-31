@@ -7,16 +7,13 @@ Verifies every library computes the same state, then times each on a set of
 OpenQASM circuits (median over many runs) and writes a grouped bar chart.
 
   python benchmark.py                 # single-threaded (kernel comparison)
-  python benchmark.py --multicore     # 8 threads (how the libraries ship)
+  python benchmark.py --multicore     # 8 threads
   python benchmark.py --threads N     # N threads
 
-Small circuits only expose per-call overhead, so the set also includes large
-(24-qubit) circuits where the 2ⁿ state-vector update dominates. Libraries that
-aren't installed (or, for Quantum++, can't be built) are skipped.
-
-Single-threaded isolates the kernel; multi-threaded shows how the OpenMP-based
-backends (Aer, lightning, qpp) actually run by default. Ket has no threading, so
-it is identical in both — which is exactly the point the two charts make.
+The suite mixes a small overhead reference, dense 16-qubit circuits, a deep dense
+22-qubit circuit (bandwidth-bound, where gate fusion pays off), and large
+Clifford circuits — each library picks its best method per circuit. Libraries
+that aren't installed (or can't reach a circuit) are skipped.
 """
 
 import argparse
@@ -75,21 +72,33 @@ def plot_order_key(name):
     return len(PLOT_ORDER)
 
 
+# Libraries the deep-dense circuit skips: a pure-Python kernel (Cirq) and a state
+# vector with no gate fusion (Quantum++) take minutes per shot at 22 qubits, and
+# aren't the comparison that circuit is about (fusion on a compiled kernel).
+_NO_FUSION = frozenset({"Cirq", "Quantum++"})
+
+
 def timing_circuits():
-    """(name, qasm, clifford) for the timed benchmark.
+    """(name, qasm, clifford, skip) for the timed benchmark.
 
     `clifford` flags circuits a stabilizer simulator can handle, so each library
-    can pick its best method. Qubit counts are kept modest so the whole run
-    finishes in a few seconds: the dense (state-vector) circuits, where every
-    library pays the 2^n cost, stay at 16 qubits; the large Clifford circuit is
-    out of reach for any state vector, so only the stabilizer-capable libraries
-    reach it."""
+    picks its best method; `skip` names libraries to leave out of that circuit.
+    The dense 16-qubit circuits are state-vector throughput; the large Clifford
+    circuit is out of reach for any state vector; the deep dense 22-qubit circuit
+    is bandwidth-bound, where gate fusion (which ket lacks) pays off."""
+    none = frozenset()
     return [
-        ("Bell (2q)", circuits.bell(), True),
-        ("QFT (16q)", circuits.qft(16), False),
-        ("Random (16q)", circuits.random_circuit(16, depth=10, seed=7), False),
-        ("Clifford (16q)", circuits.random_clifford(16, depth=20, seed=3), True),
-        ("Clifford (64q)", circuits.random_clifford(64, depth=64, seed=5), True),
+        ("Bell (2q)", circuits.bell(), True, none),
+        ("QFT (16q)", circuits.qft(16), False, none),
+        ("Random (16q)", circuits.random_circuit(16, depth=10, seed=7), False, none),
+        (
+            "Deep dense (22q)",
+            circuits.random_circuit(22, depth=4, seed=104),
+            False,
+            _NO_FUSION,
+        ),
+        ("Clifford (16q)", circuits.random_clifford(16, depth=20, seed=3), True, none),
+        ("Clifford (64q)", circuits.random_clifford(64, depth=64, seed=5), True, none),
     ]
 
 
@@ -202,11 +211,14 @@ def run(reps):
     check_correctness(available)
 
     results = {}  # results[circuit][adapter] = {"median": s, "std": s}
-    for cname, qasm, clifford in timing_circuits():
+    for cname, qasm, clifford, skip in timing_circuits():
         n = num_qubits(qasm)
         kind = "Clifford" if clifford else "dense"
         print(f"\n{cname}  ({kind}, best method per library):")
         for adapter in available:
+            if adapter.name in skip:
+                print(f"  {adapter.name:24s} [skipped: no gate fusion, too slow]")
+                continue
             if not adapter.supports(n, clifford):
                 print(f"  {adapter.name:24s} [skipped: no {n}-qubit {kind} method]")
                 continue
@@ -231,7 +243,10 @@ def plot(adapter_names, results, versions, out_path):
     import matplotlib.pyplot as plt
     import numpy as np
 
-    adapter_names = sorted(adapter_names, key=plot_order_key)
+    present = {name for cell in results.values() for name in cell}
+    adapter_names = [
+        n for n in sorted(adapter_names, key=plot_order_key) if n in present
+    ]
     circuit_names = list(results.keys())
     x = np.arange(len(circuit_names))
     width = 0.8 / max(1, len(adapter_names))
@@ -257,17 +272,13 @@ def plot(adapter_names, results, versions, out_path):
     ax.legend()
     ax.grid(axis="y", which="both", linewidth=0.3, alpha=0.4)
 
-    threads_note = (
-        "Ket has no threading, so it is single-core here too."
-        if THREADS > 1
-        else ""
-    )
     vers = "   ".join(f"{n} {versions.get(n, '?')}" for n in adapter_names)
-    note = (
-        "Each library uses its best method per circuit (a stabilizer engine for "
-        "Clifford circuits); Quantum++ has none, so it can't reach the large "
-        "Clifford case. " + threads_note + "\n" + vers
+    head = (
+        "Best method per circuit (a stabilizer engine for Clifford circuits). "
+        "Cirq and Quantum++ are omitted from the deep dense circuit (no gate "
+        "fusion, minutes per shot)."
     )
+    note = head + "\n" + vers
     fig.text(0.5, 0.005, note, ha="center", va="bottom", fontsize=6, color="0.35")
 
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
@@ -280,7 +291,7 @@ def main():
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
-    parser.add_argument("--reps", type=int, default=20, help="timed runs per cell")
+    parser.add_argument("--reps", type=int, default=10, help="timed runs per cell")
     # --threads / --multicore are parsed in _resolve_threads() before imports;
     # declared here so they appear in --help and aren't rejected as unknown.
     parser.add_argument(
