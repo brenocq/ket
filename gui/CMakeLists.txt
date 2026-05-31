@@ -111,9 +111,10 @@ set_target_properties(ket_gui PROPERTIES OUTPUT_NAME ket-gui)
 target_link_libraries(ket_gui PRIVATE ket_gui_core)
 
 if(EMSCRIPTEN)
-  # Emit a self-contained page; bundle the fonts and example circuits into the
-  # virtual FS so the existing file lookups and the File dialog work in-browser.
-  set_target_properties(ket_gui PROPERTIES SUFFIX ".html")
+  # Emit ket-gui.js (+ .wasm + .data) loaded by our own demo/index.html shell;
+  # bundle the fonts and example circuits into the virtual FS so the existing
+  # file lookups and the File dialog work in-browser.
+  set_target_properties(ket_gui PROPERTIES SUFFIX ".js")
   target_link_options(
     ket_gui
     PRIVATE

@@ -1,12 +1,17 @@
 name: 🌐 Pages
 
-# Deploys the static site in website/ to GitHub Pages. (The live WASM demo will
-# be built and added here in a follow-up; for now the front page ships as-is.)
+# Builds the ket-gui debugger to WebAssembly, stages it into website/demo/, and
+# deploys the static site to GitHub Pages.
 on:
   push:
     branches: [main]
     paths:
       - "website/**"
+      - "gui/**"
+      - "src/**"
+      - "include/**"
+      - "examples/**"
+      - "CMakeLists.txt"
       - ".github/workflows/pages.yml"
   workflow_dispatch:
 
@@ -21,13 +26,39 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+
+      - name: Set up Emscripten
+        uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: latest
+          actions-cache-folder: emsdk-cache
+
+      # Cache the generated Emscripten system libraries / ports between runs.
+      - name: Cache Emscripten ports
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/emscripten
+          key: emcache-${{ runner.os }}-${{ hashFiles('gui/CMakeLists.txt') }}
+
+      - name: Build the WASM debugger
+        run: |
+          emcmake cmake -S . -B build-web -DKET_GUI=ON -DCMAKE_BUILD_TYPE=Release
+          cmake --build build-web --target ket_gui -j
+
+      - name: Stage the demo into the site
+        run: |
+          cp build-web/gui/ket-gui.js \
+             build-web/gui/ket-gui.wasm \
+             build-web/gui/ket-gui.data \
+             website/demo/
+
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

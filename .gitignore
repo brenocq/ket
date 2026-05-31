@@ -3,6 +3,9 @@ build/
 build-py/
 build-web/
 
+# WASM debugger artifacts (built in CI, staged into website/demo/)
+website/demo/ket-gui.*
+
 # Cache
 .cache/
 **/__pycache__/
