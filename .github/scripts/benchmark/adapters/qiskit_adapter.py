@@ -22,12 +22,16 @@ class QiskitAdapter(PythonAdapter):
         return f"{qiskit.__version__}/aer {qiskit_aer.__version__}"
 
     def load(self, qasm: str):
+        import os
+
         from qiskit import QuantumCircuit, transpile
         from qiskit_aer import AerSimulator
 
         qc = QuantumCircuit.from_qasm_str(qasm)
         qc.save_statevector()  # capture the final state (no measurements here)
-        sim = AerSimulator(method="statevector", max_parallel_threads=1)
+        # Match the run's thread budget (set via OMP_NUM_THREADS by benchmark.py).
+        threads = int(os.environ.get("OMP_NUM_THREADS", "1"))
+        sim = AerSimulator(method="statevector", max_parallel_threads=threads)
         return sim, transpile(qc, sim)
 
     def simulate(self, circuit) -> None:

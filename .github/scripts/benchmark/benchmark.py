@@ -6,12 +6,17 @@
 Verifies every library computes the same state, then times each on a set of
 OpenQASM circuits (median over many runs) and writes a grouped bar chart.
 
-  python benchmark.py [--reps N] [--big-reps M]
+  python benchmark.py                 # single-threaded (kernel comparison)
+  python benchmark.py --multicore     # 8 threads (how the libraries ship)
+  python benchmark.py --threads N     # N threads
 
 Small circuits only expose per-call overhead, so the set also includes large
 (24-qubit) circuits where the 2ⁿ state-vector update dominates. Libraries that
-aren't installed (or, for Quantum++, can't be built) are skipped. Everything
-runs single-threaded so the comparison is about the kernel, not core count.
+aren't installed (or, for Quantum++, can't be built) are skipped.
+
+Single-threaded isolates the kernel; multi-threaded shows how the OpenMP-based
+backends (Aer, lightning, qpp) actually run by default. Ket has no threading, so
+it is identical in both — which is exactly the point the two charts make.
 """
 
 import argparse
@@ -21,9 +26,32 @@ import os
 import statistics
 import sys
 
-# Pin every OpenMP-based backend (Aer, lightning, qpp, ...) to one thread for an
-# apples-to-apples comparison. Must happen before those libraries are imported.
-os.environ.setdefault("OMP_NUM_THREADS", "1")
+
+def _resolve_threads():
+    """Thread count from the CLI, parsed before any numeric library is imported
+    (so the env vars below take effect). --threads N wins; --multicore means 8."""
+    argv = sys.argv
+    for i, a in enumerate(argv):
+        try:
+            if a.startswith("--threads="):
+                return max(1, int(a.split("=", 1)[1]))
+            if a == "--threads" and i + 1 < len(argv):
+                return max(1, int(argv[i + 1]))
+        except ValueError:
+            return 1
+    return 8 if "--multicore" in argv else 1
+
+
+# Every OpenMP/BLAS backend reads these at import time, so pin them up front.
+THREADS = _resolve_threads()
+for _var in (
+    "OMP_NUM_THREADS",
+    "OPENBLAS_NUM_THREADS",
+    "MKL_NUM_THREADS",
+    "NUMEXPR_NUM_THREADS",
+    "VECLIB_MAXIMUM_THREADS",
+):
+    os.environ[_var] = str(THREADS)
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ADAPTERS_DIR = os.path.join(HERE, "adapters")
@@ -145,8 +173,14 @@ def check_correctness(adapters, tol=1e-4):
     return all_ok
 
 
+def _threads_label():
+    return "single-threaded" if THREADS == 1 else f"{THREADS} threads"
+
+
 def run(reps, big_reps):
-    print(f"Discovering simulators (single-threaded, reps: {reps} / {big_reps}):")
+    print(
+        f"Discovering simulators ({_threads_label()}, reps: {reps} / {big_reps}):"
+    )
     available, versions = [], {}
     for adapter in discover_adapters():
         if adapter.available():
@@ -204,14 +238,22 @@ def plot(adapter_names, results, versions, out_path):
     ax.set_ylabel("simulation time (ms) — lower is better")
     ax.set_xticks(x)
     ax.set_xticklabels(circuit_names)
-    ax.set_title("OpenQASM state-vector simulation\n(single-threaded; bars = median, error bars = std)")
+    ax.set_title(
+        "OpenQASM state-vector simulation\n"
+        f"({_threads_label()}; bars = median, error bars = std)"
+    )
     ax.legend()
     ax.grid(axis="y", which="both", linewidth=0.3, alpha=0.4)
 
+    threads_note = (
+        "Ket has no threading, so it is single-core here too."
+        if THREADS > 1
+        else ""
+    )
     vers = "   ".join(f"{n} {versions.get(n, '?')}" for n in adapter_names)
     note = (
         "Ket and Quantum++ are compiled locally; the other libraries use generic "
-        "pip wheels (no -march=native).\n" + vers
+        "pip wheels (no -march=native). " + threads_note + "\n" + vers
     )
     fig.text(0.5, 0.005, note, ha="center", va="bottom", fontsize=6, color="0.35")
 
@@ -222,15 +264,23 @@ def plot(adapter_names, results, versions, out_path):
 
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     parser.add_argument("--reps", type=int, default=50, help="runs for small circuits")
     parser.add_argument(
         "--big-reps", type=int, default=3, help="runs for the large (24-qubit) circuits"
     )
+    # --threads / --multicore are parsed in _resolve_threads() before imports;
+    # declared here so they appear in --help and aren't rejected as unknown.
     parser.add_argument(
-        "--out",
-        default=os.path.join(HERE, "results", "benchmark.png"),
-        help="output PNG path",
+        "--threads", type=int, default=None, help="threads per backend (default 1)"
+    )
+    parser.add_argument(
+        "--multicore", action="store_true", help="shorthand for --threads 8"
+    )
+    parser.add_argument(
+        "--out", default=None, help="output PNG path (default depends on thread count)"
     )
     parser.add_argument(
         "--replot",
@@ -238,6 +288,10 @@ def main():
         help="skip simulation; redraw from the cached results JSON",
     )
     args = parser.parse_args()
+
+    if args.out is None:
+        name = "benchmark.png" if THREADS == 1 else f"benchmark-{THREADS}core.png"
+        args.out = os.path.join(HERE, "results", name)
 
     import json
 

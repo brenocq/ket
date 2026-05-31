@@ -7,18 +7,33 @@ grouped bar chart (one group per circuit).
 ```sh
 pip install .                                  # install ket (from the repo root)
 pip install -r .github/scripts/benchmark/requirements.txt
-python .github/scripts/benchmark/benchmark.py  # --reps / --big-reps to change run counts
+python .github/scripts/benchmark/benchmark.py             # single-threaded
+python .github/scripts/benchmark/benchmark.py --multicore # 8 threads per backend
 ```
 
-The chart lands in `results/benchmark.png`. A library that is not installed is
-skipped, so it shows whatever you have.
+A library that is not installed is skipped, so it shows whatever you have. Use
+`--reps` / `--big-reps` to change run counts.
+
+## Single-core vs. multi-core
+
+There are two charts because they answer different questions:
+
+| command | threads | output | what it shows |
+| --- | --- | --- | --- |
+| `benchmark.py` | 1 | `results/benchmark.png` | the bare kernel, head to head |
+| `benchmark.py --multicore` | 8 | `results/benchmark-8core.png` | how the libraries actually ship |
+| `benchmark.py --threads N` | N | `results/benchmark-Ncore.png` | any thread budget |
+
+The multi-core run pins every OpenMP/BLAS backend (Aer, lightning, qpp) to the
+chosen thread count. **Ket has no threading, so it is identical in both** — which
+is exactly the gap the multi-core chart is meant to show.
 
 ## What it measures
 
 For each circuit and library, only the **simulation** is timed (parsing and
 circuit construction are excluded), reported as the **median** over several runs
-after a warm-up, with the standard deviation as an error bar. Every library runs
-**single-threaded** (`OMP_NUM_THREADS=1`) and computes the full **state vector**.
+after a warm-up, with the standard deviation as an error bar. Every library
+computes the full **state vector**, on the same thread count.
 
 Two circuit sizes matter:
 
@@ -39,8 +54,10 @@ property of the kernel, not the width, so small instances are enough.
 
 ## Fairness caveats
 
-- **Single-threaded** is deliberate (compare the algorithm, not core count), but
-  it disables the multi-threading that Aer and lightning are built around.
+- **Threads:** the default single-threaded run compares the kernel, not core
+  count; `--multicore` enables the multi-threading Aer/lightning/qpp ship with.
+  Either way ket is single-core (it has no threading), so on `--multicore` the
+  others pull further ahead — the honest picture.
 - **Build flags:** ket and Quantum++ are compiled locally (so they pick up the
   host's instruction set), while the comparison libraries use generic **pip
   wheels** built for broad CPU compatibility. The chart records each library's
