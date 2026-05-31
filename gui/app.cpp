@@ -1509,6 +1509,13 @@ int run(const std::string& qasm_source, const std::string& path) {
   setup_dark_style();
   ImGui_ImplGlfw_InitForOpenGL(window, true);
   ImGui_ImplOpenGL3_Init(glsl_version);
+#ifdef __EMSCRIPTEN__
+  // The embedded GLFW3 port delivers no scroll events through GLFW; ImGui
+  // routes the wheel through its own canvas-targeted handler, which only
+  // registers once this is called. Also makes the GUI track the canvas size.
+  // Selector matches the <canvas id="canvas"> in website/demo/index.html.
+  ImGui_ImplGlfw_InstallEmscriptenCallbacks(window, "#canvas");
+#endif
 
   Gui* gui = new Gui();
   gui->window = window;
