@@ -79,6 +79,56 @@ const char* gate_name(GateType t) {
   }
 }
 
+static ImU32 rgb(float r, float g, float b) {
+  return IM_COL32(static_cast<int>(r * 255.0f + 0.5f),
+                  static_cast<int>(g * 255.0f + 0.5f),
+                  static_cast<int>(b * 255.0f + 0.5f), 255);
+}
+
+// Fill color for a gate's box. Controlled variants share the color of the gate
+// they apply (CRx is the Rx color, CH the H color, ...), so the family reads at
+// a glance and the control dot is what marks it controlled.
+ImU32 gate_color(GateType t) {
+  switch (t) {
+    case GateType::H:
+    case GateType::CH:
+      return rgb(0.118f, 0.565f, 1.000f);  // Dodger Blue
+    case GateType::X:
+      return rgb(0.894f, 0.102f, 0.110f);  // Crimson
+    case GateType::Y:
+    case GateType::CY:
+      return rgb(0.302f, 0.686f, 0.290f);  // Forest Green
+    case GateType::Z:
+      return rgb(0.855f, 0.647f, 0.125f);  // Goldenrod
+    case GateType::S:
+      return rgb(0.251f, 0.878f, 0.816f);  // Turquoise
+    case GateType::Sdg:
+      return rgb(0.400f, 0.804f, 0.667f);  // Medium Aquamarine
+    case GateType::T:
+      return rgb(0.780f, 0.082f, 0.522f);  // Medium Violet Red
+    case GateType::Tdg:
+      return rgb(0.729f, 0.333f, 0.827f);  // Medium Orchid
+    case GateType::Rx:
+    case GateType::CRx:
+      return rgb(1.000f, 0.388f, 0.278f);  // Tomato
+    case GateType::Ry:
+    case GateType::CRy:
+      return rgb(0.180f, 0.545f, 0.341f);  // Sea Green
+    case GateType::Rz:
+    case GateType::CRz:
+      return rgb(0.255f, 0.412f, 0.882f);  // Royal Blue
+    case GateType::U:
+    case GateType::CU:
+      return rgb(0.576f, 0.439f, 0.859f);  // Medium Purple
+    case GateType::CP:
+      return rgb(1.000f, 0.498f, 0.000f);  // Orange
+    case GateType::Measure:
+      return rgb(0.957f, 0.643f, 0.376f);  // Sandy Brown
+    default:
+      return rgb(0.216f, 0.494f, 0.722f);  // Steel Blue
+  }
+}
+
 // Renders the circuit into a decoration-free ImPlot plot using its draw list:
 // horizontal qubit wires, then gates placed into greedily-packed columns.
 void render_circuit(const Circuit& circuit) {
@@ -160,7 +210,6 @@ void render_circuit(const Circuit& circuit) {
   ImPlot::PushPlotClipRect();  // clip drawing to the plot area
 
   const ImU32 wire_col = IM_COL32(150, 152, 162, 255);
-  const ImU32 box_fill = IM_COL32(70, 120, 200, 255);
   const ImU32 comp_fill = IM_COL32(120, 92, 170, 255);
   const ImU32 border_col = IM_COL32(222, 226, 236, 255);
   const ImU32 text_col = IM_COL32(245, 246, 250, 255);
@@ -196,17 +245,23 @@ void render_circuit(const Circuit& circuit) {
   }
 
   // Boxes/circles scale with zoom; the label text stays pixel-sized.
-  auto box = [&](double cx, double y, const char* label) {
+  auto box = [&](double cx, double y, const char* label, ImU32 fill) {
     const ImVec2 c = px(cx, y);
     const float hw = 20.0f * zoom;
     const float hh = 13.0f * zoom;
     const float round = 3.0f * zoom;
     dl->AddRectFilled(ImVec2(c.x - hw, c.y - hh), ImVec2(c.x + hw, c.y + hh),
-                      box_fill, round);
+                      fill, round);
     dl->AddRect(ImVec2(c.x - hw, c.y - hh), ImVec2(c.x + hw, c.y + hh),
                 border_col, round, 0, thick(1.5f));
+    // Dark label on light fills, light label on dark, so every box stays legible.
+    const float lum = (0.299f * ((fill >> IM_COL32_R_SHIFT) & 0xFF) +
+                       0.587f * ((fill >> IM_COL32_G_SHIFT) & 0xFF) +
+                       0.114f * ((fill >> IM_COL32_B_SHIFT) & 0xFF)) /
+                      255.0f;
+    const ImU32 label_col = lum > 0.6f ? IM_COL32(20, 22, 28, 255) : text_col;
     const ImVec2 ts = ImGui::CalcTextSize(label);
-    dl->AddText(ImVec2(c.x - ts.x * 0.5f, c.y - ts.y * 0.5f), text_col, label);
+    dl->AddText(ImVec2(c.x - ts.x * 0.5f, c.y - ts.y * 0.5f), label_col, label);
   };
   auto dot = [&](double cx, double y) {
     dl->AddCircleFilled(px(cx, y), 5.0f * zoom, ctrl_col);
@@ -261,7 +316,7 @@ void render_circuit(const Circuit& circuit) {
       case GateType::CP:
         vline(cx, yq(g.qubits[0].index), yq(g.qubits[1].index));
         dot(cx, yq(g.qubits[0].index));
-        box(cx, yq(g.qubits[1].index), gate_name(g.type));
+        box(cx, yq(g.qubits[1].index), gate_name(g.type), gate_color(g.type));
         break;
       case GateType::CZ:
         vline(cx, yq(g.qubits[0].index), yq(g.qubits[1].index));
@@ -306,7 +361,7 @@ void render_circuit(const Circuit& circuit) {
         break;
       }
       default:
-        box(cx, yq(g.qubits[0].index), gate_name(g.type));
+        box(cx, yq(g.qubits[0].index), gate_name(g.type), gate_color(g.type));
         break;
     }
   }
