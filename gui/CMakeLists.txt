@@ -88,6 +88,10 @@ set_target_properties(ket_gui PROPERTIES OUTPUT_NAME ket-gui)
 target_link_libraries(ket_gui PRIVATE ket_gui_core)
 
 install(TARGETS ket_gui RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
-install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/assets/Inter-Regular.ttf
-              ${CMAKE_CURRENT_SOURCE_DIR}/assets/Inter-Bold.ttf
-        DESTINATION ${CMAKE_INSTALL_DATADIR}/ket)
+install(
+  FILES ${CMAKE_CURRENT_SOURCE_DIR}/assets/Inter-Regular.ttf
+        ${CMAKE_CURRENT_SOURCE_DIR}/assets/Inter-Bold.ttf
+        ${CMAKE_CURRENT_SOURCE_DIR}/assets/Inter-OFL.txt
+        ${CMAKE_CURRENT_SOURCE_DIR}/assets/JetBrainsMono-Regular.ttf
+        ${CMAKE_CURRENT_SOURCE_DIR}/assets/JetBrainsMono-OFL.txt
+  DESTINATION ${CMAKE_INSTALL_DATADIR}/ket)

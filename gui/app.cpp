@@ -200,13 +200,20 @@ void highlight_qasm(ImDrawList* dl, ImVec2 origin, const std::string& code,
     return std::isdigit(static_cast<unsigned char>(c)) != 0;
   };
 
+  // ImGui renders each line in a single call and truncates the start position
+  // once (ImFont::RenderText does IM_TRUNC(pos.x)), then lays out glyphs from
+  // there. We draw token-by-token, so truncating each token's start would drift
+  // ±1px against that layout (and against the cursor). Match ImGui by
+  // truncating the line origin once and snapping each token to an integer
+  // offset from it.
+  const float ox = IM_TRUNC(origin.x);
   float y = origin.y;
   std::size_t line_start = 0;
   while (line_start <= code.size()) {
     std::size_t line_end = code.find('\n', line_start);
     if (line_end == std::string::npos) line_end = code.size();
 
-    float x = origin.x;
+    float adv = 0.0f;  // running width from the line start (unrounded)
     std::size_t i = line_start;
     while (i < line_end) {
       std::size_t j = i;
@@ -241,8 +248,8 @@ void highlight_qasm(ImDrawList* dl, ImVec2 origin, const std::string& code,
 
       const char* a = code.data() + i;
       const char* b = code.data() + j;
-      dl->AddText(ImVec2(x, y), col, a, b);
-      x += ImGui::CalcTextSize(a, b).x;
+      dl->AddText(ImVec2(ox + IM_ROUND(adv), y), col, a, b);
+      adv += ImGui::CalcTextSize(a, b).x;
       i = j;
     }
 
@@ -585,22 +592,29 @@ int run(const std::string& qasm_source, const std::string& title) {
   io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
   io.IniFilename = nullptr;  // rebuild the default layout each launch
 
+  ImFont* mono_font = nullptr;
 #if defined(KET_GUI_ASSETS_DIR) || defined(KET_GUI_INSTALL_ASSETS_DIR)
-  // Use the Inter UI font, looking in the source tree (dev builds) first and
-  // then in the install location; fall back to ImGui's built-in font.
-  for (const char* font : {
+  // Inter for the UI and JetBrains Mono for the code editor, looking in the
+  // source tree (dev builds) first and then in the install location. The first
+  // font added becomes ImGui's default; a missing file falls back to the
+  // built-in font.
+  auto load_font = [&](const char* file) -> ImFont* {
+    for (const char* dir : {
 #ifdef KET_GUI_ASSETS_DIR
-           KET_GUI_ASSETS_DIR "/Inter-Regular.ttf",
+             KET_GUI_ASSETS_DIR,
 #endif
 #ifdef KET_GUI_INSTALL_ASSETS_DIR
-           KET_GUI_INSTALL_ASSETS_DIR "/Inter-Regular.ttf",
+             KET_GUI_INSTALL_ASSETS_DIR,
 #endif
-       }) {
-    if (std::ifstream(font).good()) {
-      io.Fonts->AddFontFromFileTTF(font, 16.0f);
-      break;
+         }) {
+      const std::string path = std::string(dir) + "/" + file;
+      if (std::ifstream(path).good())
+        return io.Fonts->AddFontFromFileTTF(path.c_str(), 16.0f);
     }
-  }
+    return nullptr;
+  };
+  load_font("Inter-Regular.ttf");  // default UI font (added first)
+  mono_font = load_font("JetBrainsMono-Regular.ttf");
 #endif
 
   ImGui::StyleColorsDark();
@@ -649,6 +663,9 @@ int run(const std::string& qasm_source, const std::string& title) {
     }
 
     if (ImGui::Begin("Code")) {
+      // Monospace for the editor — fixed advances keep the highlight overlay
+      // exactly under the editable text (NULL keeps the UI font as a fallback).
+      ImGui::PushFont(mono_font);
       // Size the editor to its content so it never scrolls internally (the Code
       // window scrolls instead). That keeps the highlight overlay — drawn at
       // the input's fixed text origin — aligned with the editable text.
@@ -700,6 +717,7 @@ int run(const std::string& qasm_source, const std::string& title) {
                      line_h, IM_COL32(245, 246, 250, 255));
       dl->PopClipRect();
       if (changed) reparse();
+      ImGui::PopFont();
     }
     ImGui::End();
 
