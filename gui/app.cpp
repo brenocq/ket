@@ -806,7 +806,7 @@ void render_qubits(const State& state) {
   int nq = 0;
   while ((std::size_t{1} << nq) < dim) ++nq;
 
-  const float side = 150.0f;  // fixed square size; columns follow the width
+  const float side = 225.0f;  // fixed square size; columns follow the width
   const float spacing = ImGui::GetStyle().ItemSpacing.x;
   const float avail = ImGui::GetContentRegionAvail().x;
   const int cols =
@@ -1280,13 +1280,19 @@ struct Gui {
       ImGuiID circuit_node = 0;
       ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Right, 0.32f,
                                   &code_node, &circuit_node);
+      // Right column: Code on top, State on the bottom 45%.
       ImGuiID state_node = 0;
       ImGui::DockBuilderSplitNode(code_node, ImGuiDir_Down, 0.45f, &state_node,
                                   &code_node);
+      // Left column: Circuit on top, Qubits on the bottom 45% (so it lines up
+      // with State across the window).
+      ImGuiID qubits_node = 0;
+      ImGui::DockBuilderSplitNode(circuit_node, ImGuiDir_Down, 0.45f,
+                                  &qubits_node, &circuit_node);
       ImGui::DockBuilderDockWindow("Code", code_node);
       ImGui::DockBuilderDockWindow("State", state_node);
-      ImGui::DockBuilderDockWindow("Qubits", state_node);  // tab beside State
       ImGui::DockBuilderDockWindow("Circuit", circuit_node);
+      ImGui::DockBuilderDockWindow("Qubits", qubits_node);
       ImGui::DockBuilderFinish(dockspace_id);
     }
 
