@@ -22,9 +22,11 @@ from ._ket import (
     from_qasm,
     is_clifford,
     measure,
+    num_threads,
     run,
     run_with_probes,
     sample,
+    set_num_threads,
     to_qasm,
 )
 
@@ -37,8 +39,10 @@ __all__ = [
     "from_qasm",
     "is_clifford",
     "measure",
+    "num_threads",
     "run",
     "run_with_probes",
     "sample",
+    "set_num_threads",
     "to_qasm",
 ]

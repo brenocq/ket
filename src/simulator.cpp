@@ -14,21 +14,24 @@
 #include <ket/gate.hpp>
 #include <ket/qubit.hpp>
 
+#include "parallel.hpp"
+
 namespace ket {
 namespace {
 
 void apply_single(State& s, std::size_t qubit, Complex m00, Complex m01,
                   Complex m10, Complex m11) {
   const std::size_t mask = std::size_t{1} << qubit;
-  const std::size_t n = s.size();
-  for (std::size_t k = 0; k < n; ++k) {
-    if ((k & mask) != 0) continue;
-    const std::size_t k1 = k | mask;
-    const Complex a = s[k];
-    const Complex b = s[k1];
-    s[k] = m00 * a + m01 * b;
-    s[k1] = m10 * a + m11 * b;
-  }
+  internal::parallel_for(s.size(), [&](std::size_t lo, std::size_t hi) {
+    for (std::size_t k = lo; k < hi; ++k) {
+      if ((k & mask) != 0) continue;
+      const std::size_t k1 = k | mask;
+      const Complex a = s[k];
+      const Complex b = s[k1];
+      s[k] = m00 * a + m01 * b;
+      s[k1] = m10 * a + m11 * b;
+    }
+  });
 }
 
 void apply_h(State& s, std::size_t q) {
@@ -95,27 +98,29 @@ void apply_u(State& s, std::size_t q, double theta, double phi, double lambda) {
 void apply_cx(State& s, std::size_t control, std::size_t target) {
   const std::size_t cmask = std::size_t{1} << control;
   const std::size_t tmask = std::size_t{1} << target;
-  const std::size_t n = s.size();
-  for (std::size_t k = 0; k < n; ++k) {
-    if ((k & cmask) == 0) continue;
-    if ((k & tmask) != 0) continue;
-    std::swap(s[k], s[k | tmask]);
-  }
+  internal::parallel_for(s.size(), [&](std::size_t lo, std::size_t hi) {
+    for (std::size_t k = lo; k < hi; ++k) {
+      if ((k & cmask) == 0) continue;
+      if ((k & tmask) != 0) continue;
+      std::swap(s[k], s[k | tmask]);
+    }
+  });
 }
 
 // Controlled-Y: apply Y to the target when the control is 1.
 void apply_cy(State& s, std::size_t control, std::size_t target) {
   const std::size_t cmask = std::size_t{1} << control;
   const std::size_t tmask = std::size_t{1} << target;
-  const std::size_t n = s.size();
-  for (std::size_t k = 0; k < n; ++k) {
-    if ((k & cmask) == 0 || (k & tmask) != 0) continue;  // control=1, target=0
-    const std::size_t k1 = k | tmask;
-    const Complex a = s[k];         // target-0 amplitude
-    const Complex b = s[k1];        // target-1 amplitude
-    s[k] = Complex{0.0, -1.0} * b;  // Y: |0> <- -i * (target-1)
-    s[k1] = Complex{0.0, 1.0} * a;  // Y: |1> <- +i * (target-0)
-  }
+  internal::parallel_for(s.size(), [&](std::size_t lo, std::size_t hi) {
+    for (std::size_t k = lo; k < hi; ++k) {
+      if ((k & cmask) == 0 || (k & tmask) != 0) continue;  // control=1, target=0
+      const std::size_t k1 = k | tmask;
+      const Complex a = s[k];         // target-0 amplitude
+      const Complex b = s[k1];        // target-1 amplitude
+      s[k] = Complex{0.0, -1.0} * b;  // Y: |0> <- -i * (target-1)
+      s[k1] = Complex{0.0, 1.0} * a;  // Y: |1> <- +i * (target-0)
+    }
+  });
 }
 
 // Controlled-H: apply H to the target when the control is 1.
@@ -123,15 +128,16 @@ void apply_ch(State& s, std::size_t control, std::size_t target) {
   const std::size_t cmask = std::size_t{1} << control;
   const std::size_t tmask = std::size_t{1} << target;
   const double inv_sqrt2 = 1.0 / std::sqrt(2.0);
-  const std::size_t n = s.size();
-  for (std::size_t k = 0; k < n; ++k) {
-    if ((k & cmask) == 0 || (k & tmask) != 0) continue;  // control=1, target=0
-    const std::size_t k1 = k | tmask;
-    const Complex a = s[k];
-    const Complex b = s[k1];
-    s[k] = (a + b) * inv_sqrt2;
-    s[k1] = (a - b) * inv_sqrt2;
-  }
+  internal::parallel_for(s.size(), [&](std::size_t lo, std::size_t hi) {
+    for (std::size_t k = lo; k < hi; ++k) {
+      if ((k & cmask) == 0 || (k & tmask) != 0) continue;  // control=1, target=0
+      const std::size_t k1 = k | tmask;
+      const Complex a = s[k];
+      const Complex b = s[k1];
+      s[k] = (a + b) * inv_sqrt2;
+      s[k1] = (a - b) * inv_sqrt2;
+    }
+  });
 }
 
 // Apply a 2x2 matrix to the target qubit only on basis states where the
@@ -141,15 +147,16 @@ void apply_controlled_single(State& s, std::size_t control, std::size_t target,
                              Complex m11) {
   const std::size_t cmask = std::size_t{1} << control;
   const std::size_t tmask = std::size_t{1} << target;
-  const std::size_t n = s.size();
-  for (std::size_t k = 0; k < n; ++k) {
-    if ((k & cmask) == 0 || (k & tmask) != 0) continue;  // control=1, target=0
-    const std::size_t k1 = k | tmask;
-    const Complex a = s[k];
-    const Complex b = s[k1];
-    s[k] = m00 * a + m01 * b;
-    s[k1] = m10 * a + m11 * b;
-  }
+  internal::parallel_for(s.size(), [&](std::size_t lo, std::size_t hi) {
+    for (std::size_t k = lo; k < hi; ++k) {
+      if ((k & cmask) == 0 || (k & tmask) != 0) continue;  // control=1, target=0
+      const std::size_t k1 = k | tmask;
+      const Complex a = s[k];
+      const Complex b = s[k1];
+      s[k] = m00 * a + m01 * b;
+      s[k1] = m10 * a + m11 * b;
+    }
+  });
 }
 
 // Controlled rotations: the rotation matrix is applied to the target only when
@@ -193,10 +200,11 @@ void apply_cu(State& s, std::size_t control, std::size_t target, double theta,
 void apply_swap(State& s, std::size_t qa, std::size_t qb) {
   const std::size_t ma = std::size_t{1} << qa;
   const std::size_t mb = std::size_t{1} << qb;
-  const std::size_t n = s.size();
-  for (std::size_t k = 0; k < n; ++k) {
-    if ((k & ma) != 0 && (k & mb) == 0) std::swap(s[k], s[(k ^ ma) | mb]);
-  }
+  internal::parallel_for(s.size(), [&](std::size_t lo, std::size_t hi) {
+    for (std::size_t k = lo; k < hi; ++k) {
+      if ((k & ma) != 0 && (k & mb) == 0) std::swap(s[k], s[(k ^ ma) | mb]);
+    }
+  });
 }
 
 // Toffoli (CCX): flip the target on basis states where both controls are 1.
@@ -205,12 +213,13 @@ void apply_ccx(State& s, std::size_t control1, std::size_t control2,
   const std::size_t c1mask = std::size_t{1} << control1;
   const std::size_t c2mask = std::size_t{1} << control2;
   const std::size_t tmask = std::size_t{1} << target;
-  const std::size_t n = s.size();
-  for (std::size_t k = 0; k < n; ++k) {
-    if ((k & c1mask) == 0 || (k & c2mask) == 0) continue;  // both controls = 1
-    if ((k & tmask) != 0) continue;                        // target = 0
-    std::swap(s[k], s[k | tmask]);
-  }
+  internal::parallel_for(s.size(), [&](std::size_t lo, std::size_t hi) {
+    for (std::size_t k = lo; k < hi; ++k) {
+      if ((k & c1mask) == 0 || (k & c2mask) == 0) continue;  // both controls = 1
+      if ((k & tmask) != 0) continue;                        // target = 0
+      std::swap(s[k], s[k | tmask]);
+    }
+  });
 }
 
 // Fredkin (CSwap): exchange the two targets on basis states where the control
@@ -219,11 +228,12 @@ void apply_cswap(State& s, std::size_t control, std::size_t a, std::size_t b) {
   const std::size_t cmask = std::size_t{1} << control;
   const std::size_t ma = std::size_t{1} << a;
   const std::size_t mb = std::size_t{1} << b;
-  const std::size_t n = s.size();
-  for (std::size_t k = 0; k < n; ++k) {
-    if ((k & cmask) == 0) continue;  // control = 1
-    if ((k & ma) != 0 && (k & mb) == 0) std::swap(s[k], s[(k ^ ma) | mb]);
-  }
+  internal::parallel_for(s.size(), [&](std::size_t lo, std::size_t hi) {
+    for (std::size_t k = lo; k < hi; ++k) {
+      if ((k & cmask) == 0) continue;  // control = 1
+      if ((k & ma) != 0 && (k & mb) == 0) std::swap(s[k], s[(k ^ ma) | mb]);
+    }
+  });
 }
 
 // Controlled phase: multiply by `phase` exactly when both qubits are 1.
@@ -231,10 +241,11 @@ void apply_cswap(State& s, std::size_t control, std::size_t a, std::size_t b) {
 void apply_cphase(State& s, std::size_t qa, std::size_t qb, Complex phase) {
   const std::size_t ma = std::size_t{1} << qa;
   const std::size_t mb = std::size_t{1} << qb;
-  const std::size_t n = s.size();
-  for (std::size_t k = 0; k < n; ++k) {
-    if ((k & ma) != 0 && (k & mb) != 0) s[k] *= phase;
-  }
+  internal::parallel_for(s.size(), [&](std::size_t lo, std::size_t hi) {
+    for (std::size_t k = lo; k < hi; ++k) {
+      if ((k & ma) != 0 && (k & mb) != 0) s[k] *= phase;
+    }
+  });
 }
 
 // Apply a circuit's gates to the state. `wire[i]` is the actual state-vector

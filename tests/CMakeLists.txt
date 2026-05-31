@@ -35,6 +35,7 @@ add_executable(
   test_measurement.cpp
   test_observable.cpp
   test_stabilizer.cpp
+  test_parallelism.cpp
   test_print.cpp
   test_qasm.cpp)
 target_link_libraries(ket_tests PRIVATE ket ket_warnings GTest::gtest_main)

@@ -23,8 +23,12 @@ class KetAdapter(PythonAdapter):
         return True if clifford else n <= 28  # stabilizer handles any Clifford n
 
     def load(self, qasm: str, clifford: bool):
+        import os
+
         import ket
 
+        # Match the run's thread budget (the harness sets OMP_NUM_THREADS).
+        ket.set_num_threads(int(os.environ.get("OMP_NUM_THREADS", "1")))
         circuit = ket.from_qasm(qasm)
         circuit.measure_all()
         return circuit

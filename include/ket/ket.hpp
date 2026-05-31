@@ -8,6 +8,7 @@
 #include <ket/gate.hpp>
 #include <ket/measurement.hpp>
 #include <ket/observable.hpp>
+#include <ket/parallelism.hpp>
 #include <ket/qasm.hpp>
 #include <ket/qubit.hpp>
 #include <ket/simulator.hpp>

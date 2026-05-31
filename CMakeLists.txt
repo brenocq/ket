@@ -45,6 +45,7 @@ add_library(
   src/circuit.cpp
   src/dag.cpp
   src/state.cpp
+  src/parallelism.cpp
   src/simulator.cpp
   src/measurement.cpp
   src/observable.cpp

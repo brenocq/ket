@@ -17,7 +17,8 @@ explicit and leaves room for future analysis and optimization passes.
   (`Rx`/`Ry`/`Rz`), the general single-qubit `U`, their controlled forms
   (including controlled rotations and controlled-phase), `SWAP`, and the
   three-qubit Toffoli (`CCX`) and Fredkin (`CSWAP`).
-- **Exact state-vector simulation** of the full `2ⁿ` amplitude vector.
+- **Exact state-vector simulation** of the full `2ⁿ` amplitude vector,
+  **multithreaded** across a persistent `std::` thread pool (`set_num_threads`).
 - **Automatic backend selection** — Clifford circuits are routed to an `O(n²)`
   stabilizer simulator (scaling to thousands of qubits), everything else to the
   state vector. The choice is automatic but overridable.
@@ -162,13 +163,19 @@ defaults to `auto` but can be forced to `statevector` or `stabilizer`
 stabilizer engine never forms a `2ⁿ` vector, so `run()` — which returns the full
 state vector — is always the dense path.
 
+The state-vector backend applies each gate's `2ⁿ`-amplitude update across a
+persistent `std::jthread` pool (the pairs are independent, so the split needs no
+locks). `set_num_threads(n)` controls it — `0` selects the hardware concurrency;
+it defaults to `1` (or `KET_NUM_THREADS`). Small states stay serial, since the
+synchronization would cost more than the work.
+
 ## Roadmap
 
 - DAG optimization passes (gate cancellation, commutation, fusion) and a
   scheduler that no longer relies on insertion order.
 - A state panel in the GUI (amplitudes / Bloch-style plots via ImPlot3D).
-- More backends behind `simulate()` — e.g. tensor-network (MPS) or a
-  multithreaded state vector.
+- More backends behind `simulate()` — e.g. a tensor-network (MPS) simulator.
+- Gate fusion and SIMD kernels for the state-vector backend.
 
 ## Benchmark
 
