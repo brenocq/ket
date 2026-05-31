@@ -16,10 +16,13 @@
 #include <cstddef>
 #include <cstdio>
 #include <exception>
+#include <filesystem>
 #include <fstream>
 #include <optional>
+#include <sstream>
 #include <string>
 #include <string_view>
+#include <system_error>
 #include <vector>
 
 #include "imgui.h"
@@ -51,6 +54,96 @@ void set_window_icon(GLFWwindow* window) {
                   const_cast<unsigned char*>(kIconRGBA)};
   glfwSetWindowIcon(window, 1, &image);
 }
+
+namespace fs = std::filesystem;
+
+// A small self-contained file picker (no native dialog dependency): browse
+// directories and pick/name a .qasm file. begin() opens it; draw() must be
+// called every frame and returns true once when the user confirms a path.
+struct FileDialog {
+  bool saving = false;
+  fs::path dir;
+  std::string filename;
+  std::string result;
+
+  void begin(bool save, const std::string& current) {
+    saving = save;
+    std::error_code ec;
+    const fs::path cur(current);
+    dir = (!cur.empty() && fs::exists(cur.parent_path(), ec))
+              ? cur.parent_path()
+              : fs::current_path(ec);
+    if (dir.empty()) dir = fs::path(".");
+    filename = (save && !cur.empty()) ? cur.filename().string() : std::string();
+    result.clear();
+    ImGui::OpenPopup("filedlg");
+  }
+
+  bool draw() {
+    bool done = false;
+    const ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+    ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+    ImGui::SetNextWindowSize(ImVec2(540, 460), ImGuiCond_Appearing);
+    if (!ImGui::BeginPopupModal("filedlg", nullptr,
+                                ImGuiWindowFlags_NoSavedSettings))
+      return false;
+
+    ImGui::TextDisabled(saving ? "Save circuit as (.qasm)"
+                               : "Open a .qasm file");
+    if (ImGui::Button("Up")) {
+      const fs::path p = dir.parent_path();
+      if (!p.empty() && p != dir) dir = p;
+    }
+    ImGui::SameLine();
+    ImGui::TextWrapped("%s", dir.string().c_str());
+    ImGui::Separator();
+
+    ImGui::BeginChild("##list", ImVec2(0, 300), ImGuiChildFlags_Borders);
+    std::error_code ec;
+    std::vector<fs::path> dirs;
+    std::vector<fs::path> files;
+    for (const auto& entry : fs::directory_iterator(
+             dir, fs::directory_options::skip_permission_denied, ec)) {
+      std::error_code ec2;
+      if (entry.is_directory(ec2)) {
+        dirs.push_back(entry.path());
+      } else if (entry.path().extension() == ".qasm") {
+        files.push_back(entry.path());
+      }
+    }
+    std::sort(dirs.begin(), dirs.end());
+    std::sort(files.begin(), files.end());
+    for (const fs::path& p : dirs) {
+      const std::string label = "[dir]  " + p.filename().string();
+      if (ImGui::Selectable(label.c_str())) dir = p;
+    }
+    for (const fs::path& p : files) {
+      const std::string name = p.filename().string();
+      if (ImGui::Selectable(name.c_str(), name == filename)) filename = name;
+      if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0)) {
+        result = (dir / name).string();
+        done = true;
+        ImGui::CloseCurrentPopup();
+      }
+    }
+    ImGui::EndChild();
+
+    ImGui::SetNextItemWidth(-1.0f);
+    ImGui::InputText("##filename", &filename);
+
+    ImGui::BeginDisabled(filename.empty());
+    if (ImGui::Button(saving ? "Save" : "Open")) {
+      result = (dir / filename).string();
+      done = true;
+      ImGui::CloseCurrentPopup();
+    }
+    ImGui::EndDisabled();
+    ImGui::SameLine();
+    if (ImGui::Button("Cancel")) ImGui::CloseCurrentPopup();
+    ImGui::EndPopup();
+    return done;
+  }
+};
 
 // Short box label for a gate type (ASCII only — the default ImGui font has no
 // glyphs for the dagger/box-drawing characters the ASCII printer uses).
@@ -894,20 +987,25 @@ void render_circuit(const Circuit& circuit, std::size_t current_step) {
 
 }  // namespace
 
-int run(const std::string& qasm_source, const std::string& title) {
+int run(const std::string& qasm_source, const std::string& path) {
   glfwSetErrorCallback(glfw_error_callback);
   if (glfwInit() == 0) {
     std::fprintf(stderr, "error: failed to initialize GLFW\n");
     return 1;
   }
 
+  auto make_title = [](const std::string& p) {
+    return p.empty() ? std::string("ket-gui") : "ket-gui — " + p;
+  };
+  std::string current_path = path;
+
   // OpenGL 3.0 + GLSL 130.
   const char* glsl_version = "#version 130";
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
 
-  GLFWwindow* window =
-      glfwCreateWindow(1280, 720, title.c_str(), nullptr, nullptr);
+  GLFWwindow* window = glfwCreateWindow(
+      1280, 720, make_title(current_path).c_str(), nullptr, nullptr);
   if (window == nullptr) {
     std::fprintf(stderr, "error: failed to create window\n");
     glfwTerminate();
@@ -978,6 +1076,31 @@ int run(const std::string& qasm_source, const std::string& title) {
   };
   reparse();
 
+  FileDialog dialog;
+  auto load_path = [&](const std::string& p) {
+    std::ifstream file(p);
+    if (!file) {
+      parse_error = "cannot open file: " + p;
+      return;
+    }
+    std::ostringstream ss;
+    ss << file.rdbuf();
+    code = ss.str();
+    current_path = p;
+    reparse();
+    glfwSetWindowTitle(window, make_title(current_path).c_str());
+  };
+  auto save_path = [&](const std::string& p) {
+    std::ofstream file(p);
+    if (!file) {
+      parse_error = "cannot write file: " + p;
+      return;
+    }
+    file << code;
+    current_path = p;
+    glfwSetWindowTitle(window, make_title(current_path).c_str());
+  };
+
   bool layout_done = false;
 
   while (glfwWindowShouldClose(window) == 0) {
@@ -997,6 +1120,34 @@ int run(const std::string& qasm_source, const std::string& title) {
           playing = false;
           break;
         }
+      }
+    }
+
+    // Top menu bar: File operations. OpenPopup (in dialog.begin) must run at
+    // the same ID-stack level as BeginPopupModal (in dialog.draw), so the menu
+    // only records intent and we open the dialog after EndMainMenuBar.
+    bool want_load = false;
+    bool want_save_as = false;
+    if (ImGui::BeginMainMenuBar()) {
+      if (ImGui::BeginMenu("File")) {
+        if (ImGui::MenuItem("Load...")) want_load = true;
+        if (ImGui::MenuItem("Save", nullptr, false, !current_path.empty()))
+          save_path(current_path);
+        if (ImGui::MenuItem("Save As...")) want_save_as = true;
+        ImGui::Separator();
+        if (ImGui::MenuItem("Quit"))
+          glfwSetWindowShouldClose(window, GLFW_TRUE);
+        ImGui::EndMenu();
+      }
+      ImGui::EndMainMenuBar();
+    }
+    if (want_load) dialog.begin(false, current_path);
+    if (want_save_as) dialog.begin(true, current_path);
+    if (dialog.draw()) {
+      if (dialog.saving) {
+        save_path(dialog.result);
+      } else {
+        load_path(dialog.result);
       }
     }
 

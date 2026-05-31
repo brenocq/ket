@@ -6,9 +6,9 @@
 
 namespace ket::gui {
 
-// Opens a GLFW/ImGui window titled `title` with a single "Circuit" panel that
-// shows the given QASM source, and runs until the user closes it. Returns a
-// process exit code.
-int run(const std::string& qasm_source, const std::string& title);
+// Opens the GLFW/ImGui window on the given QASM source, loaded from `path`
+// (used for the title bar and File > Save; may be empty). Runs until the user
+// closes the window. Returns a process exit code.
+int run(const std::string& qasm_source, const std::string& path);
 
 }  // namespace ket::gui

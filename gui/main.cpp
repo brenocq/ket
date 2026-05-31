@@ -2,7 +2,8 @@
 // SPDX-FileCopyrightText: 2026 Breno Cunha Queiroz
 //
 // Entry point for the `ket-gui` executable: `ket-gui <file.qasm>` opens the
-// circuit window. For now the window just shows the raw QASM source.
+// circuit window (editable QASM, circuit diagram, state and qubit panels).
+// Other files can be opened from the in-window File menu while it is running.
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -30,7 +31,9 @@ std::string read_file(const std::string& path, bool& ok) {
 void usage(std::ostream& os) {
   os << "Usage: ket-gui <file.qasm>\n"
         "\n"
-        "Opens a window showing the circuit (currently the raw QASM source).\n"
+        "Opens a window with the editable QASM, circuit diagram, and state "
+        "and\n"
+        "qubit panels. Use the File menu to open other files while it runs.\n"
         "\n"
         "Options:\n"
         "  -v, --version   Print the version and exit\n"
@@ -71,5 +74,5 @@ int main(int argc, char** argv) {
     return 2;
   }
 
-  return ket::gui::run(source, "ket-gui — " + arg);
+  return ket::gui::run(source, arg);
 }
