@@ -47,6 +47,12 @@
 namespace ket::gui {
 namespace {
 
+// Ket's brand accent: a vibrant "quantum gold" — the gold of the wiring inside
+// a dilution refrigerator. Used wherever ImGui would otherwise use its blue
+// (active controls, the selected tab, focus) and for the circuit playhead and
+// the Bloch vector, so the whole app shares one accent.
+const ImU32 kAccent = IM_COL32(251, 191, 36, 255);  // #FBBF24
+
 void glfw_error_callback(int error, const char* description) {
   std::fprintf(stderr, "glfw error %d: %s\n", error, description);
 }
@@ -135,6 +141,22 @@ void setup_dark_style() {
   colors[ImGuiCol_NavWindowingHighlight] = ImVec4(1.0f, 1.0f, 1.0f, 0.7f);
   colors[ImGuiCol_NavWindowingDimBg] = ImVec4(0.0f, 0.0f, 0.0f, 0.4f);
   colors[ImGuiCol_ModalWindowDimBg] = ImVec4(0.0f, 0.0f, 0.0f, 0.5f);
+
+  // Quantum-gold accent wherever ImGui would otherwise reach for its blue:
+  // active controls, the selected tab, focus/selection, and data bars.
+  const ImVec4 accent = ImGui::ColorConvertU32ToFloat4(kAccent);
+  const ImVec4 accent_hi =
+      ImVec4(1.0f, 0.835f, 0.40f, 1.0f);  // brighter, active
+  colors[ImGuiCol_CheckMark] = accent;
+  colors[ImGuiCol_SliderGrab] = accent;
+  colors[ImGuiCol_SliderGrabActive] = accent_hi;
+  colors[ImGuiCol_TabSelectedOverline] = accent;
+  colors[ImGuiCol_ResizeGripActive] = accent;
+  colors[ImGuiCol_NavCursor] = accent;
+  colors[ImGuiCol_DragDropTarget] = accent;
+  colors[ImGuiCol_PlotHistogram] = accent;  // ProgressBar (State panel bars)
+  colors[ImGuiCol_PlotHistogramHovered] = accent_hi;
+  colors[ImGuiCol_TextSelectedBg] = ImVec4(accent.x, accent.y, accent.z, 0.28f);
 
   // Rounded corners for a modern look.
   style.WindowRounding = 6.0f;
@@ -753,8 +775,7 @@ void draw_bloch_sphere(const char* id, float side, const Bloch& b) {
   const double axs[2] = {0.0, b.x};
   const double ays[2] = {0.0, b.y};
   const double azs[2] = {0.0, b.z};
-  const ImVec4 amber =
-      ImGui::ColorConvertU32ToFloat4(IM_COL32(255, 199, 89, 255));
+  const ImVec4 amber = ImGui::ColorConvertU32ToFloat4(kAccent);
   ImPlot3DSpec arrow;
   arrow.LineColor = amber;
   arrow.LineWeight = 3.0f;
@@ -1032,7 +1053,8 @@ void render_circuit(const Circuit& circuit, std::size_t current_step) {
     const double top[2] = {yq(lo) + 0.5, yq(lo) + 0.5};
     const double bot[2] = {yq(hi) - 0.5, yq(hi) - 0.5};
     ImPlotSpec hs;
-    hs.FillColor = v4(IM_COL32(255, 209, 102, 64));  // amber glow
+    // Translucent accent glow (the brand gold at low alpha).
+    hs.FillColor = v4((kAccent & ~IM_COL32_A_MASK) | (70u << IM_COL32_A_SHIFT));
     hs.Flags = ImPlotItemFlags_NoLegend;
     ImPlot::PlotShaded(next_id(), xs, top, bot, 2, hs);
   }
