@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ket — demo (coming soon)</title>
+    <meta name="description" content="The ket in-browser debugger demo is on its way." />
+    <link rel="icon" href="../assets/icon.png" />
+    <link rel="stylesheet" href="../styles.css" />
+    <style>
+      .center {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 24px;
+      }
+      .center .pill {
+        margin-bottom: 22px;
+      }
+      .center h1 {
+        font-size: clamp(30px, 5vw, 48px);
+        letter-spacing: -0.02em;
+        margin: 0 0 14px;
+        font-weight: 700;
+      }
+      .center p {
+        color: var(--muted);
+        max-width: 48ch;
+        margin: 0 auto 28px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="center">
+      <div>
+        <a class="brand" href="../" style="justify-content: center; font-size: 20px">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none">
+            <path d="M5 4v16M11 5l6 7-6 7" style="stroke: var(--accent)"
+              stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          ket
+        </a>
+        <div style="height: 26px"></div>
+        <span class="pill"><span class="dot"></span> Live demo · coming soon</span>
+        <h1>The debugger is<br /><span class="grad">almost in your browser.</span></h1>
+        <p>
+          The full ket debugger compiles to WebAssembly and will run right here.
+          We're wiring up the build — in the meantime, grab the library or run the
+          native GUI from source.
+        </p>
+        <div class="cta" style="justify-content: center">
+          <a class="btn btn-accent btn-lg" href="https://github.com/brenocq/ket">View on GitHub</a>
+          <a class="btn btn-ghost btn-lg" href="../">← Back to ket</a>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
