@@ -32,6 +32,8 @@
 
 #include <GLFW/glfw3.h>
 
+#include "icon.hpp"  // embedded RGBA window icon
+
 #include <ket/ket.hpp>
 
 namespace ket::gui {
@@ -39,6 +41,15 @@ namespace {
 
 void glfw_error_callback(int error, const char* description) {
   std::fprintf(stderr, "glfw error %d: %s\n", error, description);
+}
+
+// Set the window icon from the embedded RGBA image. glfwSetWindowIcon copies
+// the pixels, so the const_cast is safe; platforms that ignore it (macOS,
+// Wayland) are no-ops.
+void set_window_icon(GLFWwindow* window) {
+  GLFWimage image{kIconWidth, kIconHeight,
+                  const_cast<unsigned char*>(kIconRGBA)};
+  glfwSetWindowIcon(window, 1, &image);
 }
 
 // Short box label for a gate type (ASCII only — the default ImGui font has no
@@ -902,6 +913,7 @@ int run(const std::string& qasm_source, const std::string& title) {
     glfwTerminate();
     return 1;
   }
+  set_window_icon(window);
   glfwMakeContextCurrent(window);
   glfwSwapInterval(1);  // vsync
 
