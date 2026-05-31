@@ -26,9 +26,12 @@ ket::Method method_from_string(const std::string& method) {
 
 const char* method_to_string(ket::Method method) {
   switch (method) {
-    case ket::Method::Auto: return "auto";
-    case ket::Method::StateVector: return "statevector";
-    case ket::Method::Stabilizer: return "stabilizer";
+    case ket::Method::Auto:
+      return "auto";
+    case ket::Method::StateVector:
+      return "statevector";
+    case ket::Method::Stabilizer:
+      return "stabilizer";
   }
   return "auto";
 }
@@ -166,9 +169,10 @@ PYBIND11_MODULE(_ket, m) {
   m.def("run", &ket::run, py::arg("circuit"),
         "Simulate the circuit and return the resulting state vector.");
 
-  m.def("set_num_threads", &ket::set_num_threads, py::arg("threads"),
-        "Threads the state-vector backend uses to apply each gate (0 = hardware "
-        "concurrency). Defaults to 1; only large states are parallelized.");
+  m.def(
+      "set_num_threads", &ket::set_num_threads, py::arg("threads"),
+      "Threads the state-vector backend uses to apply each gate (0 = hardware "
+      "concurrency). Defaults to 1; only large states are parallelized.");
 
   m.def("num_threads", &ket::num_threads,
         "The current state-vector thread count.");

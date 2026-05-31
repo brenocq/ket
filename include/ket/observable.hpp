@@ -33,7 +33,8 @@ double expval(const State& state, const PauliSum& hamiltonian);
 
 // Expectation value over a circuit's final state, choosing a backend (see
 // Method). For Clifford circuits the stabilizer engine computes this without
-// ever forming a 2^n state vector; the result matches expval(run(circuit), ...).
+// ever forming a 2^n state vector; the result matches expval(run(circuit),
+// ...).
 double expval(const Circuit& circuit, const std::string& pauli,
               Method method = Method::Auto);
 double expval(const Circuit& circuit, const PauliSum& hamiltonian,

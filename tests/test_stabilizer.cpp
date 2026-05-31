@@ -31,16 +31,36 @@ ket::Circuit random_clifford(std::size_t n, int depth, std::mt19937& rng) {
     std::size_t b = qubit(rng);
     while (n > 1 && b == a) b = qubit(rng);
     switch (gate(rng)) {
-      case 0: c.h(a); break;
-      case 1: c.s(a); break;
-      case 2: c.sdg(a); break;
-      case 3: c.x(a); break;
-      case 4: c.y(a); break;
-      case 5: c.z(a); break;
-      case 6: if (n > 1) c.cx(a, b); break;
-      case 7: if (n > 1) c.cy(a, b); break;
-      case 8: if (n > 1) c.cz(a, b); break;
-      case 9: if (n > 1) c.swap(a, b); break;
+      case 0:
+        c.h(a);
+        break;
+      case 1:
+        c.s(a);
+        break;
+      case 2:
+        c.sdg(a);
+        break;
+      case 3:
+        c.x(a);
+        break;
+      case 4:
+        c.y(a);
+        break;
+      case 5:
+        c.z(a);
+        break;
+      case 6:
+        if (n > 1) c.cx(a, b);
+        break;
+      case 7:
+        if (n > 1) c.cy(a, b);
+        break;
+      case 8:
+        if (n > 1) c.cz(a, b);
+        break;
+      case 9:
+        if (n > 1) c.swap(a, b);
+        break;
     }
   }
   return c;
@@ -126,7 +146,8 @@ TEST(Stabilizer, CliffordCompositeIsClifford) {
 TEST(Stabilizer, ExplicitStabilizerOnNonCliffordThrows) {
   ket::Circuit c{1};
   c.t(0);
-  EXPECT_THROW(ket::simulate(c, ket::Method::Stabilizer), std::invalid_argument);
+  EXPECT_THROW(ket::simulate(c, ket::Method::Stabilizer),
+               std::invalid_argument);
   EXPECT_THROW(ket::expval(c, "Z", ket::Method::Stabilizer),
                std::invalid_argument);
   // Auto still works (falls back to the dense backend).

@@ -35,8 +35,8 @@ class Tableau {
       : n_(n), x_(rows() * n, 0), z_(rows() * n, 0), r_(rows(), 0) {
     // The |0...0> stabilizer state: destabilizer i = X_i, stabilizer i = Z_i.
     for (std::size_t i = 0; i < n_; ++i) {
-      x(i, i) = 1;          // destabilizers
-      z(n_ + i, i) = 1;     // stabilizers
+      x(i, i) = 1;       // destabilizers
+      z(n_ + i, i) = 1;  // stabilizers
     }
   }
 
@@ -100,7 +100,8 @@ class Tableau {
   // Measure qubit q in the computational basis, collapsing the state and
   // returning the outcome bit (0 or 1).
   int measure(std::size_t q, std::mt19937& rng) {
-    std::size_t p = 2 * n_;  // a stabilizer generator that anticommutes with Z_q
+    std::size_t p =
+        2 * n_;  // a stabilizer generator that anticommutes with Z_q
     for (std::size_t i = n_; i < 2 * n_; ++i) {
       if (x(i, q)) {
         p = i;
@@ -150,8 +151,12 @@ class Tableau {
 
  private:
   std::size_t rows() const { return 2 * n_ + 1; }
-  std::uint8_t& x(std::size_t row, std::size_t col) { return x_[row * n_ + col]; }
-  std::uint8_t& z(std::size_t row, std::size_t col) { return z_[row * n_ + col]; }
+  std::uint8_t& x(std::size_t row, std::size_t col) {
+    return x_[row * n_ + col];
+  }
+  std::uint8_t& z(std::size_t row, std::size_t col) {
+    return z_[row * n_ + col];
+  }
   std::uint8_t& r(std::size_t row) { return r_[row]; }
 
   void clear_row(std::size_t row) {
@@ -172,10 +177,10 @@ class Tableau {
   // Power of i (mod 4) produced when left-multiplying Pauli (x1,z1) by (x2,z2).
   static int g(std::uint8_t x1, std::uint8_t z1, std::uint8_t x2,
                std::uint8_t z2) {
-    if (!x1 && !z1) return 0;                          // I
-    if (x1 && z1) return static_cast<int>(z2) - x2;    // Y
-    if (x1 && !z1) return z2 * (2 * x2 - 1);           // X
-    return x2 * (1 - 2 * z2);                          // Z
+    if (!x1 && !z1) return 0;                        // I
+    if (x1 && z1) return static_cast<int>(z2) - x2;  // Y
+    if (x1 && !z1) return z2 * (2 * x2 - 1);         // X
+    return x2 * (1 - 2 * z2);                        // Z
   }
 
   // Left-multiply row h by row i, storing the result (with its sign) in row h.
@@ -186,7 +191,8 @@ class Tableau {
     }
     sum %= 4;
     if (sum < 0) sum += 4;
-    r(h) = static_cast<std::uint8_t>(sum == 2 ? 1 : 0);  // products are real (+/-1)
+    r(h) = static_cast<std::uint8_t>(sum == 2 ? 1
+                                              : 0);  // products are real (+/-1)
     for (std::size_t j = 0; j < n_; ++j) {
       x(h, j) ^= x(i, j);
       z(h, j) ^= z(i, j);
@@ -208,16 +214,36 @@ void evolve(Tableau& t, const Circuit& circuit,
     const Gate& g = node.gate;
     auto q = [&](std::size_t k) { return wire[g.qubits[k].index]; };
     switch (g.type) {
-      case GateType::H: t.h(q(0)); break;
-      case GateType::X: t.x_gate(q(0)); break;
-      case GateType::Y: t.y_gate(q(0)); break;
-      case GateType::Z: t.z_gate(q(0)); break;
-      case GateType::S: t.s(q(0)); break;
-      case GateType::Sdg: t.sdg(q(0)); break;
-      case GateType::CX: t.cnot(q(0), q(1)); break;
-      case GateType::CY: t.cy(q(0), q(1)); break;
-      case GateType::CZ: t.cz(q(0), q(1)); break;
-      case GateType::Swap: t.swap(q(0), q(1)); break;
+      case GateType::H:
+        t.h(q(0));
+        break;
+      case GateType::X:
+        t.x_gate(q(0));
+        break;
+      case GateType::Y:
+        t.y_gate(q(0));
+        break;
+      case GateType::Z:
+        t.z_gate(q(0));
+        break;
+      case GateType::S:
+        t.s(q(0));
+        break;
+      case GateType::Sdg:
+        t.sdg(q(0));
+        break;
+      case GateType::CX:
+        t.cnot(q(0), q(1));
+        break;
+      case GateType::CY:
+        t.cy(q(0), q(1));
+        break;
+      case GateType::CZ:
+        t.cz(q(0), q(1));
+        break;
+      case GateType::Swap:
+        t.swap(q(0), q(1));
+        break;
       case GateType::Measure:
       case GateType::Barrier:
       case GateType::Probe:
@@ -272,13 +298,24 @@ class StabilizerSimulation final : public Simulation {
     Tableau t = tableau_;
     std::vector<std::size_t> support;
     for (std::size_t i = 0; i < tableau_.n(); ++i) {
-      char p = pauli[tableau_.n() - 1 - i];  // right-to-left: rightmost = qubit 0
+      char p =
+          pauli[tableau_.n() - 1 - i];  // right-to-left: rightmost = qubit 0
       if (p >= 'a' && p <= 'z') p = static_cast<char>(p - ('a' - 'A'));
       switch (p) {
-        case 'I': break;
-        case 'X': t.h(i); support.push_back(i); break;
-        case 'Y': t.sdg(i); t.h(i); support.push_back(i); break;
-        case 'Z': support.push_back(i); break;
+        case 'I':
+          break;
+        case 'X':
+          t.h(i);
+          support.push_back(i);
+          break;
+        case 'Y':
+          t.sdg(i);
+          t.h(i);
+          support.push_back(i);
+          break;
+        case 'Z':
+          support.push_back(i);
+          break;
         default:
           throw std::invalid_argument(
               std::string("expval: invalid Pauli character '") + p + "'");

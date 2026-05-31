@@ -40,7 +40,10 @@ class ThreadPool {
       stop_ = true;
       ++gen_;
     }
-    cv_.notify_all();  // std::jthread joins on destruction
+    cv_.notify_all();
+    for (std::thread& t : workers_) {
+      if (t.joinable()) t.join();
+    }
   }
 
   unsigned size() const { return n_; }
@@ -93,7 +96,7 @@ class ThreadPool {
   }
 
   unsigned n_;
-  std::vector<std::jthread> workers_;
+  std::vector<std::thread> workers_;
   std::mutex m_;
   std::condition_variable cv_;
   std::condition_variable done_;

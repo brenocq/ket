@@ -28,15 +28,33 @@ ket::Circuit random_mixed(std::size_t n, int depth, std::mt19937& rng) {
     std::size_t b = qubit(rng);
     while (b == a) b = qubit(rng);
     switch (gate(rng)) {
-      case 0: c.h(a); break;
-      case 1: c.rx(a, angle(rng)); break;
-      case 2: c.ry(a, angle(rng)); break;
-      case 3: c.t(a); break;
-      case 4: c.cx(a, b); break;
-      case 5: c.cz(a, b); break;
-      case 6: c.swap(a, b); break;
-      case 7: c.cp(a, b, angle(rng)); break;
-      case 8: c.cy(a, b); break;
+      case 0:
+        c.h(a);
+        break;
+      case 1:
+        c.rx(a, angle(rng));
+        break;
+      case 2:
+        c.ry(a, angle(rng));
+        break;
+      case 3:
+        c.t(a);
+        break;
+      case 4:
+        c.cx(a, b);
+        break;
+      case 5:
+        c.cz(a, b);
+        break;
+      case 6:
+        c.swap(a, b);
+        break;
+      case 7:
+        c.cp(a, b, angle(rng));
+        break;
+      case 8:
+        c.cy(a, b);
+        break;
     }
   }
   return c;

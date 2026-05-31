@@ -164,7 +164,7 @@ stabilizer engine never forms a `2ⁿ` vector, so `run()` — which returns the 
 state vector — is always the dense path.
 
 The state-vector backend applies each gate's `2ⁿ`-amplitude update across a
-persistent `std::jthread` pool (the pairs are independent, so the split needs no
+persistent `std::thread` pool (the pairs are independent, so the split needs no
 locks). `set_num_threads(n)` controls it — `0` selects the hardware concurrency;
 it defaults to `1` (or `KET_NUM_THREADS`). Small states stay serial, since the
 synchronization would cost more than the work.

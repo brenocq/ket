@@ -113,7 +113,8 @@ void apply_cy(State& s, std::size_t control, std::size_t target) {
   const std::size_t tmask = std::size_t{1} << target;
   internal::parallel_for(s.size(), [&](std::size_t lo, std::size_t hi) {
     for (std::size_t k = lo; k < hi; ++k) {
-      if ((k & cmask) == 0 || (k & tmask) != 0) continue;  // control=1, target=0
+      if ((k & cmask) == 0 || (k & tmask) != 0)
+        continue;  // control=1, target=0
       const std::size_t k1 = k | tmask;
       const Complex a = s[k];         // target-0 amplitude
       const Complex b = s[k1];        // target-1 amplitude
@@ -130,7 +131,8 @@ void apply_ch(State& s, std::size_t control, std::size_t target) {
   const double inv_sqrt2 = 1.0 / std::sqrt(2.0);
   internal::parallel_for(s.size(), [&](std::size_t lo, std::size_t hi) {
     for (std::size_t k = lo; k < hi; ++k) {
-      if ((k & cmask) == 0 || (k & tmask) != 0) continue;  // control=1, target=0
+      if ((k & cmask) == 0 || (k & tmask) != 0)
+        continue;  // control=1, target=0
       const std::size_t k1 = k | tmask;
       const Complex a = s[k];
       const Complex b = s[k1];
@@ -149,7 +151,8 @@ void apply_controlled_single(State& s, std::size_t control, std::size_t target,
   const std::size_t tmask = std::size_t{1} << target;
   internal::parallel_for(s.size(), [&](std::size_t lo, std::size_t hi) {
     for (std::size_t k = lo; k < hi; ++k) {
-      if ((k & cmask) == 0 || (k & tmask) != 0) continue;  // control=1, target=0
+      if ((k & cmask) == 0 || (k & tmask) != 0)
+        continue;  // control=1, target=0
       const std::size_t k1 = k | tmask;
       const Complex a = s[k];
       const Complex b = s[k1];
@@ -215,8 +218,9 @@ void apply_ccx(State& s, std::size_t control1, std::size_t control2,
   const std::size_t tmask = std::size_t{1} << target;
   internal::parallel_for(s.size(), [&](std::size_t lo, std::size_t hi) {
     for (std::size_t k = lo; k < hi; ++k) {
-      if ((k & c1mask) == 0 || (k & c2mask) == 0) continue;  // both controls = 1
-      if ((k & tmask) != 0) continue;                        // target = 0
+      if ((k & c1mask) == 0 || (k & c2mask) == 0)
+        continue;                      // both controls = 1
+      if ((k & tmask) != 0) continue;  // target = 0
       std::swap(s[k], s[k | tmask]);
     }
   });
