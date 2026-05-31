@@ -23,6 +23,7 @@
 #include <string>
 #include <string_view>
 #include <system_error>
+#include <utility>
 #include <vector>
 
 #include "imgui.h"
@@ -250,6 +251,46 @@ struct FileDialog {
     return done;
   }
 };
+
+// A human-friendly menu label from an example's file stem:
+// "bernstein_vazirani" -> "Bernstein vazirani".
+std::string example_label(std::string stem) {
+  for (char& c : stem) {
+    if (c == '_' || c == '-') c = ' ';
+  }
+  if (!stem.empty()) {
+    stem[0] =
+        static_cast<char>(std::toupper(static_cast<unsigned char>(stem[0])));
+  }
+  return stem;
+}
+
+// (label, path) for every .qasm in the examples dir (the in-tree copy for dev
+// builds, the installed copy otherwise, or /examples in the web build), sorted
+// by label.
+std::vector<std::pair<std::string, std::string>> scan_examples() {
+  std::vector<std::pair<std::string, std::string>> out;
+  for (const char* dir : {
+#ifdef KET_GUI_EXAMPLES_DIR
+           KET_GUI_EXAMPLES_DIR,
+#endif
+#ifdef KET_GUI_INSTALL_EXAMPLES_DIR
+           KET_GUI_INSTALL_EXAMPLES_DIR,
+#endif
+       }) {
+    std::error_code ec;
+    if (!fs::is_directory(dir, ec)) continue;
+    for (const auto& entry : fs::directory_iterator(
+             dir, fs::directory_options::skip_permission_denied, ec)) {
+      if (entry.path().extension() != ".qasm") continue;
+      out.emplace_back(example_label(entry.path().stem().string()),
+                       entry.path().string());
+    }
+    if (!out.empty()) break;  // first dir that has examples wins
+  }
+  std::sort(out.begin(), out.end());
+  return out;
+}
 
 // Short box label for a gate type (ASCII only — the default ImGui font has no
 // glyphs for the dagger/box-drawing characters the ASCII printer uses).
@@ -1111,6 +1152,7 @@ struct Gui {
   float play_interval = 0.20f;  // seconds per gate while playing
   std::string current_path;
   FileDialog dialog;
+  std::vector<std::pair<std::string, std::string>> examples;  // (label, path)
   bool layout_done = false;
 
   void retitle() {
@@ -1184,6 +1226,12 @@ struct Gui {
         ImGui::Separator();
         if (ImGui::MenuItem("Quit"))
           glfwSetWindowShouldClose(window, GLFW_TRUE);
+        ImGui::EndMenu();
+      }
+      if (ImGui::BeginMenu("Examples", !examples.empty())) {
+        for (const auto& [label, ex_path] : examples) {
+          if (ImGui::MenuItem(label.c_str())) load_path(ex_path);
+        }
         ImGui::EndMenu();
       }
       ImGui::EndMainMenuBar();
@@ -1445,6 +1493,7 @@ int run(const std::string& qasm_source, const std::string& path) {
   gui->mono_font = mono_font;
   gui->code = qasm_source;
   gui->current_path = path;
+  gui->examples = scan_examples();
   gui->reparse();
 
 #ifdef __EMSCRIPTEN__

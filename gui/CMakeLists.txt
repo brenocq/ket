@@ -93,12 +93,17 @@ target_include_directories(ket_gui_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 # Where the fonts are found at runtime. Native: the in-tree copy (dev) or the
 # installed copy (share/ket). Emscripten: the preloaded virtual FS at /assets.
 if(EMSCRIPTEN)
-  target_compile_definitions(ket_gui_core PRIVATE KET_GUI_ASSETS_DIR="/assets")
+  target_compile_definitions(
+    ket_gui_core PRIVATE KET_GUI_ASSETS_DIR="/assets"
+                         KET_GUI_EXAMPLES_DIR="/examples")
 else()
   target_compile_definitions(
     ket_gui_core
-    PRIVATE KET_GUI_ASSETS_DIR="${CMAKE_CURRENT_SOURCE_DIR}/assets"
-            KET_GUI_INSTALL_ASSETS_DIR="${CMAKE_INSTALL_FULL_DATADIR}/ket")
+    PRIVATE
+      KET_GUI_ASSETS_DIR="${CMAKE_CURRENT_SOURCE_DIR}/assets"
+      KET_GUI_INSTALL_ASSETS_DIR="${CMAKE_INSTALL_FULL_DATADIR}/ket"
+      KET_GUI_EXAMPLES_DIR="${PROJECT_SOURCE_DIR}/examples"
+      KET_GUI_INSTALL_EXAMPLES_DIR="${CMAKE_INSTALL_FULL_DATADIR}/ket/examples")
 endif()
 
 add_executable(ket_gui main.cpp)
@@ -127,4 +132,8 @@ else()
           ${CMAKE_CURRENT_SOURCE_DIR}/assets/JetBrainsMono-Regular.ttf
           ${CMAKE_CURRENT_SOURCE_DIR}/assets/JetBrainsMono-OFL.txt
     DESTINATION ${CMAKE_INSTALL_DATADIR}/ket)
+  # The example circuits power the in-app Examples menu on an installed binary.
+  file(GLOB _ket_example_qasm "${PROJECT_SOURCE_DIR}/examples/*.qasm")
+  install(FILES ${_ket_example_qasm}
+          DESTINATION ${CMAKE_INSTALL_DATADIR}/ket/examples)
 endif()
