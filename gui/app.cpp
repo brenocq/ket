@@ -55,6 +55,108 @@ void set_window_icon(GLFWwindow* window) {
   glfwSetWindowIcon(window, 1, &image);
 }
 
+// A black/gray dark theme with rounded corners, applied over StyleColorsDark.
+void setup_dark_style() {
+  ImGuiStyle& style = ImGui::GetStyle();
+  ImVec4* colors = style.Colors;
+
+  // Black/gray palette.
+  // clang-format off
+  const ImVec4 bg       = ImVec4(0.059f, 0.059f, 0.059f, 1.0f); // #0f0f0f — main background
+  const ImVec4 mantle   = ImVec4(0.039f, 0.039f, 0.039f, 1.0f); // #0a0a0a — deeper background (menubar, titlebar)
+  const ImVec4 surface0 = ImVec4(0.102f, 0.102f, 0.102f, 1.0f); // #1a1a1a — raised surface
+  const ImVec4 surface1 = ImVec4(0.149f, 0.149f, 0.149f, 1.0f); // #262626 — hovered surface
+  const ImVec4 surface2 = ImVec4(0.200f, 0.200f, 0.200f, 1.0f); // #333333 — active surface
+  const ImVec4 overlay0 = ImVec4(0.259f, 0.259f, 0.259f, 1.0f); // #424242 — subtle highlight
+  const ImVec4 overlay1 = ImVec4(0.349f, 0.349f, 0.349f, 1.0f); // #595959 — stronger highlight
+  const ImVec4 overlay2 = ImVec4(0.459f, 0.459f, 0.459f, 1.0f); // #757575 — muted text / grabs
+  const ImVec4 text     = ImVec4(0.878f, 0.878f, 0.878f, 1.0f); // #e0e0e0 — primary text
+  const ImVec4 subtext  = ImVec4(0.580f, 0.580f, 0.580f, 1.0f); // #949494 — secondary text
+  // clang-format on
+
+  colors[ImGuiCol_Text] = text;
+  colors[ImGuiCol_TextDisabled] = subtext;
+  colors[ImGuiCol_WindowBg] = bg;
+  colors[ImGuiCol_ChildBg] = bg;
+  colors[ImGuiCol_PopupBg] = surface0;
+  colors[ImGuiCol_Border] = overlay0;
+  colors[ImGuiCol_BorderShadow] = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
+  colors[ImGuiCol_FrameBg] = surface0;
+  colors[ImGuiCol_FrameBgHovered] = surface1;
+  colors[ImGuiCol_FrameBgActive] = surface2;
+  colors[ImGuiCol_TitleBg] = mantle;
+  colors[ImGuiCol_TitleBgActive] = surface0;
+  colors[ImGuiCol_TitleBgCollapsed] = mantle;
+  colors[ImGuiCol_MenuBarBg] = mantle;
+  colors[ImGuiCol_ScrollbarBg] = surface0;
+  colors[ImGuiCol_ScrollbarGrab] = surface2;
+  colors[ImGuiCol_ScrollbarGrabHovered] = overlay0;
+  colors[ImGuiCol_ScrollbarGrabActive] = overlay1;
+  colors[ImGuiCol_CheckMark] = text;
+  colors[ImGuiCol_SliderGrab] = overlay1;
+  colors[ImGuiCol_SliderGrabActive] = overlay2;
+  colors[ImGuiCol_Button] = surface1;
+  colors[ImGuiCol_ButtonHovered] = surface2;
+  colors[ImGuiCol_ButtonActive] = overlay0;
+  colors[ImGuiCol_Header] = surface0;
+  colors[ImGuiCol_HeaderHovered] = surface1;
+  colors[ImGuiCol_HeaderActive] = surface2;
+  colors[ImGuiCol_Separator] = overlay0;
+  colors[ImGuiCol_SeparatorHovered] = overlay1;
+  colors[ImGuiCol_SeparatorActive] = overlay2;
+  colors[ImGuiCol_ResizeGrip] = surface2;
+  colors[ImGuiCol_ResizeGripHovered] = overlay0;
+  colors[ImGuiCol_ResizeGripActive] = overlay1;
+  colors[ImGuiCol_Tab] = surface0;
+  colors[ImGuiCol_TabHovered] = surface2;
+  colors[ImGuiCol_TabSelected] = surface1;
+  colors[ImGuiCol_TabDimmed] = surface0;
+  colors[ImGuiCol_TabDimmedSelected] = surface1;
+  colors[ImGuiCol_TabSelectedOverline] = ImVec4(0.85f, 0.85f, 0.85f, 1.0f);
+  colors[ImGuiCol_DockingPreview] = overlay1;
+  colors[ImGuiCol_DockingEmptyBg] = bg;
+  colors[ImGuiCol_PlotLines] = overlay2;
+  colors[ImGuiCol_PlotLinesHovered] = text;
+  colors[ImGuiCol_PlotHistogram] = overlay1;
+  colors[ImGuiCol_PlotHistogramHovered] = text;
+  colors[ImGuiCol_TableHeaderBg] = surface0;
+  colors[ImGuiCol_TableBorderStrong] = overlay0;
+  colors[ImGuiCol_TableBorderLight] = surface1;
+  colors[ImGuiCol_TableRowBg] = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
+  colors[ImGuiCol_TableRowBgAlt] = ImVec4(1.0f, 1.0f, 1.0f, 0.04f);
+  colors[ImGuiCol_TextSelectedBg] = surface2;
+  colors[ImGuiCol_DragDropTarget] = overlay2;
+  colors[ImGuiCol_NavCursor] = overlay2;
+  colors[ImGuiCol_NavWindowingHighlight] = ImVec4(1.0f, 1.0f, 1.0f, 0.7f);
+  colors[ImGuiCol_NavWindowingDimBg] = ImVec4(0.0f, 0.0f, 0.0f, 0.4f);
+  colors[ImGuiCol_ModalWindowDimBg] = ImVec4(0.0f, 0.0f, 0.0f, 0.5f);
+
+  // Rounded corners for a modern look.
+  style.WindowRounding = 6.0f;
+  style.ChildRounding = 6.0f;
+  style.FrameRounding = 4.0f;
+  style.PopupRounding = 4.0f;
+  style.ScrollbarRounding = 9.0f;
+  style.GrabRounding = 4.0f;
+  style.TabRounding = 4.0f;
+
+  // Padding and spacing.
+  style.WindowPadding = ImVec2(8.0f, 8.0f);
+  style.FramePadding = ImVec2(5.0f, 3.0f);
+  style.ItemSpacing = ImVec2(8.0f, 4.0f);
+  style.ItemInnerSpacing = ImVec2(4.0f, 4.0f);
+  style.IndentSpacing = 21.0f;
+  style.ScrollbarSize = 14.0f;
+  style.GrabMinSize = 10.0f;
+
+  // Borders.
+  style.WindowBorderSize = 1.0f;
+  style.ChildBorderSize = 1.0f;
+  style.PopupBorderSize = 1.0f;
+  style.FrameBorderSize = 0.0f;
+  style.TabBorderSize = 0.0f;
+}
+
 namespace fs = std::filesystem;
 
 // A small self-contained file picker (no native dialog dependency): browse
@@ -1050,6 +1152,7 @@ int run(const std::string& qasm_source, const std::string& path) {
 #endif
 
   ImGui::StyleColorsDark();
+  setup_dark_style();
   ImGui_ImplGlfw_InitForOpenGL(window, true);
   ImGui_ImplOpenGL3_Init(glsl_version);
 
