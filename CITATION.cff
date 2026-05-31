@@ -1,0 +1,31 @@
+cff-version: 1.2.0
+message: "If you use ket in your research, please cite it as below."
+title: ket
+abstract: >-
+  A C++20 quantum computing library with first-class Python bindings: an exact
+  state-vector and stabilizer circuit simulator, OpenQASM 2.0 import/export, a
+  command-line tool, and a step-through circuit debugger that also runs in the
+  browser via WebAssembly.
+type: software
+authors:
+  - given-names: Breno Cunha
+    family-names: Queiroz
+    orcid: "https://orcid.org/0000-0002-7768-3474"
+    email: "brenocq.br@gmail.com"
+license: MIT
+version: 0.1.0
+date-released: "2026-05-31"
+url: "https://ket.brenocq.com"
+repository-code: "https://github.com/brenocq/ket"
+keywords:
+  - quantum computing
+  - quantum simulator
+  - state vector
+  - stabilizer
+  - OpenQASM
+  - WebAssembly
+  - C++
+  - Python
+# Once you mint a DOI for a release (e.g. via the GitHub–Zenodo integration),
+# add it here so it shows up in the citation:
+# doi: 10.5281/zenodo.XXXXXXX
