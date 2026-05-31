@@ -25,9 +25,8 @@ bindings. You build a circuit, simulate it on a built-in state-vector
 simulator, and sample measurement outcomes — from C++, from Python, the command
 line, a desktop GUI, or right in your browser.
 
-https://github.com/user-attachments/assets/5b14a6eb-3eb7-4a7f-a1ba-e406af6a2c3b
-
 <div align="center">
+  <a href="https://brenocq.github.io/ket/demo/"><img width="760" alt="The ket debugger stepping through a Grover circuit" src="website/assets/demo.gif"/></a>
   <p>
     <b><a href="https://brenocq.github.io/ket/demo/">▶&nbsp; Try the debugger in your browser</a></b><br/>
     No install — step a circuit gate by gate and watch every amplitude and Bloch vector.
