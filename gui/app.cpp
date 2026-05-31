@@ -164,18 +164,19 @@ void render_circuit(const Circuit& circuit) {
   }
   if (ncols == 0) ncols = 1;
 
-  // Pixels per circuit cell: rows packed tightly, columns a touch wider (like
-  // the terminal diagram). Gate shapes are pixel-sized, so this only controls
-  // the spacing between wires and columns. No ImPlotFlags_Equal — the two axes
-  // use independent scales.
-  const float ppu_x = 50.0f;
-  const float ppu_y = 38.0f;
+  // Pixels per circuit cell, used to pick the initial scale. The plot uses
+  // ImPlotFlags_Equal, so both axes share this scale (1 column == 1 row in
+  // pixels) and double-click fit-to-data keeps that 1:1 ratio rather than
+  // stretching the gate boxes.
+  const float ppu = 44.0f;
   const ImVec2 avail = ImGui::GetContentRegionAvail();
 
   ImPlot::PushStyleVar(ImPlotStyleVar_PlotPadding, ImVec2(0.0f, 0.0f));
-  const ImPlotFlags pflags = ImPlotFlags_CanvasOnly;
+  // Margin left around the data when the user double-clicks to fit-to-data.
+  ImPlot::PushStyleVar(ImPlotStyleVar_FitPadding, ImVec2(0.1f, 0.1f));
+  const ImPlotFlags pflags = ImPlotFlags_CanvasOnly | ImPlotFlags_Equal;
   if (!ImPlot::BeginPlot("##circuit", ImVec2(-1, -1), pflags)) {
-    ImPlot::PopStyleVar();
+    ImPlot::PopStyleVar(2);
     return;
   }
   ImPlot::SetupAxes(nullptr, nullptr, ImPlotAxisFlags_NoDecorations,
@@ -198,17 +199,18 @@ void render_circuit(const Circuit& circuit) {
     last_ah = avail.y;
     const double x_lo = -0.7;
     const double x_hi =
-        x_lo + static_cast<double>(std::max(avail.x, 1.0f)) / ppu_x;
+        x_lo + static_cast<double>(std::max(avail.x, 1.0f)) / ppu;
     const double y_hi = static_cast<double>(nq) - 1.0 + 0.7;
     const double y_lo =
-        y_hi - static_cast<double>(std::max(avail.y, 1.0f)) / ppu_y;
+        y_hi - static_cast<double>(std::max(avail.y, 1.0f)) / ppu;
     ImPlot::SetupAxisLimits(ImAxis_X1, x_lo, x_hi, ImPlotCond_Always);
     ImPlot::SetupAxisLimits(ImAxis_Y1, y_lo, y_hi, ImPlotCond_Always);
   }
 
-  ImDrawList* dl = ImPlot::GetPlotDrawList();
-  ImPlot::PushPlotClipRect();  // clip drawing to the plot area
-
+  // Everything below is drawn as ImPlot items (PlotLine/PlotScatter/PlotShaded/
+  // PlotText) rather than raw draw-list calls. ImPlot only knows the data
+  // extents from the points its items plot, so going through items is what makes
+  // double-click "fit to data" work (and ImPlot clips the items for us).
   const ImU32 wire_col = IM_COL32(150, 152, 162, 255);
   const ImU32 comp_fill = IM_COL32(120, 92, 170, 255);
   const ImU32 border_col = IM_COL32(222, 226, 236, 255);
@@ -216,6 +218,7 @@ void render_circuit(const Circuit& circuit) {
   const ImU32 ctrl_col = IM_COL32(222, 226, 236, 255);
   const ImU32 barrier_col = IM_COL32(130, 132, 140, 120);
   const ImU32 probe_col = IM_COL32(110, 190, 130, 200);
+  const ImU32 clear = IM_COL32(0, 0, 0, 0);
 
   auto px = [](double x, double y) { return ImPlot::PlotToPixels(x, y); };
   // q0 is drawn at the top (largest y).
@@ -223,69 +226,103 @@ void render_circuit(const Circuit& circuit) {
     return static_cast<double>(nq) - 1.0 - static_cast<double>(qi);
   };
 
-  // Pixels per plot unit at the current zoom. Gate boxes and circles are sized
-  // in plot coordinates (so they grow/shrink with zoom); only text stays at a
-  // fixed pixel size. `zoom` is 1.0 at the default scale.
+  // Pixels per plot unit at the current zoom, so line weights and marker sizes
+  // track zoom. Gate boxes are sized in plot units, so they scale on their own.
   const ImVec2 origin = px(0.0, 0.0);
   const float sx = std::fabs(px(1.0, 0.0).x - origin.x);
   const float sy = std::fabs(px(0.0, 1.0).y - origin.y);
   const float zoom = ((sx + sy) * 0.5f) / 44.0f;
   auto thick = [zoom](float base) { return std::max(1.0f, base * zoom); };
 
-  // Wires and left-hand qubit labels.
-  for (std::size_t qi = 0; qi < nq; ++qi) {
-    const double y = yq(qi);
-    dl->AddLine(px(0.0, y), px(static_cast<double>(ncols), y), wire_col,
-                thick(1.5f));
-    char buf[24];
-    std::snprintf(buf, sizeof(buf), "q%zu", qi);
-    const ImVec2 ts = ImGui::CalcTextSize(buf);
-    const ImVec2 lp = px(-0.15, y);
-    dl->AddText(ImVec2(lp.x - ts.x, lp.y - ts.y * 0.5f), text_col, buf);
-  }
+  auto v4 = [](ImU32 c) { return ImGui::ColorConvertU32ToFloat4(c); };
+  // ImPlot keys item state on label id; give each its own so they don't merge.
+  int iid = 0;
+  char idbuf[16];
+  auto next_id = [&iid, &idbuf]() {
+    std::snprintf(idbuf, sizeof(idbuf), "##i%d", iid++);
+    return idbuf;
+  };
 
-  // Boxes/circles scale with zoom; the label text stays pixel-sized.
+  auto line = [&](double x0, double y0, double x1, double y1, ImU32 col,
+                  float w) {
+    const double xs[2] = {x0, x1};
+    const double ys[2] = {y0, y1};
+    ImPlotSpec s;
+    s.LineColor = v4(col);
+    s.LineWeight = w;
+    s.Flags = ImPlotItemFlags_NoLegend;
+    ImPlot::PlotLine(next_id(), xs, ys, 2, s);
+  };
+  auto marker = [&](double cx, double y, ImPlotMarker m, float size, ImU32 fill,
+                    ImU32 edge, float w) {
+    const double xs[1] = {cx};
+    const double ys[1] = {y};
+    ImPlotSpec s;
+    s.Marker = m;
+    s.MarkerSize = size;
+    s.MarkerFillColor = v4(fill);
+    s.MarkerLineColor = v4(edge);
+    s.LineWeight = w;
+    s.Flags = ImPlotItemFlags_NoLegend;
+    ImPlot::PlotScatter(next_id(), xs, ys, 1, s);
+  };
+  auto text = [&](double cx, double y, const char* label, ImU32 col) {
+    ImPlot::PushStyleColor(ImPlotCol_InlayText, col);
+    ImPlot::PlotText(label, cx, y);
+    ImPlot::PopStyleColor();
+  };
+
+  // A labeled gate box, sized in plot units (so it scales with zoom): a filled
+  // rectangle (PlotShaded between a top and bottom edge), an outline, a label.
+  const double bw = 0.40;  // half-width
+  const double bh = 0.34;  // half-height
   auto box = [&](double cx, double y, const char* label, ImU32 fill) {
-    const ImVec2 c = px(cx, y);
-    const float hw = 20.0f * zoom;
-    const float hh = 13.0f * zoom;
-    const float round = 3.0f * zoom;
-    dl->AddRectFilled(ImVec2(c.x - hw, c.y - hh), ImVec2(c.x + hw, c.y + hh),
-                      fill, round);
-    dl->AddRect(ImVec2(c.x - hw, c.y - hh), ImVec2(c.x + hw, c.y + hh),
-                border_col, round, 0, thick(1.5f));
+    const double xs[2] = {cx - bw, cx + bw};
+    const double top[2] = {y + bh, y + bh};
+    const double bot[2] = {y - bh, y - bh};
+    ImPlotSpec fs;
+    fs.FillColor = v4(fill);
+    fs.Flags = ImPlotItemFlags_NoLegend;
+    ImPlot::PlotShaded(next_id(), xs, top, bot, 2, fs);
+    const double bxs[5] = {cx - bw, cx + bw, cx + bw, cx - bw, cx - bw};
+    const double bys[5] = {y + bh, y + bh, y - bh, y - bh, y + bh};
+    ImPlotSpec bs;
+    bs.LineColor = v4(border_col);
+    bs.LineWeight = thick(1.5f);
+    bs.Flags = ImPlotItemFlags_NoLegend;
+    ImPlot::PlotLine(next_id(), bxs, bys, 5, bs);
     // Dark label on light fills, light label on dark, so every box stays legible.
     const float lum = (0.299f * ((fill >> IM_COL32_R_SHIFT) & 0xFF) +
                        0.587f * ((fill >> IM_COL32_G_SHIFT) & 0xFF) +
                        0.114f * ((fill >> IM_COL32_B_SHIFT) & 0xFF)) /
                       255.0f;
-    const ImU32 label_col = lum > 0.6f ? IM_COL32(20, 22, 28, 255) : text_col;
-    const ImVec2 ts = ImGui::CalcTextSize(label);
-    dl->AddText(ImVec2(c.x - ts.x * 0.5f, c.y - ts.y * 0.5f), label_col, label);
+    text(cx, y, label, lum > 0.6f ? IM_COL32(20, 22, 28, 255) : text_col);
   };
   auto dot = [&](double cx, double y) {
-    dl->AddCircleFilled(px(cx, y), 5.0f * zoom, ctrl_col);
+    marker(cx, y, ImPlotMarker_Circle, std::max(2.5f, 4.0f * zoom), ctrl_col,
+           ctrl_col, 1.0f);
   };
   auto oplus = [&](double cx, double y) {
-    const ImVec2 c = px(cx, y);
-    const float r = 11.0f * zoom;
-    const float t = thick(2.0f);
-    dl->AddCircle(c, r, ctrl_col, 0, t);
-    dl->AddLine(ImVec2(c.x - r, c.y), ImVec2(c.x + r, c.y), ctrl_col, t);
-    dl->AddLine(ImVec2(c.x, c.y - r), ImVec2(c.x, c.y + r), ctrl_col, t);
+    const float r = std::max(6.0f, 11.0f * zoom);
+    marker(cx, y, ImPlotMarker_Circle, r, clear, ctrl_col, thick(2.0f));
+    marker(cx, y, ImPlotMarker_Plus, r, ctrl_col, ctrl_col, thick(2.0f));
   };
   auto cross = [&](double cx, double y) {
-    const ImVec2 c = px(cx, y);
-    const float r = 7.0f * zoom;
-    const float t = thick(2.0f);
-    dl->AddLine(ImVec2(c.x - r, c.y - r), ImVec2(c.x + r, c.y + r), ctrl_col,
-                t);
-    dl->AddLine(ImVec2(c.x - r, c.y + r), ImVec2(c.x + r, c.y - r), ctrl_col,
-                t);
+    marker(cx, y, ImPlotMarker_Cross, std::max(5.0f, 7.0f * zoom), ctrl_col,
+           ctrl_col, thick(2.0f));
   };
   auto vline = [&](double cx, double ya, double yb) {
-    dl->AddLine(px(cx, ya), px(cx, yb), ctrl_col, thick(2.0f));
+    line(cx, ya, cx, yb, ctrl_col, thick(2.0f));
   };
+
+  // Wires and left-hand qubit labels.
+  for (std::size_t qi = 0; qi < nq; ++qi) {
+    const double y = yq(qi);
+    line(0.0, y, static_cast<double>(ncols), y, wire_col, thick(1.5f));
+    char buf[24];
+    std::snprintf(buf, sizeof(buf), "q%zu", qi);
+    text(-0.45, y, buf, text_col);
+  }
 
   std::size_t idx = 0;
   for (const DagNode& node : circuit.dag().nodes()) {
@@ -341,23 +378,31 @@ void render_circuit(const Circuit& circuit) {
         cross(cx, yq(g.qubits[2].index));
         break;
       case GateType::Barrier:
-        dl->AddLine(px(cx, yq(lo) + 0.5), px(cx, yq(hi) - 0.5), barrier_col,
-                    thick(6.0f));
+        line(cx, yq(lo) + 0.5, cx, yq(hi) - 0.5, barrier_col, thick(6.0f));
         break;
       case GateType::Probe:
-        dl->AddLine(px(cx, yq(lo) + 0.5), px(cx, yq(hi) - 0.5), probe_col,
-                    thick(2.0f));
+        line(cx, yq(lo) + 0.5, cx, yq(hi) - 0.5, probe_col, thick(2.0f));
         break;
       case GateType::Composite: {
-        const ImVec2 a = px(cx - 0.36, yq(lo) + 0.36);
-        const ImVec2 b = px(cx + 0.36, yq(hi) - 0.36);
-        dl->AddRectFilled(a, b, comp_fill, 4.0f * zoom);
-        dl->AddRect(a, b, border_col, 4.0f * zoom, 0, thick(1.5f));
+        const double yt = yq(lo) + 0.36;  // top edge (lo is the topmost qubit)
+        const double yb = yq(hi) - 0.36;  // bottom edge
+        const double xs[2] = {cx - 0.36, cx + 0.36};
+        const double top[2] = {yt, yt};
+        const double bot[2] = {yb, yb};
+        ImPlotSpec fs;
+        fs.FillColor = v4(comp_fill);
+        fs.Flags = ImPlotItemFlags_NoLegend;
+        ImPlot::PlotShaded(next_id(), xs, top, bot, 2, fs);
+        const double bxs[5] = {cx - 0.36, cx + 0.36, cx + 0.36, cx - 0.36,
+                               cx - 0.36};
+        const double bys[5] = {yt, yt, yb, yb, yt};
+        ImPlotSpec bs;
+        bs.LineColor = v4(border_col);
+        bs.LineWeight = thick(1.5f);
+        bs.Flags = ImPlotItemFlags_NoLegend;
+        ImPlot::PlotLine(next_id(), bxs, bys, 5, bs);
         const char* label = g.label.empty() ? "circ" : g.label.c_str();
-        const ImVec2 ts = ImGui::CalcTextSize(label);
-        const ImVec2 c = px(cx, (yq(lo) + yq(hi)) * 0.5);
-        dl->AddText(ImVec2(c.x - ts.x * 0.5f, c.y - ts.y * 0.5f), text_col,
-                    label);
+        text(cx, (yq(lo) + yq(hi)) * 0.5, label, text_col);
         break;
       }
       default:
@@ -366,9 +411,8 @@ void render_circuit(const Circuit& circuit) {
     }
   }
 
-  ImPlot::PopPlotClipRect();
   ImPlot::EndPlot();
-  ImPlot::PopStyleVar();
+  ImPlot::PopStyleVar(2);
 }
 
 }  // namespace
