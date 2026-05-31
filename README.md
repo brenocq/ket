@@ -3,13 +3,15 @@
 </div>
 
 <h6 align="center">
+    <a href="https://brenocq.github.io/ket/demo/">Live demo</a>
+    ·
+    <a href="https://brenocq.github.io/ket/">Website</a>
+    ·
     <a href="#examples">Examples</a>
     ·
     <a href="#benchmark">Benchmark</a>
     ·
     <a href="CONTRIBUTING.md">Contributing</a>
-    ·
-    <a href="https://github.com/brenocq/ket/issues">Issues</a>
     ·
     <a href="https://github.com/sponsors/brenocq">Sponsor</a>
 </h6>
@@ -24,8 +26,16 @@
 
 **Ket** (|⟩) is a quantum computing library for C++20, with first-class Python
 bindings. You build a circuit, simulate it on a built-in state-vector
-simulator, and sample measurement outcomes — from C++, from Python, from the
-command line, or in a small GUI.
+simulator, and sample measurement outcomes — from C++, from Python, the command
+line, a desktop GUI, or right in your browser.
+
+<div align="center">
+  <img width="760" src="website/assets/demo.mp4"/>
+  <p>
+    <b><a href="https://brenocq.github.io/ket/demo/">▶&nbsp; Try the debugger in your browser</a></b><br/>
+    No install — step a circuit gate by gate and watch every amplitude and Bloch vector.
+  </p>
+</div>
 
 Internally a circuit is a **directed acyclic graph (DAG)** of gates: each node is
 a gate and edges connect gates that share a qubit. This makes gate dependencies
@@ -94,8 +104,12 @@ and Grover's search. Once built, run them from `build/examples/`:
 
 ## GUI
 
-`ket-gui` opens a circuit in a window — an editable QASM panel beside a
-pan/zoom circuit view (GLFW, Dear ImGui, and ImPlot):
+`ket-gui` is a step-through debugger: an editable QASM panel, a circuit view,
+the live state vector, and per-qubit Bloch spheres (GLFW, Dear ImGui, ImPlot).
+**The fastest way to try it is the [live demo](https://brenocq.github.io/ket/demo/)**
+— it's the desktop GUI compiled to WebAssembly, no install required.
+
+To run it natively:
 
 ```sh
 ./build/gui/ket-gui examples/grover.qasm
