@@ -4,6 +4,14 @@
   "use strict";
   const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+  // Reduced motion: hold the demo video on its poster frame instead of looping.
+  if (reduce) {
+    for (const v of document.querySelectorAll("video")) {
+      v.removeAttribute("autoplay");
+      v.pause();
+    }
+  }
+
   // Cursor spotlight: feed the mouse position to each card's radial highlight.
   if (!reduce) {
     for (const card of document.querySelectorAll(".card")) {
@@ -31,6 +39,21 @@
         setTimeout(() => (copyBtn.textContent = old), 1200);
       } catch {
         /* clipboard blocked — ignore */
+      }
+    });
+  }
+
+  // Install command: copy the command text (without the prompt).
+  const installBtn = document.querySelector(".install .copy2");
+  if (installBtn) {
+    installBtn.addEventListener("click", async () => {
+      const cmd = document.querySelector(".install .cmd")?.innerText ?? "";
+      try {
+        await navigator.clipboard.writeText(cmd.trim());
+        installBtn.textContent = "Copied";
+        setTimeout(() => (installBtn.textContent = "Copy"), 1200);
+      } catch {
+        /* ignore */
       }
     });
   }

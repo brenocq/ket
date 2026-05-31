@@ -1,0 +1,219 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 920" width="1000" height="920" role="img" aria-label="A stylized superconducting quantum computer: a gold dilution-refrigerator chandelier with steel support rods, a striped mixing chamber, copper connectors and bundled cryogenic wiring.">
+<defs>
+ <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ffe9ad"/><stop offset="45%" stop-color="#f7bf3a"/><stop offset="100%" stop-color="#b9790a"/></linearGradient>
+ <linearGradient id="plate" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#fff1c8"/><stop offset="48%" stop-color="#f4b62c"/><stop offset="100%" stop-color="#9c620a"/></linearGradient>
+ <linearGradient id="wire" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#f9d473"/><stop offset="100%" stop-color="#c98f1e"/></linearGradient>
+ <linearGradient id="steel" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#5a616c"/><stop offset="45%" stop-color="#cfd5dd"/><stop offset="55%" stop-color="#e7ebf0"/><stop offset="100%" stop-color="#6b727d"/></linearGradient>
+ <linearGradient id="steelV" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#dfe4ea"/><stop offset="100%" stop-color="#7b828d"/></linearGradient>
+ <linearGradient id="copper" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#f6c39b"/><stop offset="50%" stop-color="#d4824e"/><stop offset="100%" stop-color="#8f4a22"/></linearGradient>
+ <radialGradient id="glow" cx="50%" cy="44%" r="54%"><stop offset="0%" stop-color="#fbbf24" stop-opacity="0.32"/><stop offset="55%" stop-color="#fbbf24" stop-opacity="0.06"/><stop offset="100%" stop-color="#fbbf24" stop-opacity="0"/></radialGradient>
+ <filter id="soft" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="2.2"/></filter>
+ <style>
+  .glow{transform-box:fill-box;transform-origin:center;animation:pulse 6.5s ease-in-out infinite}
+  .rig{animation:floatY 8s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:.6;transform:scale(1)}50%{opacity:1;transform:scale(1.06)}}
+  @keyframes floatY{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+  @media (prefers-reduced-motion:reduce){.glow,.rig{animation:none}.glow{opacity:.85}}
+ </style>
+</defs>
+<ellipse class="glow" cx="500" cy="430" rx="350" ry="350" fill="url(#glow)"/>
+<g class="rig">
+<ellipse cx="500" cy="110" rx="250" ry="40" fill="#23272f"/>
+<ellipse cx="500" cy="100" rx="250" ry="40" fill="#15181e" stroke="#3a414c" stroke-width="2"/>
+<ellipse cx="500" cy="96" rx="150" ry="22" fill="#0e1116" stroke="#2c333d"/>
+<g stroke="url(#steelV)" stroke-linecap="round" fill="none">
+<line x1="722.7" y1="168" x2="588.3" y2="772" stroke-width="1.5" opacity="0.34"/>
+<line x1="716.2" y1="168" x2="585.8" y2="772" stroke-width="2.4" opacity="0.80"/>
+<line x1="697.2" y1="168" x2="578.2" y2="772" stroke-width="2.4" opacity="0.80"/>
+<line x1="666.7" y1="168" x2="566.1" y2="772" stroke-width="2.4" opacity="0.80"/>
+<line x1="626.5" y1="168" x2="550.2" y2="772" stroke-width="2.4" opacity="0.80"/>
+<line x1="579.0" y1="168" x2="531.3" y2="772" stroke-width="2.4" opacity="0.80"/>
+<line x1="526.8" y1="168" x2="510.6" y2="772" stroke-width="2.4" opacity="0.80"/>
+<line x1="473.2" y1="168" x2="489.4" y2="772" stroke-width="2.4" opacity="0.80"/>
+<line x1="421.0" y1="168" x2="468.7" y2="772" stroke-width="2.4" opacity="0.80"/>
+<line x1="373.5" y1="168" x2="449.8" y2="772" stroke-width="2.4" opacity="0.80"/>
+<line x1="333.3" y1="168" x2="433.9" y2="772" stroke-width="2.4" opacity="0.80"/>
+<line x1="302.8" y1="168" x2="421.8" y2="772" stroke-width="2.4" opacity="0.80"/>
+<line x1="283.8" y1="168" x2="414.2" y2="772" stroke-width="2.4" opacity="0.80"/>
+<line x1="277.3" y1="168" x2="411.7" y2="772" stroke-width="2.4" opacity="0.80"/>
+<line x1="283.8" y1="168" x2="414.2" y2="772" stroke-width="1.5" opacity="0.34"/>
+<line x1="302.8" y1="168" x2="421.8" y2="772" stroke-width="1.5" opacity="0.34"/>
+<line x1="333.3" y1="168" x2="433.9" y2="772" stroke-width="1.5" opacity="0.34"/>
+<line x1="373.5" y1="168" x2="449.8" y2="772" stroke-width="1.5" opacity="0.34"/>
+<line x1="421.0" y1="168" x2="468.7" y2="772" stroke-width="1.5" opacity="0.34"/>
+<line x1="473.2" y1="168" x2="489.4" y2="772" stroke-width="1.5" opacity="0.34"/>
+<line x1="526.8" y1="168" x2="510.6" y2="772" stroke-width="1.5" opacity="0.34"/>
+<line x1="579.0" y1="168" x2="531.3" y2="772" stroke-width="1.5" opacity="0.34"/>
+<line x1="626.5" y1="168" x2="550.2" y2="772" stroke-width="1.5" opacity="0.34"/>
+<line x1="666.7" y1="168" x2="566.1" y2="772" stroke-width="1.5" opacity="0.34"/>
+<line x1="697.2" y1="168" x2="578.2" y2="772" stroke-width="1.5" opacity="0.34"/>
+<line x1="716.2" y1="168" x2="585.8" y2="772" stroke-width="1.5" opacity="0.34"/>
+</g>
+<rect x="485" y="168" width="30" height="604" fill="url(#steelV)" opacity="0.95"/>
+<g stroke="#aeb6c1" stroke-width="2" opacity="0.8">
+<line x1="485" y1="190" x2="515" y2="190"/>
+<line x1="485" y1="199" x2="515" y2="199"/>
+<line x1="485" y1="208" x2="515" y2="208"/>
+<line x1="485" y1="217" x2="515" y2="217"/>
+<line x1="485" y1="226" x2="515" y2="226"/>
+<line x1="485" y1="235" x2="515" y2="235"/>
+<line x1="485" y1="244" x2="515" y2="244"/>
+<line x1="485" y1="253" x2="515" y2="253"/>
+<line x1="485" y1="262" x2="515" y2="262"/>
+<line x1="485" y1="271" x2="515" y2="271"/>
+<line x1="485" y1="280" x2="515" y2="280"/>
+<line x1="485" y1="289" x2="515" y2="289"/>
+<line x1="485" y1="298" x2="515" y2="298"/>
+</g>
+<rect x="474" y="462" width="52" height="114" rx="3" fill="#cdd2d9"/>
+<rect x="474" y="462.0" width="52" height="14.2" fill="#1b1e24"/>
+<rect x="474" y="490.5" width="52" height="14.2" fill="#1b1e24"/>
+<rect x="474" y="519.0" width="52" height="14.2" fill="#1b1e24"/>
+<rect x="474" y="547.5" width="52" height="14.2" fill="#1b1e24"/>
+<rect x="480" y="161" width="40" height="14" rx="3" fill="url(#gold)"/>
+<rect x="480" y="301" width="40" height="14" rx="3" fill="url(#gold)"/>
+<rect x="480" y="441" width="40" height="14" rx="3" fill="url(#gold)"/>
+<rect x="480" y="575" width="40" height="14" rx="3" fill="url(#gold)"/>
+<rect x="480" y="693" width="40" height="14" rx="3" fill="url(#gold)"/>
+<g fill="none" stroke-linecap="round">
+<path d="M291.2,181.0 C259.0,215.5 278.2,263.8 296.6,296.0" stroke="url(#wire)" stroke-width="1.00" opacity="0.30"/>
+<path d="M307.9,181.0 C292.7,215.5 280.4,263.8 312.9,296.0" stroke="url(#copper)" stroke-width="1.52" opacity="0.47"/>
+<path d="M324.6,181.0 C286.4,215.5 322.7,263.8 329.1,296.0" stroke="url(#wire)" stroke-width="1.18" opacity="0.63"/>
+<path d="M341.3,181.0 C306.0,215.5 339.1,263.8 345.4,296.0" stroke="url(#wire)" stroke-width="1.70" opacity="0.80"/>
+<path d="M358.0,181.0 C348.9,215.5 332.2,263.8 361.7,296.0" stroke="url(#wire)" stroke-width="1.35" opacity="0.38"/>
+<path d="M374.7,181.0 C350.8,215.5 366.2,263.8 378.0,296.0" stroke="url(#copper)" stroke-width="1.00" opacity="0.55"/>
+<path d="M391.4,181.0 C355.9,215.5 397.1,263.8 394.2,296.0" stroke="url(#wire)" stroke-width="1.52" opacity="0.72"/>
+<path d="M408.1,181.0 C400.0,215.5 389.0,263.8 410.5,296.0" stroke="url(#wire)" stroke-width="1.18" opacity="0.30"/>
+<path d="M424.8,181.0 C415.6,215.5 409.3,263.8 426.8,296.0" stroke="url(#wire)" stroke-width="1.70" opacity="0.47"/>
+<path d="M441.5,181.0 C410.7,215.5 450.2,263.8 443.0,296.0" stroke="url(#copper)" stroke-width="1.35" opacity="0.63"/>
+<path d="M458.2,181.0 C447.5,215.5 449.4,263.8 459.3,296.0" stroke="url(#wire)" stroke-width="1.00" opacity="0.80"/>
+<path d="M474.9,181.0 C477.9,215.5 455.0,263.8 475.6,296.0" stroke="url(#wire)" stroke-width="1.52" opacity="0.38"/>
+<path d="M491.6,181.0 C470.7,215.5 498.1,263.8 491.9,296.0" stroke="url(#wire)" stroke-width="1.18" opacity="0.55"/>
+<path d="M508.4,181.0 C511.0,215.5 520.2,263.8 508.1,296.0" stroke="url(#copper)" stroke-width="1.70" opacity="0.72"/>
+<path d="M525.1,181.0 C552.2,215.5 514.9,263.8 524.4,296.0" stroke="url(#wire)" stroke-width="1.35" opacity="0.30"/>
+<path d="M541.8,181.0 C551.3,215.5 551.8,263.8 540.7,296.0" stroke="url(#wire)" stroke-width="1.00" opacity="0.47"/>
+<path d="M558.5,181.0 C559.9,215.5 579.2,263.8 557.0,296.0" stroke="url(#wire)" stroke-width="1.52" opacity="0.63"/>
+<path d="M575.2,181.0 C604.5,215.5 570.5,263.8 573.2,296.0" stroke="url(#copper)" stroke-width="1.18" opacity="0.80"/>
+<path d="M591.9,181.0 C616.3,215.5 594.7,263.8 589.5,296.0" stroke="url(#wire)" stroke-width="1.70" opacity="0.38"/>
+<path d="M608.6,181.0 C613.4,215.5 633.6,263.8 605.8,296.0" stroke="url(#wire)" stroke-width="1.35" opacity="0.55"/>
+<path d="M625.3,181.0 C652.7,215.5 630.3,263.8 622.0,296.0" stroke="url(#wire)" stroke-width="1.00" opacity="0.72"/>
+<path d="M642.0,181.0 C679.5,215.5 639.4,263.8 638.3,296.0" stroke="url(#copper)" stroke-width="1.52" opacity="0.30"/>
+<path d="M658.7,181.0 C672.1,215.5 682.8,263.8 654.6,296.0" stroke="url(#wire)" stroke-width="1.18" opacity="0.47"/>
+<path d="M675.4,181.0 C699.3,215.5 691.5,263.8 670.9,296.0" stroke="url(#wire)" stroke-width="1.70" opacity="0.63"/>
+<path d="M692.1,181.0 C738.4,215.5 688.5,263.8 687.1,296.0" stroke="url(#wire)" stroke-width="1.35" opacity="0.80"/>
+<path d="M708.8,181.0 C735.1,215.5 727.7,263.8 703.4,296.0" stroke="url(#copper)" stroke-width="1.00" opacity="0.38"/>
+<path d="M296.6,320.0 C277.9,355.1 279.1,404.2 311.0,437.0" stroke="url(#wire)" stroke-width="1.52" opacity="0.55"/>
+<path d="M314.3,320.0 C288.0,355.1 306.4,404.2 327.4,437.0" stroke="url(#copper)" stroke-width="1.18" opacity="0.72"/>
+<path d="M332.0,320.0 C288.0,355.1 343.8,404.2 343.9,437.0" stroke="url(#wire)" stroke-width="1.70" opacity="0.30"/>
+<path d="M349.7,320.0 C330.1,355.1 339.0,404.2 360.3,437.0" stroke="url(#wire)" stroke-width="1.35" opacity="0.47"/>
+<path d="M367.3,320.0 C355.2,355.1 351.3,404.2 376.7,437.0" stroke="url(#wire)" stroke-width="1.00" opacity="0.63"/>
+<path d="M385.0,320.0 C349.1,355.1 394.8,404.2 393.2,437.0" stroke="url(#copper)" stroke-width="1.52" opacity="0.80"/>
+<path d="M402.7,320.0 C380.3,355.1 401.0,404.2 409.6,437.0" stroke="url(#wire)" stroke-width="1.18" opacity="0.38"/>
+<path d="M420.4,320.0 C418.5,355.1 400.1,404.2 426.0,437.0" stroke="url(#wire)" stroke-width="1.70" opacity="0.55"/>
+<path d="M438.1,320.0 C414.9,355.1 441.1,404.2 442.5,437.0" stroke="url(#wire)" stroke-width="1.35" opacity="0.72"/>
+<path d="M455.8,320.0 C431.3,355.1 462.1,404.2 458.9,437.0" stroke="url(#copper)" stroke-width="1.00" opacity="0.30"/>
+<path d="M473.5,320.0 C476.6,355.1 454.2,404.2 475.3,437.0" stroke="url(#wire)" stroke-width="1.52" opacity="0.47"/>
+<path d="M491.2,320.0 C483.2,355.1 484.9,404.2 491.8,437.0" stroke="url(#wire)" stroke-width="1.18" opacity="0.63"/>
+<path d="M508.8,320.0 C502.7,355.1 529.2,404.2 508.2,437.0" stroke="url(#wire)" stroke-width="1.70" opacity="0.80"/>
+<path d="M526.5,320.0 C546.6,355.1 522.6,404.2 524.7,437.0" stroke="url(#copper)" stroke-width="1.35" opacity="0.38"/>
+<path d="M544.2,320.0 C567.8,355.1 538.9,404.2 541.1,437.0" stroke="url(#wire)" stroke-width="1.00" opacity="0.55"/>
+<path d="M561.9,320.0 C562.5,355.1 581.5,404.2 557.5,437.0" stroke="url(#wire)" stroke-width="1.52" opacity="0.72"/>
+<path d="M579.6,320.0 C597.0,355.1 584.3,404.2 574.0,437.0" stroke="url(#wire)" stroke-width="1.18" opacity="0.30"/>
+<path d="M597.3,320.0 C632.3,355.1 586.5,404.2 590.4,437.0" stroke="url(#copper)" stroke-width="1.70" opacity="0.47"/>
+<path d="M615.0,320.0 C627.2,355.1 628.9,404.2 606.8,437.0" stroke="url(#wire)" stroke-width="1.35" opacity="0.63"/>
+<path d="M632.7,320.0 C647.6,355.1 646.0,404.2 623.3,437.0" stroke="url(#wire)" stroke-width="1.00" opacity="0.80"/>
+<path d="M650.3,320.0 C691.8,355.1 639.1,404.2 639.7,437.0" stroke="url(#wire)" stroke-width="1.52" opacity="0.38"/>
+<path d="M668.0,320.0 C695.1,355.1 673.1,404.2 656.1,437.0" stroke="url(#copper)" stroke-width="1.18" opacity="0.55"/>
+<path d="M685.7,320.0 C701.0,355.1 704.6,404.2 672.6,437.0" stroke="url(#wire)" stroke-width="1.70" opacity="0.72"/>
+<path d="M703.4,320.0 C746.1,355.1 696.9,404.2 689.0,437.0" stroke="url(#wire)" stroke-width="1.35" opacity="0.30"/>
+<path d="M311.0,459.0 C293.3,493.1 308.7,540.7 341.6,572.5" stroke="url(#wire)" stroke-width="1.00" opacity="0.47"/>
+<path d="M329.0,459.0 C288.1,493.1 350.6,540.7 356.7,572.5" stroke="url(#copper)" stroke-width="1.52" opacity="0.63"/>
+<path d="M347.0,459.0 C311.9,493.1 363.4,540.7 371.8,572.5" stroke="url(#wire)" stroke-width="1.18" opacity="0.80"/>
+<path d="M365.0,459.0 C355.4,493.1 356.5,540.7 386.9,572.5" stroke="url(#wire)" stroke-width="1.70" opacity="0.38"/>
+<path d="M383.0,459.0 C357.1,493.1 391.5,540.7 401.9,572.5" stroke="url(#wire)" stroke-width="1.35" opacity="0.55"/>
+<path d="M401.0,459.0 C366.1,493.1 419.1,540.7 417.0,572.5" stroke="url(#copper)" stroke-width="1.00" opacity="0.72"/>
+<path d="M419.0,459.0 C412.2,493.1 409.6,540.7 432.1,572.5" stroke="url(#wire)" stroke-width="1.52" opacity="0.30"/>
+<path d="M437.0,459.0 C427.0,493.1 431.5,540.7 447.2,572.5" stroke="url(#wire)" stroke-width="1.18" opacity="0.47"/>
+<path d="M455.0,459.0 C425.0,493.1 470.2,540.7 462.3,572.5" stroke="url(#wire)" stroke-width="1.70" opacity="0.63"/>
+<path d="M473.0,459.0 C465.2,493.1 466.7,540.7 477.4,572.5" stroke="url(#copper)" stroke-width="1.35" opacity="0.80"/>
+<path d="M491.0,459.0 C494.9,493.1 473.6,540.7 492.5,572.5" stroke="url(#wire)" stroke-width="1.00" opacity="0.38"/>
+<path d="M509.0,459.0 C505.9,493.1 525.6,540.7 507.5,572.5" stroke="url(#wire)" stroke-width="1.52" opacity="0.55"/>
+<path d="M527.0,459.0 C533.6,493.1 534.6,540.7 522.6,572.5" stroke="url(#wire)" stroke-width="1.18" opacity="0.72"/>
+<path d="M545.0,459.0 C575.1,493.1 529.8,540.7 537.7,572.5" stroke="url(#copper)" stroke-width="1.70" opacity="0.30"/>
+<path d="M563.0,459.0 C574.2,493.1 567.3,540.7 552.8,572.5" stroke="url(#wire)" stroke-width="1.35" opacity="0.47"/>
+<path d="M581.0,459.0 C586.9,493.1 591.2,540.7 567.9,572.5" stroke="url(#wire)" stroke-width="1.00" opacity="0.63"/>
+<path d="M599.0,459.0 C633.2,493.1 581.6,540.7 583.0,572.5" stroke="url(#wire)" stroke-width="1.52" opacity="0.80"/>
+<path d="M617.0,459.0 C644.2,493.1 607.2,540.7 598.1,572.5" stroke="url(#copper)" stroke-width="1.18" opacity="0.38"/>
+<path d="M635.0,459.0 C644.4,493.1 643.6,540.7 613.1,572.5" stroke="url(#wire)" stroke-width="1.70" opacity="0.55"/>
+<path d="M653.0,459.0 C686.9,493.1 637.8,540.7 628.2,572.5" stroke="url(#wire)" stroke-width="1.35" opacity="0.72"/>
+<path d="M671.0,459.0 C712.9,493.1 648.5,540.7 643.3,572.5" stroke="url(#wire)" stroke-width="1.00" opacity="0.30"/>
+<path d="M689.0,459.0 C707.2,493.1 690.8,540.7 658.4,572.5" stroke="url(#copper)" stroke-width="1.52" opacity="0.47"/>
+<path d="M341.6,591.5 C311.7,621.8 364.1,664.2 384.8,692.5" stroke="url(#wire)" stroke-width="1.18" opacity="0.63"/>
+<path d="M362.7,591.5 C318.0,621.8 399.3,664.2 400.2,692.5" stroke="url(#copper)" stroke-width="1.70" opacity="0.80"/>
+<path d="M383.8,591.5 C365.9,621.8 392.8,664.2 415.5,692.5" stroke="url(#wire)" stroke-width="1.35" opacity="0.38"/>
+<path d="M405.0,591.5 C392.9,621.8 407.3,664.2 430.9,692.5" stroke="url(#wire)" stroke-width="1.00" opacity="0.55"/>
+<path d="M426.1,591.5 C391.8,621.8 449.9,664.2 446.2,692.5" stroke="url(#wire)" stroke-width="1.52" opacity="0.72"/>
+<path d="M447.2,591.5 C429.8,621.8 453.3,664.2 461.6,692.5" stroke="url(#copper)" stroke-width="1.18" opacity="0.30"/>
+<path d="M468.3,591.5 C470.6,621.8 454.0,664.2 477.0,692.5" stroke="url(#wire)" stroke-width="1.70" opacity="0.47"/>
+<path d="M489.4,591.5 C470.5,621.8 495.5,664.2 492.3,692.5" stroke="url(#wire)" stroke-width="1.35" opacity="0.63"/>
+<path d="M510.6,591.5 C510.9,621.8 523.1,664.2 507.7,692.5" stroke="url(#wire)" stroke-width="1.00" opacity="0.80"/>
+<path d="M531.7,591.5 C560.0,621.8 515.4,664.2 523.0,692.5" stroke="url(#copper)" stroke-width="1.52" opacity="0.38"/>
+<path d="M552.8,591.5 C569.0,621.8 547.9,664.2 538.4,692.5" stroke="url(#wire)" stroke-width="1.18" opacity="0.55"/>
+<path d="M573.9,591.5 C578.3,621.8 580.0,664.2 553.8,692.5" stroke="url(#wire)" stroke-width="1.70" opacity="0.72"/>
+<path d="M595.0,591.5 C627.6,621.8 572.2,664.2 569.1,692.5" stroke="url(#wire)" stroke-width="1.35" opacity="0.30"/>
+<path d="M616.2,591.5 C650.7,621.8 590.6,664.2 584.5,692.5" stroke="url(#copper)" stroke-width="1.00" opacity="0.47"/>
+<path d="M637.3,591.5 C650.8,621.8 631.9,664.2 599.8,692.5" stroke="url(#wire)" stroke-width="1.52" opacity="0.63"/>
+<path d="M658.4,591.5 C691.9,621.8 632.3,664.2 615.2,692.5" stroke="url(#wire)" stroke-width="1.18" opacity="0.80"/>
+<path d="M384.8,707.5 C340.5,725.0 410.9,749.6 417.2,766.0" stroke="url(#wire)" stroke-width="1.70" opacity="0.38"/>
+<path d="M407.8,707.5 C374.4,725.0 424.1,749.6 433.8,766.0" stroke="url(#copper)" stroke-width="1.35" opacity="0.55"/>
+<path d="M430.9,707.5 C424.2,725.0 421.4,749.6 450.3,766.0" stroke="url(#wire)" stroke-width="1.00" opacity="0.72"/>
+<path d="M453.9,707.5 C431.7,725.0 461.0,749.6 466.9,766.0" stroke="url(#wire)" stroke-width="1.52" opacity="0.30"/>
+<path d="M477.0,707.5 C450.6,725.0 489.1,749.6 483.4,766.0" stroke="url(#wire)" stroke-width="1.18" opacity="0.47"/>
+<path d="M500.0,707.5 C521.3,725.0 491.9,749.6 500.0,766.0" stroke="url(#copper)" stroke-width="1.70" opacity="0.63"/>
+<path d="M523.0,707.5 C541.0,725.0 519.2,749.6 516.6,766.0" stroke="url(#wire)" stroke-width="1.35" opacity="0.80"/>
+<path d="M546.1,707.5 C548.0,725.0 559.4,749.6 533.1,766.0" stroke="url(#wire)" stroke-width="1.00" opacity="0.38"/>
+<path d="M569.1,707.5 C597.3,725.0 557.1,749.6 549.7,766.0" stroke="url(#wire)" stroke-width="1.52" opacity="0.55"/>
+<path d="M592.2,707.5 C632.0,725.0 569.5,749.6 566.2,766.0" stroke="url(#copper)" stroke-width="1.18" opacity="0.72"/>
+<path d="M615.2,707.5 C633.9,725.0 614.7,749.6 582.8,766.0" stroke="url(#wire)" stroke-width="1.70" opacity="0.30"/>
+</g>
+<g fill="none" stroke="#cfd5dd" stroke-width="1.4" opacity="0.7">
+<circle cx="372.4" cy="134.0" r="7"/><circle cx="377.4" cy="134.0" r="5"/>
+<circle cx="453.6" cy="134.0" r="7"/><circle cx="458.6" cy="134.0" r="5"/>
+<circle cx="569.6" cy="134.0" r="7"/><circle cx="574.6" cy="134.0" r="5"/>
+<circle cx="639.2" cy="134.0" r="7"/><circle cx="644.2" cy="134.0" r="5"/>
+<circle cx="409.6" cy="276.0" r="7"/><circle cx="414.6" cy="276.0" r="5"/>
+<circle cx="601.7" cy="276.0" r="7"/><circle cx="606.7" cy="276.0" r="5"/>
+<circle cx="437.0" cy="418.0" r="7"/><circle cx="442.0" cy="418.0" r="5"/>
+<circle cx="573.5" cy="418.0" r="7"/><circle cx="578.5" cy="418.0" r="5"/>
+<circle cx="473.6" cy="555.0" r="7"/><circle cx="478.6" cy="555.0" r="5"/>
+<circle cx="544.0" cy="555.0" r="7"/><circle cx="549.0" cy="555.0" r="5"/>
+</g>
+<ellipse cx="500" cy="168" rx="232" ry="26" fill="url(#plate)"/>
+<ellipse cx="500" cy="158.9" rx="232" ry="16.1" fill="#ffe9ad" opacity="0.28"/>
+<ellipse cx="500" cy="308" rx="226" ry="24" fill="url(#plate)"/>
+<ellipse cx="500" cy="299.6" rx="226" ry="14.9" fill="#ffe9ad" opacity="0.28"/>
+<ellipse cx="500" cy="448" rx="210" ry="22" fill="url(#plate)"/>
+<ellipse cx="500" cy="440.3" rx="210" ry="13.6" fill="#ffe9ad" opacity="0.28"/>
+<ellipse cx="500" cy="582" rx="176" ry="19" fill="url(#plate)"/>
+<ellipse cx="500" cy="575.4" rx="176" ry="11.8" fill="#ffe9ad" opacity="0.28"/>
+<ellipse cx="500" cy="700" rx="128" ry="15" fill="url(#plate)"/>
+<ellipse cx="500" cy="694.8" rx="128" ry="9.3" fill="#ffe9ad" opacity="0.28"/>
+<ellipse cx="500" cy="772" rx="92" ry="12" fill="url(#plate)"/>
+<ellipse cx="500" cy="767.8" rx="92" ry="7.4" fill="#ffe9ad" opacity="0.28"/>
+<g stroke="#d9dee5" stroke-width="1" opacity="0.6" fill="none"><path d="M355.0,800.0 C355.0,770.0 465,794 500,780"/><path d="M361.0,800.0 C361.0,770.0 465,794 500,780"/><path d="M367.0,800.0 C367.0,770.0 465,794 500,780"/><path d="M373.0,800.0 C373.0,770.0 465,794 500,780"/><path d="M379.0,800.0 C379.0,770.0 465,794 500,780"/><path d="M385.0,800.0 C385.0,770.0 465,794 500,780"/><path d="M391.0,800.0 C391.0,770.0 465,794 500,780"/><path d="M397.0,800.0 C397.0,770.0 465,794 500,780"/><path d="M403.0,800.0 C403.0,770.0 465,794 500,780"/><path d="M409.0,800.0 C409.0,770.0 465,794 500,780"/></g><rect x="349.0" y="800.0" width="66" height="58" rx="5" fill="url(#copper)"/><g fill="#7a3f1c"><circle cx="359.0" cy="810.0" r="2.4"/><circle cx="370.5" cy="810.0" r="2.4"/><circle cx="382.0" cy="810.0" r="2.4"/><circle cx="393.5" cy="810.0" r="2.4"/><circle cx="405.0" cy="810.0" r="2.4"/><circle cx="359.0" cy="822.7" r="2.4"/><circle cx="370.5" cy="822.7" r="2.4"/><circle cx="382.0" cy="822.7" r="2.4"/><circle cx="393.5" cy="822.7" r="2.4"/><circle cx="405.0" cy="822.7" r="2.4"/><circle cx="359.0" cy="835.3" r="2.4"/><circle cx="370.5" cy="835.3" r="2.4"/><circle cx="382.0" cy="835.3" r="2.4"/><circle cx="393.5" cy="835.3" r="2.4"/><circle cx="405.0" cy="835.3" r="2.4"/><circle cx="359.0" cy="848.0" r="2.4"/><circle cx="370.5" cy="848.0" r="2.4"/><circle cx="382.0" cy="848.0" r="2.4"/><circle cx="393.5" cy="848.0" r="2.4"/><circle cx="405.0" cy="848.0" r="2.4"/></g><path d="M370.0,858.0 q-8,8 0,16 q8,8 0,16 q-8,8 0,16" stroke="url(#copper)" stroke-width="2.5" fill="none"/><path d="M394.0,858.0 q8,8 0,16 q-8,8 0,16 q8,8 0,16" stroke="url(#copper)" stroke-width="2.5" fill="none"/>
+<g stroke="#d9dee5" stroke-width="1" opacity="0.6" fill="none"><path d="M467.0,800.0 C467.0,770.0 500,794 500,780"/><path d="M474.3,800.0 C474.3,770.0 500,794 500,780"/><path d="M481.7,800.0 C481.7,770.0 500,794 500,780"/><path d="M489.0,800.0 C489.0,770.0 500,794 500,780"/><path d="M496.3,800.0 C496.3,770.0 500,794 500,780"/><path d="M503.7,800.0 C503.7,770.0 500,794 500,780"/><path d="M511.0,800.0 C511.0,770.0 500,794 500,780"/><path d="M518.3,800.0 C518.3,770.0 500,794 500,780"/><path d="M525.7,800.0 C525.7,770.0 500,794 500,780"/><path d="M533.0,800.0 C533.0,770.0 500,794 500,780"/></g><rect x="461.0" y="800.0" width="78" height="64" rx="5" fill="url(#copper)"/><g fill="#7a3f1c"><circle cx="471.0" cy="810.0" r="2.4"/><circle cx="485.5" cy="810.0" r="2.4"/><circle cx="500.0" cy="810.0" r="2.4"/><circle cx="514.5" cy="810.0" r="2.4"/><circle cx="529.0" cy="810.0" r="2.4"/><circle cx="471.0" cy="824.7" r="2.4"/><circle cx="485.5" cy="824.7" r="2.4"/><circle cx="500.0" cy="824.7" r="2.4"/><circle cx="514.5" cy="824.7" r="2.4"/><circle cx="529.0" cy="824.7" r="2.4"/><circle cx="471.0" cy="839.3" r="2.4"/><circle cx="485.5" cy="839.3" r="2.4"/><circle cx="500.0" cy="839.3" r="2.4"/><circle cx="514.5" cy="839.3" r="2.4"/><circle cx="529.0" cy="839.3" r="2.4"/><circle cx="471.0" cy="854.0" r="2.4"/><circle cx="485.5" cy="854.0" r="2.4"/><circle cx="500.0" cy="854.0" r="2.4"/><circle cx="514.5" cy="854.0" r="2.4"/><circle cx="529.0" cy="854.0" r="2.4"/></g><path d="M488.0,864.0 q-8,8 0,16 q8,8 0,16 q-8,8 0,16" stroke="url(#copper)" stroke-width="2.5" fill="none"/><path d="M512.0,864.0 q8,8 0,16 q-8,8 0,16 q8,8 0,16" stroke="url(#copper)" stroke-width="2.5" fill="none"/>
+<g stroke="#d9dee5" stroke-width="1" opacity="0.6" fill="none"><path d="M591.0,800.0 C591.0,770.0 535,794 500,780"/><path d="M597.0,800.0 C597.0,770.0 535,794 500,780"/><path d="M603.0,800.0 C603.0,770.0 535,794 500,780"/><path d="M609.0,800.0 C609.0,770.0 535,794 500,780"/><path d="M615.0,800.0 C615.0,770.0 535,794 500,780"/><path d="M621.0,800.0 C621.0,770.0 535,794 500,780"/><path d="M627.0,800.0 C627.0,770.0 535,794 500,780"/><path d="M633.0,800.0 C633.0,770.0 535,794 500,780"/><path d="M639.0,800.0 C639.0,770.0 535,794 500,780"/><path d="M645.0,800.0 C645.0,770.0 535,794 500,780"/></g><rect x="585.0" y="800.0" width="66" height="58" rx="5" fill="url(#copper)"/><g fill="#7a3f1c"><circle cx="595.0" cy="810.0" r="2.4"/><circle cx="606.5" cy="810.0" r="2.4"/><circle cx="618.0" cy="810.0" r="2.4"/><circle cx="629.5" cy="810.0" r="2.4"/><circle cx="641.0" cy="810.0" r="2.4"/><circle cx="595.0" cy="822.7" r="2.4"/><circle cx="606.5" cy="822.7" r="2.4"/><circle cx="618.0" cy="822.7" r="2.4"/><circle cx="629.5" cy="822.7" r="2.4"/><circle cx="641.0" cy="822.7" r="2.4"/><circle cx="595.0" cy="835.3" r="2.4"/><circle cx="606.5" cy="835.3" r="2.4"/><circle cx="618.0" cy="835.3" r="2.4"/><circle cx="629.5" cy="835.3" r="2.4"/><circle cx="641.0" cy="835.3" r="2.4"/><circle cx="595.0" cy="848.0" r="2.4"/><circle cx="606.5" cy="848.0" r="2.4"/><circle cx="618.0" cy="848.0" r="2.4"/><circle cx="629.5" cy="848.0" r="2.4"/><circle cx="641.0" cy="848.0" r="2.4"/></g><path d="M606.0,858.0 q-8,8 0,16 q8,8 0,16 q-8,8 0,16" stroke="url(#copper)" stroke-width="2.5" fill="none"/><path d="M630.0,858.0 q8,8 0,16 q-8,8 0,16 q8,8 0,16" stroke="url(#copper)" stroke-width="2.5" fill="none"/>
+<g fill="none" stroke="#fff6d6" stroke-linecap="round" filter="url(#soft)">
+<path d="M341.3,181.0 C306.0,215.5 339.1,263.8 345.4,296.0" stroke-width="2.4" pathLength="100" stroke-dasharray="9 100"><animate attributeName="stroke-dashoffset" from="109" to="-9" dur="2.20s" begin="0.00s" repeatCount="indefinite"/></path>
+<path d="M441.5,181.0 C410.7,215.5 450.2,263.8 443.0,296.0" stroke-width="2.4" pathLength="100" stroke-dasharray="9 100"><animate attributeName="stroke-dashoffset" from="109" to="-9" dur="2.60s" begin="0.40s" repeatCount="indefinite"/></path>
+<path d="M541.8,181.0 C551.3,215.5 551.8,263.8 540.7,296.0" stroke-width="2.4" pathLength="100" stroke-dasharray="9 100"><animate attributeName="stroke-dashoffset" from="109" to="-9" dur="3.00s" begin="0.80s" repeatCount="indefinite"/></path>
+<path d="M642.0,181.0 C679.5,215.5 639.4,263.8 638.3,296.0" stroke-width="2.4" pathLength="100" stroke-dasharray="9 100"><animate attributeName="stroke-dashoffset" from="109" to="-9" dur="3.40s" begin="1.20s" repeatCount="indefinite"/></path>
+<path d="M314.3,320.0 C288.0,355.1 306.4,404.2 327.4,437.0" stroke-width="2.4" pathLength="100" stroke-dasharray="9 100"><animate attributeName="stroke-dashoffset" from="109" to="-9" dur="2.20s" begin="1.60s" repeatCount="indefinite"/></path>
+<path d="M420.4,320.0 C418.5,355.1 400.1,404.2 426.0,437.0" stroke-width="2.4" pathLength="100" stroke-dasharray="9 100"><animate attributeName="stroke-dashoffset" from="109" to="-9" dur="2.60s" begin="2.00s" repeatCount="indefinite"/></path>
+<path d="M526.5,320.0 C546.6,355.1 522.6,404.2 524.7,437.0" stroke-width="2.4" pathLength="100" stroke-dasharray="9 100"><animate attributeName="stroke-dashoffset" from="109" to="-9" dur="3.00s" begin="2.40s" repeatCount="indefinite"/></path>
+<path d="M632.7,320.0 C647.6,355.1 646.0,404.2 623.3,437.0" stroke-width="2.4" pathLength="100" stroke-dasharray="9 100"><animate attributeName="stroke-dashoffset" from="109" to="-9" dur="3.40s" begin="2.80s" repeatCount="indefinite"/></path>
+<path d="M329.0,459.0 C288.1,493.1 350.6,540.7 356.7,572.5" stroke-width="2.4" pathLength="100" stroke-dasharray="9 100"><animate attributeName="stroke-dashoffset" from="109" to="-9" dur="2.20s" begin="1.00s" repeatCount="indefinite"/></path>
+<path d="M437.0,459.0 C427.0,493.1 431.5,540.7 447.2,572.5" stroke-width="2.4" pathLength="100" stroke-dasharray="9 100"><animate attributeName="stroke-dashoffset" from="109" to="-9" dur="2.60s" begin="1.00s" repeatCount="indefinite"/></path>
+<path d="M545.0,459.0 C575.1,493.1 529.8,540.7 537.7,572.5" stroke-width="2.4" pathLength="100" stroke-dasharray="9 100"><animate attributeName="stroke-dashoffset" from="109" to="-9" dur="3.00s" begin="1.00s" repeatCount="indefinite"/></path>
+</g>
+</g></svg>
