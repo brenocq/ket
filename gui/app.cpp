@@ -3,9 +3,9 @@
 //
 // GLFW + Dear ImGui (docking) host. Docked panels fill the viewport: a "Code"
 // panel with the editable QASM, a "Circuit" panel that renders the parsed
-// circuit (with transport controls and a playhead for step-through), and a
-// "State" panel showing the stepped state vector. A ket::Stepper drives the
-// gate-by-gate execution. ImPlot3D is initialized too, ready for future plots.
+// circuit (with transport controls and a playhead for step-through), a "State"
+// panel showing the stepped state vector, and a "Qubits" panel of per-qubit
+// Bloch spheres (ImPlot3D). A ket::Stepper drives the gate-by-gate execution.
 #include "app.hpp"
 
 #include <algorithm>
@@ -408,6 +408,151 @@ void render_state(const State& state, ImFont* mono_font) {
     ImGui::EndTable();
   }
   ImGui::PopFont();
+}
+
+// One qubit's reduced Bloch vector r = (<X>, <Y>, <Z>), obtained by tracing out
+// the other qubits. |r| is the purity: 1 = pure (unentangled), shrinking toward
+// 0 as the qubit becomes entangled with the rest (0 = maximally mixed).
+struct Bloch {
+  double x;
+  double y;
+  double z;
+};
+
+Bloch bloch_vector(const State& state, int qubit) {
+  const std::size_t bit = std::size_t{1} << qubit;
+  double bx = 0.0;
+  double by = 0.0;
+  double bz = 0.0;
+  for (std::size_t j = 0; j < state.size(); ++j) {
+    if (j & bit) continue;  // pair each bit-cleared index with its bit-set twin
+    const Complex w = std::conj(state[j]) * state[j | bit];
+    bx += 2.0 * w.real();
+    by += 2.0 * w.imag();
+    bz += std::norm(state[j]) - std::norm(state[j | bit]);
+  }
+  return {bx, by, bz};
+}
+
+// Draw one square Bloch sphere: a wireframe shell that fades as the qubit
+// becomes more entangled, plus the Bloch vector as an arrow whose length is the
+// purity. NoClip keeps the arrow/labels visible right up to the box edges; the
+// view starts at a shared orientation but can be rotated per sphere.
+void draw_bloch_sphere(const char* id, float side, const Bloch& b) {
+  const ImPlot3DFlags flags = ImPlot3DFlags_CanvasOnly | ImPlot3DFlags_Equal |
+                              ImPlot3DFlags_NoClip | ImPlot3DFlags_NoPan |
+                              ImPlot3DFlags_NoZoom;
+  if (!ImPlot3D::BeginPlot(id, ImVec2(side, side), flags)) return;
+  ImPlot3D::SetupAxes(
+      nullptr, nullptr, nullptr, ImPlot3DAxisFlags_NoDecorations,
+      ImPlot3DAxisFlags_NoDecorations, ImPlot3DAxisFlags_NoDecorations);
+  ImPlot3D::SetupAxisLimits(ImAxis3D_X, -1.3, 1.3, ImPlot3DCond_Always);
+  ImPlot3D::SetupAxisLimits(ImAxis3D_Y, -1.3, 1.3, ImPlot3DCond_Always);
+  ImPlot3D::SetupAxisLimits(ImAxis3D_Z, -1.3, 1.3, ImPlot3DCond_Always);
+  ImPlot3D::SetupBoxRotation(22.0, -125.0, false, ImPlot3DCond_Once);
+
+  const double r = std::sqrt(b.x * b.x + b.y * b.y + b.z * b.z);
+  const float rr = static_cast<float>(std::min(r, 1.0));
+
+  // Three great circles forming the sphere shell, fainter as purity drops.
+  constexpr int N = 41;
+  double cxs[N];
+  double cys[N];
+  double czs[N];
+  ImPlot3DSpec shell;
+  shell.LineColor = ImGui::ColorConvertU32ToFloat4(
+      IM_COL32(150, 162, 188, static_cast<int>(26.0f + 82.0f * rr)));
+  shell.LineWeight = 1.0f;
+  shell.Flags = ImPlot3DItemFlags_NoLegend | ImPlot3DItemFlags_NoFit;
+  for (int plane = 0; plane < 3; ++plane) {
+    for (int k = 0; k < N; ++k) {
+      const double t = 2.0 * 3.141592653589793 * k / (N - 1);
+      const double c = std::cos(t);
+      const double s = std::sin(t);
+      if (plane == 0) {
+        cxs[k] = c;
+        cys[k] = s;
+        czs[k] = 0.0;
+      } else if (plane == 1) {
+        cxs[k] = c;
+        cys[k] = 0.0;
+        czs[k] = s;
+      } else {
+        cxs[k] = 0.0;
+        cys[k] = c;
+        czs[k] = s;
+      }
+    }
+    ImPlot3D::PlotLine("##shell", cxs, cys, czs, N, shell);
+  }
+
+  // Cardinal axes (faint), so the six basis-state labels at their tips read as
+  // directions: |0>/|1> on +-Z, |+>/|-> on +-X, |i>/|-i> on +-Y.
+  ImPlot3DSpec axis;
+  axis.LineColor = ImGui::ColorConvertU32ToFloat4(IM_COL32(120, 130, 150, 90));
+  axis.LineWeight = 1.0f;
+  axis.Flags = ImPlot3DItemFlags_NoLegend | ImPlot3DItemFlags_NoFit;
+  const double span[2] = {-1.0, 1.0};
+  const double zero[2] = {0.0, 0.0};
+  ImPlot3D::PlotLine("##ax", span, zero, zero, 2, axis);
+  ImPlot3D::PlotLine("##ay", zero, span, zero, 2, axis);
+  ImPlot3D::PlotLine("##az", zero, zero, span, 2, axis);
+
+  // The Bloch vector arrow (origin -> r) with a dot at the tip.
+  const double axs[2] = {0.0, b.x};
+  const double ays[2] = {0.0, b.y};
+  const double azs[2] = {0.0, b.z};
+  const ImVec4 amber =
+      ImGui::ColorConvertU32ToFloat4(IM_COL32(255, 199, 89, 255));
+  ImPlot3DSpec arrow;
+  arrow.LineColor = amber;
+  arrow.LineWeight = 3.0f;
+  arrow.Flags = ImPlot3DItemFlags_NoLegend | ImPlot3DItemFlags_NoFit;
+  ImPlot3D::PlotLine("##vec", axs, ays, azs, 2, arrow);
+  arrow.Marker = ImPlot3DMarker_Circle;
+  arrow.MarkerSize = 4.0f;
+  arrow.MarkerFillColor = amber;
+  ImPlot3D::PlotScatter("##tip", &axs[1], &ays[1], &azs[1], 1, arrow);
+
+  ImPlot3D::PlotText("|0>", 0.0, 0.0, 1.15);
+  ImPlot3D::PlotText("|1>", 0.0, 0.0, -1.15);
+  ImPlot3D::PlotText("|+>", 1.15, 0.0, 0.0);
+  ImPlot3D::PlotText("|->", -1.15, 0.0, 0.0);
+  ImPlot3D::PlotText("|i>", 0.0, 1.15, 0.0);
+  ImPlot3D::PlotText("|-i>", 0.0, -1.15, 0.0);
+  ImPlot3D::EndPlot();
+}
+
+// The Qubits panel: a responsive grid of equal-size square Bloch spheres, one
+// per qubit. The number of spheres per row follows the panel width.
+void render_qubits(const State& state) {
+  const std::size_t dim = state.size();
+  if (dim == 0) {
+    ImGui::TextDisabled("(no state)");
+    return;
+  }
+  int nq = 0;
+  while ((std::size_t{1} << nq) < dim) ++nq;
+
+  const float side = 150.0f;  // fixed square size; columns follow the width
+  const float spacing = ImGui::GetStyle().ItemSpacing.x;
+  const float avail = ImGui::GetContentRegionAvail().x;
+  const int cols =
+      std::max(1, static_cast<int>((avail + spacing) / (side + spacing)));
+  for (int q = 0; q < nq; ++q) {
+    if (q % cols != 0) ImGui::SameLine();
+    ImGui::BeginGroup();
+    const Bloch bv = bloch_vector(state, q);
+    const double r = std::sqrt(bv.x * bv.x + bv.y * bv.y + bv.z * bv.z);
+    ImGui::Text("q%d", q);
+    char id[16];
+    std::snprintf(id, sizeof(id), "##bq%d", q);
+    draw_bloch_sphere(id, side, bv);
+    ImGui::TextColored(r > 0.999 ? ImVec4(0.50f, 0.85f, 0.50f, 1.0f)
+                                 : ImVec4(0.95f, 0.65f, 0.35f, 1.0f),
+                       "|r| %.3f", r);
+    ImGui::EndGroup();
+  }
 }
 
 // Renders the circuit into a decoration-free ImPlot plot using its draw list:
@@ -860,6 +1005,7 @@ int run(const std::string& qasm_source, const std::string& title) {
                                   &code_node);
       ImGui::DockBuilderDockWindow("Code", code_node);
       ImGui::DockBuilderDockWindow("State", state_node);
+      ImGui::DockBuilderDockWindow("Qubits", state_node);  // tab beside State
       ImGui::DockBuilderDockWindow("Circuit", circuit_node);
       ImGui::DockBuilderFinish(dockspace_id);
     }
@@ -989,6 +1135,15 @@ int run(const std::string& qasm_source, const std::string& title) {
     if (ImGui::Begin("State")) {
       if (stepper) {
         render_state(stepper->state(), mono_font);
+      } else {
+        ImGui::TextDisabled("(no circuit)");
+      }
+    }
+    ImGui::End();
+
+    if (ImGui::Begin("Qubits")) {
+      if (stepper && circuit.n_qubits() > 0) {
+        render_qubits(stepper->state());
       } else {
         ImGui::TextDisabled("(no circuit)");
       }
