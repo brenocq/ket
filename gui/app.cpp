@@ -97,11 +97,14 @@ ImU32 gate_color(GateType t) {
     case GateType::CH:
       return rgb(0.118f, 0.565f, 1.000f);  // Dodger Blue
     case GateType::X:
+    case GateType::CX:
+    case GateType::CCX:
       return rgb(0.894f, 0.102f, 0.110f);  // Crimson
     case GateType::Y:
     case GateType::CY:
       return rgb(0.302f, 0.686f, 0.290f);  // Forest Green
     case GateType::Z:
+    case GateType::CZ:
       return rgb(0.855f, 0.647f, 0.125f);  // Goldenrod
     case GateType::S:
       return rgb(0.251f, 0.878f, 0.816f);  // Turquoise
@@ -125,6 +128,9 @@ ImU32 gate_color(GateType t) {
       return rgb(0.576f, 0.439f, 0.859f);  // Medium Purple
     case GateType::CP:
       return rgb(1.000f, 0.498f, 0.000f);  // Orange
+    case GateType::Swap:
+    case GateType::CSwap:
+      return rgb(0.000f, 0.808f, 0.820f);  // Dark Cyan
     case GateType::Measure:
       return rgb(0.957f, 0.643f, 0.376f);  // Sandy Brown
     default:
@@ -332,10 +338,8 @@ void render_circuit(const Circuit& circuit) {
   const ImU32 comp_fill = IM_COL32(120, 92, 170, 255);
   const ImU32 border_col = IM_COL32(222, 226, 236, 255);
   const ImU32 text_col = IM_COL32(245, 246, 250, 255);
-  const ImU32 ctrl_col = IM_COL32(222, 226, 236, 255);
   const ImU32 barrier_col = IM_COL32(130, 132, 140, 120);
   const ImU32 probe_col = IM_COL32(110, 190, 130, 200);
-  const ImU32 clear = IM_COL32(0, 0, 0, 0);
 
   auto px = [](double x, double y) { return ImPlot::PlotToPixels(x, y); };
   // q0 is drawn at the top (largest y).
@@ -416,21 +420,32 @@ void render_circuit(const Circuit& circuit) {
                       255.0f;
     text(cx, y, label, lum > 0.6f ? IM_COL32(20, 22, 28, 255) : text_col);
   };
-  auto dot = [&](double cx, double y) {
-    marker(cx, y, ImPlotMarker_Circle, std::max(2.5f, 4.0f * zoom), ctrl_col,
-           ctrl_col, 1.0f);
+  auto dot = [&](double cx, double y, ImU32 c) {
+    marker(cx, y, ImPlotMarker_Circle, std::max(2.5f, 4.0f * zoom), c, c, 1.0f);
   };
-  auto oplus = [&](double cx, double y) {
+  // A filled disk with a + through it — the X / CNOT-target symbol. Drawn on
+  // the plot draw list (ImPlot's circle markers are only ~10-sided at this
+  // radius).
+  auto oplus = [&](double cx, double y, ImU32 c) {
     const float r = std::max(6.0f, 11.0f * zoom);
-    marker(cx, y, ImPlotMarker_Circle, r, clear, ctrl_col, thick(2.0f));
-    marker(cx, y, ImPlotMarker_Plus, r, ctrl_col, ctrl_col, thick(2.0f));
+    const float arm = 0.5f * r;  // the + is 0.75 of the circle
+    const float w = thick(2.0f);
+    const ImVec2 ctr = px(cx, y);
+    ImDrawList* dl = ImPlot::GetPlotDrawList();
+    ImPlot::PushPlotClipRect();
+    dl->AddCircleFilled(ctr, r, c, 30);
+    dl->AddLine(ImVec2(ctr.x - arm, ctr.y), ImVec2(ctr.x + arm, ctr.y),
+                border_col, w);
+    dl->AddLine(ImVec2(ctr.x, ctr.y - arm), ImVec2(ctr.x, ctr.y + arm),
+                border_col, w);
+    ImPlot::PopPlotClipRect();
   };
-  auto cross = [&](double cx, double y) {
-    marker(cx, y, ImPlotMarker_Cross, std::max(5.0f, 7.0f * zoom), ctrl_col,
-           ctrl_col, thick(2.0f));
+  auto cross = [&](double cx, double y, ImU32 c) {
+    marker(cx, y, ImPlotMarker_Cross, std::max(5.0f, 7.0f * zoom), c, c,
+           thick(2.0f));
   };
-  auto vline = [&](double cx, double ya, double yb) {
-    line(cx, ya, cx, yb, ctrl_col, thick(2.0f));
+  auto vline = [&](double cx, double ya, double yb, ImU32 c) {
+    line(cx, ya, cx, yb, c, thick(2.0f));
   };
 
   // Wires and left-hand qubit labels.
@@ -456,11 +471,15 @@ void render_circuit(const Circuit& circuit) {
       hi = std::max(hi, q.index);
     }
 
+    const ImU32 gc = gate_color(g.type);
     switch (g.type) {
+      case GateType::X:  // the NOT symbol — a filled disk with a +
+        oplus(cx, yq(g.qubits[0].index), gc);
+        break;
       case GateType::CX:
-        vline(cx, yq(g.qubits[0].index), yq(g.qubits[1].index));
-        dot(cx, yq(g.qubits[0].index));
-        oplus(cx, yq(g.qubits[1].index));
+        vline(cx, yq(g.qubits[0].index), yq(g.qubits[1].index), gc);
+        dot(cx, yq(g.qubits[0].index), gc);
+        oplus(cx, yq(g.qubits[1].index), gc);
         break;
       case GateType::CY:
       case GateType::CH:
@@ -469,31 +488,31 @@ void render_circuit(const Circuit& circuit) {
       case GateType::CRz:
       case GateType::CU:
       case GateType::CP:
-        vline(cx, yq(g.qubits[0].index), yq(g.qubits[1].index));
-        dot(cx, yq(g.qubits[0].index));
-        box(cx, yq(g.qubits[1].index), gate_name(g.type), gate_color(g.type));
+        vline(cx, yq(g.qubits[0].index), yq(g.qubits[1].index), gc);
+        dot(cx, yq(g.qubits[0].index), gc);
+        box(cx, yq(g.qubits[1].index), gate_name(g.type), gc);
         break;
       case GateType::CZ:
-        vline(cx, yq(g.qubits[0].index), yq(g.qubits[1].index));
-        dot(cx, yq(g.qubits[0].index));
-        dot(cx, yq(g.qubits[1].index));
+        vline(cx, yq(g.qubits[0].index), yq(g.qubits[1].index), gc);
+        dot(cx, yq(g.qubits[0].index), gc);
+        dot(cx, yq(g.qubits[1].index), gc);
         break;
       case GateType::Swap:
-        vline(cx, yq(g.qubits[0].index), yq(g.qubits[1].index));
-        cross(cx, yq(g.qubits[0].index));
-        cross(cx, yq(g.qubits[1].index));
+        vline(cx, yq(g.qubits[0].index), yq(g.qubits[1].index), gc);
+        cross(cx, yq(g.qubits[0].index), gc);
+        cross(cx, yq(g.qubits[1].index), gc);
         break;
       case GateType::CCX:
-        vline(cx, yq(lo), yq(hi));
-        dot(cx, yq(g.qubits[0].index));
-        dot(cx, yq(g.qubits[1].index));
-        oplus(cx, yq(g.qubits[2].index));
+        vline(cx, yq(lo), yq(hi), gc);
+        dot(cx, yq(g.qubits[0].index), gc);
+        dot(cx, yq(g.qubits[1].index), gc);
+        oplus(cx, yq(g.qubits[2].index), gc);
         break;
       case GateType::CSwap:
-        vline(cx, yq(lo), yq(hi));
-        dot(cx, yq(g.qubits[0].index));
-        cross(cx, yq(g.qubits[1].index));
-        cross(cx, yq(g.qubits[2].index));
+        vline(cx, yq(lo), yq(hi), gc);
+        dot(cx, yq(g.qubits[0].index), gc);
+        cross(cx, yq(g.qubits[1].index), gc);
+        cross(cx, yq(g.qubits[2].index), gc);
         break;
       case GateType::Barrier:
         line(cx, yq(lo) + 0.5, cx, yq(hi) - 0.5, barrier_col, thick(6.0f));
@@ -524,7 +543,7 @@ void render_circuit(const Circuit& circuit) {
         break;
       }
       default:
-        box(cx, yq(g.qubits[0].index), gate_name(g.type), gate_color(g.type));
+        box(cx, yq(g.qubits[0].index), gate_name(g.type), gc);
         break;
     }
   }
