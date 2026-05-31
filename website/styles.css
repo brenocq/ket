@@ -109,9 +109,10 @@ a {
   font-weight: 700;
   letter-spacing: -0.02em;
 }
-.brand svg {
-  width: 26px;
-  height: 26px;
+.brand svg,
+.brand img {
+  width: auto;
+  height: 28px;
 }
 .nav-links {
   display: flex;
