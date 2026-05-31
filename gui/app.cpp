@@ -1,20 +1,23 @@
 // SPDX-License-Identifier: MIT
 // SPDX-FileCopyrightText: 2026 Breno Cunha Queiroz
 //
-// GLFW + Dear ImGui (docking) host. Two docked panels fill the viewport: a
-// "Code" panel with the editable QASM, and a "Circuit" panel that renders the
-// parsed circuit into an ImPlot plot. ImPlot3D is initialized too, ready for
-// the state plot to come.
+// GLFW + Dear ImGui (docking) host. Docked panels fill the viewport: a "Code"
+// panel with the editable QASM, a "Circuit" panel that renders the parsed
+// circuit (with transport controls and a playhead for step-through), and a
+// "State" panel showing the stepped state vector. A ket::Stepper drives the
+// gate-by-gate execution. ImPlot3D is initialized too, ready for future plots.
 #include "app.hpp"
 
 #include <algorithm>
 #include <cctype>
 #include <cfloat>
 #include <cmath>
+#include <complex>
 #include <cstddef>
 #include <cstdio>
 #include <exception>
 #include <fstream>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -267,9 +270,151 @@ void highlight_qasm(ImDrawList* dl, ImVec2 origin, const std::string& code,
   }
 }
 
+// Map a phase angle (radians) onto a cyclic hue wheel, so relative phase reads
+// at a glance and wraps cleanly at +-pi.
+ImU32 phase_color(double phase) {
+  constexpr double two_pi = 6.283185307179586;
+  float h = static_cast<float>(phase / two_pi + 0.5);  // [-pi,pi] -> [0,1)
+  h -= std::floor(h);
+  float r = 0.0f;
+  float g = 0.0f;
+  float b = 0.0f;
+  ImGui::ColorConvertHSVtoRGB(h, 0.62f, 1.0f, r, g, b);
+  return IM_COL32(static_cast<int>(r * 255.0f + 0.5f),
+                  static_cast<int>(g * 255.0f + 0.5f),
+                  static_cast<int>(b * 255.0f + 0.5f), 255);
+}
+
+// The State panel: a phase-colored probability bar chart (bar height is
+// |amp|^2, color is the amplitude's phase) plus a per-amplitude table.
+void render_state(const State& state, ImFont* mono_font) {
+  constexpr double pi = 3.141592653589793;
+  const std::size_t dim = state.size();
+  if (dim == 0) {
+    ImGui::TextDisabled("(no state)");
+    return;
+  }
+  int nq = 0;
+  while ((std::size_t{1} << nq) < dim) ++nq;
+
+  double maxp = 0.0;
+  std::size_t nonzero = 0;
+  for (std::size_t i = 0; i < dim; ++i) {
+    const double p = std::norm(state[i]);  // |amp|^2
+    if (p > 1e-12) ++nonzero;
+    maxp = std::max(maxp, p);
+  }
+
+  ImGui::Text("%d qubit%s · %zu amplitudes · %zu nonzero", nq,
+              nq == 1 ? "" : "s", dim, nonzero);
+
+  // Phase legend: a hue strip from -pi to +pi.
+  {
+    ImDrawList* dl = ImGui::GetWindowDrawList();
+    const ImVec2 p0 = ImGui::GetCursorScreenPos();
+    const float w = ImMin(200.0f, ImGui::GetContentRegionAvail().x);
+    const float h = ImGui::GetTextLineHeight();
+    const int seg = 48;
+    for (int s = 0; s < seg; ++s) {
+      const double ph = (static_cast<double>(s) / seg) * 2.0 * pi - pi;
+      dl->AddRectFilled(ImVec2(p0.x + w * s / seg, p0.y),
+                        ImVec2(p0.x + w * (s + 1) / seg, p0.y + h),
+                        phase_color(ph));
+    }
+    ImGui::Dummy(ImVec2(w, h));
+    ImGui::SameLine();
+    ImGui::TextDisabled("phase -pi .. +pi");
+  }
+
+  // Probability bar chart, colored by phase (skipped when there are too many
+  // amplitudes to draw a bar each).
+  if (dim <= 4096 && maxp > 0.0) {
+    if (ImPlot::BeginPlot("##amps", ImVec2(-1, 150),
+                          ImPlotFlags_NoLegend | ImPlotFlags_NoMenus)) {
+      ImPlot::SetupAxes("basis index", "probability",
+                        ImPlotAxisFlags_NoGridLines, 0);
+      ImPlot::SetupAxesLimits(-0.5, static_cast<double>(dim) - 0.5, 0.0,
+                              maxp * 1.10, ImPlotCond_Always);
+      ImDrawList* dl = ImPlot::GetPlotDrawList();
+      ImPlot::PushPlotClipRect();
+      const double halfw = dim <= 128 ? 0.42 : 0.5;
+      for (std::size_t i = 0; i < dim; ++i) {
+        const double p = std::norm(state[i]);
+        if (p <= 1e-12) continue;
+        const ImVec2 a =
+            ImPlot::PlotToPixels(static_cast<double>(i) - halfw, p);
+        const ImVec2 b =
+            ImPlot::PlotToPixels(static_cast<double>(i) + halfw, 0.0);
+        dl->AddRectFilled(a, b, phase_color(std::arg(state[i])));
+      }
+      ImPlot::PopPlotClipRect();
+      ImPlot::EndPlot();
+    }
+  } else if (dim > 4096) {
+    ImGui::TextDisabled("(bar chart hidden above 4096 amplitudes)");
+  }
+
+  // Per-amplitude table (monospace for aligned kets and numbers). Lists the
+  // nonzero amplitudes in basis-index order, capped so huge states stay snappy.
+  ImGui::PushFont(mono_font);
+  const ImGuiTableFlags tflags =
+      ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg |
+      ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_SizingStretchProp;
+  if (ImGui::BeginTable("amps_table", 4, tflags)) {
+    ImGui::TableSetupScrollFreeze(0, 1);
+    ImGui::TableSetupColumn("state");
+    ImGui::TableSetupColumn("probability");
+    ImGui::TableSetupColumn("amplitude");
+    ImGui::TableSetupColumn("phase (deg)");
+    ImGui::TableHeadersRow();
+
+    const std::size_t cap = 4096;
+    std::size_t shown = 0;
+    char ket[72];
+    for (std::size_t i = 0; i < dim && shown < cap; ++i) {
+      const Complex amp = state[i];
+      const double p = std::norm(amp);
+      if (p <= 1e-12) continue;
+      ++shown;
+      ImGui::TableNextRow();
+
+      ImGui::TableNextColumn();
+      std::size_t k = 0;
+      ket[k++] = '|';
+      for (int b = nq - 1; b >= 0; --b) ket[k++] = ((i >> b) & 1) ? '1' : '0';
+      ket[k++] = '>';
+      ket[k] = '\0';
+      ImGui::TextUnformatted(ket);
+
+      ImGui::TableNextColumn();
+      char ov[24];
+      std::snprintf(ov, sizeof(ov), "%.4f", p);
+      ImGui::ProgressBar(static_cast<float>(p),
+                         ImVec2(-FLT_MIN, ImGui::GetTextLineHeight()), ov);
+
+      ImGui::TableNextColumn();
+      ImGui::Text("%+.4f %+.4fi", amp.real(), amp.imag());
+
+      ImGui::TableNextColumn();
+      const double ph = std::arg(amp);
+      const ImVec2 sw = ImGui::GetCursorScreenPos();
+      const float hgt = ImGui::GetTextLineHeight();
+      ImGui::GetWindowDrawList()->AddRectFilled(
+          sw, ImVec2(sw.x + hgt, sw.y + hgt), phase_color(ph));
+      ImGui::Dummy(ImVec2(hgt, hgt));
+      ImGui::SameLine();
+      ImGui::Text("%+.0f", ph * 180.0 / pi);
+    }
+    ImGui::EndTable();
+  }
+  ImGui::PopFont();
+}
+
 // Renders the circuit into a decoration-free ImPlot plot using its draw list:
 // horizontal qubit wires, then gates placed into greedily-packed columns.
-void render_circuit(const Circuit& circuit) {
+// `current_step` is the DAG-node index of the gate about to execute (the
+// playhead); current_step == node count means the run is finished.
+void render_circuit(const Circuit& circuit, std::size_t current_step) {
   const std::size_t nq = circuit.n_qubits();
   if (nq == 0) {
     ImGui::TextDisabled("(empty circuit)");
@@ -472,6 +617,30 @@ void render_circuit(const Circuit& circuit) {
     text(-0.45, y, buf, text_col);
   }
 
+  // Playhead: a soft band behind the gate about to execute, drawn before the
+  // gates so they sit on top. Nothing is highlighted once the run is finished.
+  if (current_step < col_of.size()) {
+    const Gate& cur = circuit.dag().nodes()[current_step].gate;
+    const double cxp = static_cast<double>(col_of[current_step]) + 0.5;
+    std::size_t lo = 0;
+    std::size_t hi = nq - 1;
+    if (!cur.qubits.empty()) {
+      lo = nq - 1;
+      hi = 0;
+      for (const Qubit& q : cur.qubits) {
+        lo = std::min(lo, q.index);
+        hi = std::max(hi, q.index);
+      }
+    }
+    const double xs[2] = {cxp - 0.5, cxp + 0.5};
+    const double top[2] = {yq(lo) + 0.5, yq(lo) + 0.5};
+    const double bot[2] = {yq(hi) - 0.5, yq(hi) - 0.5};
+    ImPlotSpec hs;
+    hs.FillColor = v4(IM_COL32(255, 209, 102, 64));  // amber glow
+    hs.Flags = ImPlotItemFlags_NoLegend;
+    ImPlot::PlotShaded(next_id(), xs, top, bot, 2, hs);
+  }
+
   std::size_t idx = 0;
   for (const DagNode& node : circuit.dag().nodes()) {
     const Gate& g = node.gate;
@@ -634,6 +803,12 @@ int run(const std::string& qasm_source, const std::string& title) {
   std::string code = qasm_source;
   Circuit circuit{0};
   std::string parse_error;
+  // Step-through state: a Stepper over the current circuit, driven by the
+  // transport controls. Editing the circuit rebuilds it (resetting to step 0).
+  std::optional<Stepper> stepper;
+  bool playing = false;
+  float play_accum = 0.0f;      // seconds accumulated toward the next auto-step
+  float play_interval = 0.20f;  // seconds per gate while playing
   auto reparse = [&]() {
     try {
       circuit = from_qasm(code);
@@ -641,6 +816,8 @@ int run(const std::string& qasm_source, const std::string& title) {
     } catch (const std::exception& e) {
       parse_error = e.what();
     }
+    stepper.emplace(circuit);
+    playing = false;
   };
   reparse();
 
@@ -653,6 +830,19 @@ int run(const std::string& qasm_source, const std::string& title) {
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
 
+    // Advance the playhead on a timer while playing (independent of which
+    // panels are visible). Catch up if several intervals elapsed in one frame.
+    if (playing && stepper) {
+      play_accum += ImGui::GetIO().DeltaTime;
+      while (play_accum >= play_interval) {
+        play_accum -= play_interval;
+        if (!stepper->step()) {
+          playing = false;
+          break;
+        }
+      }
+    }
+
     const ImGuiID dockspace_id = ImGui::DockSpaceOverViewport();
     if (!layout_done) {
       // Default layout: Circuit fills the left, Code docked on the right.
@@ -663,9 +853,13 @@ int run(const std::string& qasm_source, const std::string& title) {
                                     ImGui::GetMainViewport()->Size);
       ImGuiID code_node = 0;
       ImGuiID circuit_node = 0;
-      ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Right, 0.30f,
+      ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Right, 0.32f,
                                   &code_node, &circuit_node);
+      ImGuiID state_node = 0;
+      ImGui::DockBuilderSplitNode(code_node, ImGuiDir_Down, 0.45f, &state_node,
+                                  &code_node);
       ImGui::DockBuilderDockWindow("Code", code_node);
+      ImGui::DockBuilderDockWindow("State", state_node);
       ImGui::DockBuilderDockWindow("Circuit", circuit_node);
       ImGui::DockBuilderFinish(dockspace_id);
     }
@@ -734,7 +928,70 @@ int run(const std::string& qasm_source, const std::string& title) {
         ImGui::TextColored(ImVec4(1.0f, 0.45f, 0.45f, 1.0f), "parse error: %s",
                            parse_error.c_str());
       }
-      render_circuit(circuit);
+
+      if (stepper) {
+        Stepper& st = *stepper;
+        const int n = static_cast<int>(st.size());
+        const bool at_start = st.pos() == 0;
+        const bool at_end = st.at_end();
+
+        ImGui::BeginDisabled(at_start);
+        if (ImGui::Button("Reset")) {
+          st.reset();
+          playing = false;
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("< Prev")) {
+          st.seek(st.pos() - 1);
+          playing = false;
+        }
+        ImGui::EndDisabled();
+        ImGui::SameLine();
+        ImGui::BeginDisabled(n == 0);
+        if (ImGui::Button(playing ? "Pause" : "Play ")) {
+          if (!playing && at_end) st.reset();  // replay from the start
+          playing = !playing;
+          play_accum = 0.0f;
+        }
+        ImGui::EndDisabled();
+        ImGui::SameLine();
+        ImGui::BeginDisabled(at_end);
+        if (ImGui::Button("Next >")) {
+          st.step();
+          playing = false;
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("End")) {
+          st.seek(st.size());
+          playing = false;
+        }
+        ImGui::EndDisabled();
+        ImGui::SameLine();
+        ImGui::Text("gate %d / %d", static_cast<int>(st.pos()), n);
+        ImGui::SameLine();
+        ImGui::TextDisabled("· %zu qubit%s%s", circuit.n_qubits(),
+                            circuit.n_qubits() == 1 ? "" : "s",
+                            is_clifford(circuit) ? " · Clifford" : "");
+
+        int step_i = static_cast<int>(st.pos());
+        ImGui::SetNextItemWidth(-FLT_MIN);
+        if (ImGui::SliderInt("##scrub", &step_i, 0, n, "")) {
+          st.seek(static_cast<std::size_t>(step_i));
+          playing = false;
+        }
+        ImGui::Separator();
+      }
+
+      render_circuit(circuit, stepper ? stepper->pos() : 0);
+    }
+    ImGui::End();
+
+    if (ImGui::Begin("State")) {
+      if (stepper) {
+        render_state(stepper->state(), mono_font);
+      } else {
+        ImGui::TextDisabled("(no circuit)");
+      }
     }
     ImGui::End();
 

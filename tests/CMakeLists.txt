@@ -32,6 +32,7 @@ add_executable(
   test_dag.cpp
   test_block.cpp
   test_simulator.cpp
+  test_stepper.cpp
   test_measurement.cpp
   test_observable.cpp
   test_stabilizer.cpp

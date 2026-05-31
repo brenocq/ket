@@ -13,6 +13,7 @@
 #include <ket/dag.hpp>
 #include <ket/gate.hpp>
 #include <ket/qubit.hpp>
+#include <ket/stepper.hpp>
 
 #include "parallel.hpp"
 
@@ -531,6 +532,23 @@ State ground_state(std::size_t n_qubits) {
   return state;
 }
 
+// Apply one top-level DAG node to the state (no fusion). Unitary gates go
+// through the per-gate kernels; a composite block is applied whole; structural
+// nodes (Measure/Barrier/Probe) leave the state unchanged.
+void apply_node(State& state, const Gate& g) {
+  if (is_unitary(g.type)) {
+    std::vector<std::size_t> on(g.qubits.size());
+    for (std::size_t i = 0; i < g.qubits.size(); ++i) on[i] = g.qubits[i].index;
+    apply_gate_on(state, g, on);
+  } else if (g.type == GateType::Composite) {
+    std::vector<std::size_t> sub_wire(g.definition->n_qubits());
+    for (std::size_t j = 0; j < g.qubits.size(); ++j) {
+      sub_wire[j] = g.qubits[j].index;
+    }
+    apply_circuit(state, *g.definition, sub_wire, nullptr);
+  }
+}
+
 }  // namespace
 
 State run(const Circuit& circuit) {
@@ -544,6 +562,33 @@ ProbeRun run_with_probes(const Circuit& circuit) {
   std::vector<std::pair<std::string, State>> probes;
   apply_circuit(state, circuit, identity_wire(circuit.n_qubits()), &probes);
   return ProbeRun{std::move(state), std::move(probes)};
+}
+
+Stepper::Stepper(Circuit circuit)
+    : circuit_(std::move(circuit)),
+      state_(ground_state(circuit_.n_qubits())),
+      n_steps_(circuit_.dag().nodes().size()),
+      pos_(0) {}
+
+void Stepper::reset() {
+  state_ = ground_state(circuit_.n_qubits());
+  pos_ = 0;
+}
+
+bool Stepper::step() {
+  if (pos_ >= n_steps_) return false;
+  apply_node(state_, circuit_.dag().nodes()[pos_].gate);
+  ++pos_;
+  return true;
+}
+
+void Stepper::seek(std::size_t step) {
+  if (step > n_steps_) step = n_steps_;
+  if (step < pos_) reset();  // can only move forward; rewind by replaying
+  while (pos_ < step) {
+    apply_node(state_, circuit_.dag().nodes()[pos_].gate);
+    ++pos_;
+  }
 }
 
 }  // namespace ket
