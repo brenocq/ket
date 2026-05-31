@@ -200,6 +200,14 @@ void highlight_qasm(ImDrawList* dl, ImVec2 origin, const std::string& code,
     return std::isdigit(static_cast<unsigned char>(c)) != 0;
   };
 
+  // Advance with the *raw* glyph width. ImGui::CalcTextSize() ceils its result
+  // (text_size.x = IM_TRUNC(x + 0.99999f)), so summing it per token over-counts
+  // by up to ~1px each and drifts right. The input's cursor uses the unrounded
+  // width (ImFontCalcTextSizeEx), which is what CalcTextSizeA returns here.
+  ImGuiContext& g = *ImGui::GetCurrentContext();
+  ImFont* const font = g.Font;
+  const float font_size = g.FontSize;
+
   // ImGui renders each line in a single call and truncates the start position
   // once (ImFont::RenderText does IM_TRUNC(pos.x)), then lays out glyphs from
   // there. We draw token-by-token, so truncating each token's start would drift
@@ -249,7 +257,7 @@ void highlight_qasm(ImDrawList* dl, ImVec2 origin, const std::string& code,
       const char* a = code.data() + i;
       const char* b = code.data() + j;
       dl->AddText(ImVec2(ox + IM_ROUND(adv), y), col, a, b);
-      adv += ImGui::CalcTextSize(a, b).x;
+      adv += font->CalcTextSizeA(font_size, FLT_MAX, 0.0f, a, b, nullptr).x;
       i = j;
     }
 
