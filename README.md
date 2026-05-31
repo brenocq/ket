@@ -7,6 +7,8 @@
     ·
     <a href="#benchmark">Benchmark</a>
     ·
+    <a href="CONTRIBUTING.md">Contributing</a>
+    ·
     <a href="https://github.com/brenocq/ket/issues">Issues</a>
     ·
     <a href="https://github.com/sponsors/brenocq">Sponsor</a>
