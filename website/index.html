@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ket — quantum circuits in C++, Python, and the browser</title>
+    <meta
+      name="description"
+      content="ket is a C++20 quantum computing library with Python bindings, a state-vector + stabilizer simulator, and a WebAssembly circuit debugger."
+    />
+    <link rel="icon" href="assets/icon.png" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <!-- ===== Nav ===== -->
+    <nav class="nav">
+      <div class="container">
+        <a class="brand" href="/">
+          <!-- |> ket bracket mark -->
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path
+              d="M5 4v16M11 5l6 7-6 7"
+              style="stroke:var(--accent)"
+              stroke-width="2.2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+          ket
+        </a>
+        <div class="nav-links">
+          <a href="#features">Features</a>
+          <a href="#code">Code</a>
+          <a href="demo/">Demo</a>
+          <a href="https://github.com/brenocq/ket">Docs</a>
+        </div>
+        <div class="nav-right">
+          <a href="https://github.com/brenocq/ket">GitHub</a>
+          <a class="btn btn-accent" href="demo/">Try the demo</a>
+        </div>
+      </div>
+    </nav>
+
+    <!-- ===== Hero ===== -->
+    <header class="hero">
+      <div class="aurora"></div>
+      <div class="container">
+        <span class="pill"><span class="dot"></span> Now runs in your browser · WebAssembly</span>
+        <h1>Build quantum circuits.<br /><span class="grad">Run them in the browser.</span></h1>
+        <p class="lead">
+          A <span class="em">C++20</span> quantum computing library with
+          <span class="em">Python bindings</span>, a
+          <span class="em">state-vector</span> and
+          <span class="em">stabilizer</span> simulator, and a
+          <span class="em">WebAssembly</span> circuit debugger — step through
+          gates, watch amplitudes, and see entanglement on the Bloch sphere.
+        </p>
+        <div class="cta">
+          <a class="btn btn-accent btn-lg" href="demo/">Try the demo →</a>
+          <a class="btn btn-ghost btn-lg" href="https://github.com/brenocq/ket"
+            >View on GitHub</a
+          >
+        </div>
+      </div>
+    </header>
+
+    <!-- ===== Features (bento) ===== -->
+    <section id="features">
+      <div class="container">
+        <div class="section-head reveal">
+          <h2>One library. Two languages. Every layer.</h2>
+          <p>
+            From the C++ core to Python bindings to a browser debugger — the same
+            circuit, simulated exactly.
+          </p>
+        </div>
+
+        <div class="bento">
+          <!-- State vector -->
+          <div class="card wide reveal">
+            <div class="icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path d="M3 20h18M6 20V9M11 20V4M16 20v-7M21 20v-11"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <h3>Exact state-vector simulation</h3>
+            <p>
+              The full 2ⁿ amplitude vector, multithreaded with gate fusion —
+              with phase-colored probabilities.
+            </p>
+            <svg class="art" viewBox="0 0 320 96" fill="none" aria-hidden="true">
+              <line x1="0" y1="86" x2="320" y2="86" stroke="currentColor" stroke-width="1"/>
+              <g fill="currentColor">
+                <rect x="8"  y="38" width="20" height="48" rx="2"/>
+                <rect x="38" y="58" width="20" height="28" rx="2"/>
+                <rect x="68" y="22" width="20" height="64" rx="2"/>
+                <rect x="98" y="66" width="20" height="20" rx="2"/>
+                <rect x="158" y="50" width="20" height="36" rx="2"/>
+                <rect x="218" y="60" width="20" height="26" rx="2"/>
+                <rect x="278" y="46" width="20" height="40" rx="2"/>
+              </g>
+              <g style="fill:var(--accent)">
+                <rect x="128" y="10" width="20" height="76" rx="2"/>
+                <rect x="188" y="30" width="20" height="56" rx="2"/>
+                <rect x="248" y="18" width="20" height="68" rx="2"/>
+              </g>
+            </svg>
+          </div>
+
+          <!-- Bloch -->
+          <div class="card reveal">
+            <div class="icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/>
+                <path d="M12 12l5-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <h3>Per-qubit Bloch spheres</h3>
+            <p>Watch entanglement form — the arrow shrinks as purity drops.</p>
+            <svg class="art" viewBox="0 0 200 96" fill="none" aria-hidden="true">
+              <g stroke="currentColor" stroke-width="1.4">
+                <circle cx="46" cy="48" r="30"/>
+                <ellipse cx="46" cy="48" rx="30" ry="10"/>
+                <circle cx="150" cy="48" r="30"/>
+                <ellipse cx="150" cy="48" rx="30" ry="10"/>
+              </g>
+              <g style="stroke:var(--accent)" stroke-width="2.4" stroke-linecap="round">
+                <line x1="46" y1="48" x2="64" y2="26"/>
+                <line x1="150" y1="48" x2="156" y2="40"/>
+              </g>
+              <circle cx="64" cy="26" r="3" style="fill:var(--accent)"/>
+              <circle cx="156" cy="40" r="3" style="fill:var(--accent)"/>
+            </svg>
+          </div>
+
+          <!-- Stabilizer -->
+          <div class="card reveal">
+            <div class="icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <h3>Stabilizer backend</h3>
+            <p>
+              Clifford circuits run on an <span class="em">O(n²)</span> tableau —
+              thousands of qubits. Chosen automatically.
+            </p>
+          </div>
+
+          <!-- Circuit / DAG -->
+          <div class="card wide reveal">
+            <div class="icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <circle cx="6" cy="7" r="2.4" stroke="currentColor" stroke-width="2"/>
+                <circle cx="18" cy="17" r="2.4" stroke="currentColor" stroke-width="2"/>
+                <path d="M8 8.5l8 7" stroke="currentColor" stroke-width="2"/>
+              </svg>
+            </div>
+            <h3>Circuits as a DAG</h3>
+            <p>A directed acyclic graph of gates — explicit dependencies, room for optimization passes.</p>
+            <svg class="art" viewBox="0 0 320 96" fill="none" aria-hidden="true">
+              <g stroke="currentColor" stroke-width="1.4">
+                <line x1="14" y1="34" x2="306" y2="34"/>
+                <line x1="14" y1="70" x2="306" y2="70"/>
+                <line x1="150" y1="34" x2="150" y2="70"/>
+              </g>
+              <!-- H box -->
+              <rect x="40" y="20" width="28" height="28" rx="4" style="fill:var(--panel)" stroke="currentColor" stroke-width="1.4"/>
+              <text x="54" y="39" style="fill:var(--muted)" font-size="14" font-family="JetBrains Mono, monospace" text-anchor="middle">H</text>
+              <!-- CX: control dot + target -->
+              <circle cx="150" cy="34" r="4.5" style="fill:var(--accent)"/>
+              <circle cx="150" cy="70" r="11" style="fill:var(--accent)"/>
+              <line x1="150" y1="63" x2="150" y2="77" style="stroke:var(--bg)" stroke-width="2"/>
+              <line x1="143" y1="70" x2="157" y2="70" style="stroke:var(--bg)" stroke-width="2"/>
+              <!-- Rz box -->
+              <rect x="230" y="56" width="34" height="28" rx="4" style="fill:var(--panel)" stroke="currentColor" stroke-width="1.4"/>
+              <text x="247" y="75" style="fill:var(--muted)" font-size="13" font-family="JetBrains Mono, monospace" text-anchor="middle">Rz</text>
+            </svg>
+          </div>
+
+          <!-- QASM / Python -->
+          <div class="card reveal">
+            <div class="icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path d="M9 8l-4 4 4 4M15 8l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <h3>OpenQASM &amp; Python</h3>
+            <p>Import/export OpenQASM 2.0; a pybind11 API that mirrors the C++ one.</p>
+          </div>
+
+          <!-- WASM -->
+          <div class="card reveal">
+            <div class="icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" stroke-width="2"/>
+                <path d="M3 9h18" stroke="currentColor" stroke-width="2"/>
+              </svg>
+            </div>
+            <h3>Runs in the browser</h3>
+            <p>The full debugger, compiled to WebAssembly. No install, nothing to set up.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Code showcase ===== -->
+    <section id="code">
+      <div class="container">
+        <div class="section-head reveal">
+          <h2>A Bell state in a few lines.</h2>
+          <p>Build a circuit, simulate it, read the amplitudes — from C++, Python, or QASM.</p>
+        </div>
+
+        <div class="code reveal">
+          <input type="radio" name="tab" id="tab-cpp" checked />
+          <input type="radio" name="tab" id="tab-py" />
+          <input type="radio" name="tab" id="tab-qasm" />
+          <div class="chrome">
+            <div class="dots"><i></i><i></i><i></i></div>
+            <div class="tabs">
+              <label for="tab-cpp">C++</label>
+              <label for="tab-py">Python</label>
+              <label for="tab-qasm">QASM</label>
+            </div>
+            <button class="copy" type="button">Copy</button>
+          </div>
+          <div class="body">
+<pre class="panel" id="panel-cpp"><span class="tok-com">#include &lt;ket/ket.hpp&gt;</span>
+
+<span class="tok-kw">int</span> <span class="tok-fn">main</span>() {
+  ket::Circuit c{<span class="tok-num">2</span>};
+  c.<span class="tok-fn">h</span>(<span class="tok-num">0</span>);
+  c.<span class="tok-fn">cx</span>(<span class="tok-num">0</span>, <span class="tok-num">1</span>);
+  std::cout &lt;&lt; ket::<span class="tok-fn">run</span>(c).<span class="tok-fn">print</span>();
+}</pre>
+<pre class="panel" id="panel-py"><span class="tok-kw">import</span> ket
+
+c = ket.<span class="tok-fn">Circuit</span>(<span class="tok-num">2</span>)
+c.<span class="tok-fn">h</span>(<span class="tok-num">0</span>)
+c.<span class="tok-fn">cx</span>(<span class="tok-num">0</span>, <span class="tok-num">1</span>)
+<span class="tok-fn">print</span>(ket.<span class="tok-fn">run</span>(c))</pre>
+<pre class="panel" id="panel-qasm"><span class="tok-kw">OPENQASM</span> <span class="tok-num">2.0</span>;
+<span class="tok-kw">include</span> <span class="tok-str">"qelib1.inc"</span>;
+<span class="tok-kw">qreg</span> q[<span class="tok-num">2</span>];
+<span class="tok-fn">h</span> q[<span class="tok-num">0</span>];
+<span class="tok-fn">cx</span> q[<span class="tok-num">0</span>], q[<span class="tok-num">1</span>];</pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Footer ===== -->
+    <footer>
+      <div class="container foot-grid">
+        <div class="foot-col">
+          <a class="brand" href="/" style="font-size:18px">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none">
+              <path d="M5 4v16M11 5l6 7-6 7" style="stroke:var(--accent)" stroke-width="2.2"
+                stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            ket
+          </a>
+          <p class="muted" style="max-width:32ch;margin-top:12px">
+            A quantum computing library for C++20, with first-class Python bindings.
+          </p>
+        </div>
+        <div class="foot-col">
+          <h4>Project</h4>
+          <a href="#features">Features</a>
+          <a href="demo/">Demo</a>
+          <a href="https://github.com/brenocq/ket">GitHub</a>
+          <a href="https://github.com/brenocq/ket/blob/main/CONTRIBUTING.md">Contributing</a>
+        </div>
+        <div class="foot-col">
+          <h4>Resources</h4>
+          <a href="https://github.com/brenocq/ket/issues">Issues</a>
+          <a href="https://github.com/brenocq/ket#benchmark">Benchmark</a>
+          <a href="https://github.com/sponsors/brenocq">Sponsor</a>
+        </div>
+      </div>
+      <div class="container" style="margin-top:32px">
+        <span class="muted">MIT © 2026 Breno Cunha Queiroz</span>
+      </div>
+    </footer>
+
+    <script src="main.js"></script>
+  </body>
+</html>
