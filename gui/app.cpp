@@ -8,12 +8,15 @@
 #include "app.hpp"
 
 #include <algorithm>
+#include <cctype>
+#include <cfloat>
 #include <cmath>
 #include <cstddef>
 #include <cstdio>
 #include <exception>
 #include <fstream>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "imgui.h"
@@ -129,6 +132,120 @@ ImU32 gate_color(GateType t) {
   }
 }
 
+// Color of a QASM gate keyword, matching its box in the circuit window, or 0 if
+// `tok` is not a gate keyword (so the editor and the diagram agree at a
+// glance).
+ImU32 qasm_gate_color(std::string_view tok) {
+  using G = GateType;
+  if (tok == "h") return gate_color(G::H);
+  if (tok == "x") return gate_color(G::X);
+  if (tok == "y") return gate_color(G::Y);
+  if (tok == "z") return gate_color(G::Z);
+  if (tok == "s") return gate_color(G::S);
+  if (tok == "sdg") return gate_color(G::Sdg);
+  if (tok == "t") return gate_color(G::T);
+  if (tok == "tdg") return gate_color(G::Tdg);
+  if (tok == "rx") return gate_color(G::Rx);
+  if (tok == "ry") return gate_color(G::Ry);
+  if (tok == "rz") return gate_color(G::Rz);
+  if (tok == "u" || tok == "u1" || tok == "u2" || tok == "u3" || tok == "p")
+    return gate_color(G::U);
+  if (tok == "cx") return gate_color(G::CX);
+  if (tok == "cy") return gate_color(G::CY);
+  if (tok == "cz") return gate_color(G::CZ);
+  if (tok == "ch") return gate_color(G::CH);
+  if (tok == "crx") return gate_color(G::CRx);
+  if (tok == "cry") return gate_color(G::CRy);
+  if (tok == "crz") return gate_color(G::CRz);
+  if (tok == "cu" || tok == "cu3") return gate_color(G::CU);
+  if (tok == "cp" || tok == "cu1") return gate_color(G::CP);
+  if (tok == "swap") return gate_color(G::Swap);
+  if (tok == "ccx") return gate_color(G::CCX);
+  if (tok == "cswap") return gate_color(G::CSwap);
+  if (tok == "measure") return gate_color(G::Measure);
+  return 0;
+}
+
+bool qasm_keyword(std::string_view tok) {
+  return tok == "OPENQASM" || tok == "include" || tok == "qreg" ||
+         tok == "creg" || tok == "gate" || tok == "barrier" || tok == "reset" ||
+         tok == "if";
+}
+
+// Draw QASM syntax highlighting at `origin` (the text's top-left, in screen
+// space). Used as an overlay over an InputTextMultiline whose own text is drawn
+// transparent, so the editor stays editable while showing color. Tokens are
+// advanced by their rendered width, so the overlay lines up with the input
+// regardless of the (proportional) font.
+void highlight_qasm(ImDrawList* dl, ImVec2 origin, const std::string& code,
+                    float line_h, ImU32 text_col) {
+  const ImU32 kw_col = rgb(0.847f, 0.561f, 0.996f);   // keywords — purple
+  const ImU32 num_col = rgb(0.953f, 0.706f, 0.451f);  // numbers — tan
+  const ImU32 str_col = rgb(0.651f, 0.890f, 0.510f);  // strings — green
+  const ImU32 com_col = rgb(0.510f, 0.533f, 0.580f);  // comments — gray
+
+  auto alpha = [](char c) {
+    return std::isalpha(static_cast<unsigned char>(c)) != 0 || c == '_';
+  };
+  auto ident = [](char c) {
+    return std::isalnum(static_cast<unsigned char>(c)) != 0 || c == '_';
+  };
+  auto digit = [](char c) {
+    return std::isdigit(static_cast<unsigned char>(c)) != 0;
+  };
+
+  float y = origin.y;
+  std::size_t line_start = 0;
+  while (line_start <= code.size()) {
+    std::size_t line_end = code.find('\n', line_start);
+    if (line_end == std::string::npos) line_end = code.size();
+
+    float x = origin.x;
+    std::size_t i = line_start;
+    while (i < line_end) {
+      std::size_t j = i;
+      ImU32 col = text_col;
+      const char c = code[i];
+      if (c == '/' && i + 1 < line_end && code[i + 1] == '/') {
+        j = line_end;  // line comment
+        col = com_col;
+      } else if (c == '"') {
+        j = i + 1;
+        while (j < line_end && code[j] != '"') ++j;
+        if (j < line_end) ++j;
+        col = str_col;
+      } else if (alpha(c)) {
+        while (j < line_end && ident(code[j])) ++j;
+        const std::string_view tok(code.data() + i, j - i);
+        const ImU32 gc = qasm_gate_color(tok);
+        if (gc != 0) {
+          col = gc;  // exactly the gate's color in the circuit window
+        } else if (tok == "pi") {
+          col = num_col;
+        } else if (qasm_keyword(tok)) {
+          col = kw_col;
+        }
+      } else if (digit(c) ||
+                 (c == '.' && i + 1 < line_end && digit(code[i + 1]))) {
+        while (j < line_end && (digit(code[j]) || code[j] == '.')) ++j;
+        col = num_col;
+      } else {
+        j = i + 1;  // a single punctuation / whitespace character
+      }
+
+      const char* a = code.data() + i;
+      const char* b = code.data() + j;
+      dl->AddText(ImVec2(x, y), col, a, b);
+      x += ImGui::CalcTextSize(a, b).x;
+      i = j;
+    }
+
+    y += line_h;
+    if (line_end == code.size()) break;
+    line_start = line_end + 1;
+  }
+}
+
 // Renders the circuit into a decoration-free ImPlot plot using its draw list:
 // horizontal qubit wires, then gates placed into greedily-packed columns.
 void render_circuit(const Circuit& circuit) {
@@ -209,8 +326,8 @@ void render_circuit(const Circuit& circuit) {
 
   // Everything below is drawn as ImPlot items (PlotLine/PlotScatter/PlotShaded/
   // PlotText) rather than raw draw-list calls. ImPlot only knows the data
-  // extents from the points its items plot, so going through items is what makes
-  // double-click "fit to data" work (and ImPlot clips the items for us).
+  // extents from the points its items plot, so going through items is what
+  // makes double-click "fit to data" work (and ImPlot clips the items for us).
   const ImU32 wire_col = IM_COL32(150, 152, 162, 255);
   const ImU32 comp_fill = IM_COL32(120, 92, 170, 255);
   const ImU32 border_col = IM_COL32(222, 226, 236, 255);
@@ -291,7 +408,8 @@ void render_circuit(const Circuit& circuit) {
     bs.LineWeight = thick(1.5f);
     bs.Flags = ImPlotItemFlags_NoLegend;
     ImPlot::PlotLine(next_id(), bxs, bys, 5, bs);
-    // Dark label on light fills, light label on dark, so every box stays legible.
+    // Dark label on light fills, light label on dark, so every box stays
+    // legible.
     const float lum = (0.299f * ((fill >> IM_COL32_R_SHIFT) & 0xFF) +
                        0.587f * ((fill >> IM_COL32_G_SHIFT) & 0xFF) +
                        0.114f * ((fill >> IM_COL32_B_SHIFT) & 0xFF)) /
@@ -512,10 +630,57 @@ int run(const std::string& qasm_source, const std::string& title) {
     }
 
     if (ImGui::Begin("Code")) {
-      if (ImGui::InputTextMultiline("##code", &code,
-                                    ImGui::GetContentRegionAvail())) {
-        reparse();
+      // Size the editor to its content so it never scrolls internally (the Code
+      // window scrolls instead). That keeps the highlight overlay — drawn at
+      // the input's fixed text origin — aligned with the editable text.
+      const ImGuiStyle& style = ImGui::GetStyle();
+      const float line_h = ImGui::GetTextLineHeight();
+      const int line_count =
+          1 + static_cast<int>(std::count(code.begin(), code.end(), '\n'));
+      // One line of slack so the input never grows an internal scrollbar (which
+      // would scroll the text out from under the overlay).
+      const float content_h =
+          ImMax(static_cast<float>(line_count + 1) * line_h +
+                    style.FramePadding.y * 2.0f,
+                ImGui::GetContentRegionAvail().y);
+      const ImVec2 cursor = ImGui::GetCursorScreenPos();
+      const ImVec2 text_origin(cursor.x + style.FramePadding.x,
+                               cursor.y + style.FramePadding.y);
+
+      ImGui::PushStyleColor(ImGuiCol_Text,
+                            IM_COL32(0, 0, 0, 0));  // hide raw text
+      const bool changed = ImGui::InputTextMultiline(
+          "##code", &code, ImVec2(-FLT_MIN, content_h),
+          ImGuiInputTextFlags_AllowTabInput);
+      ImGui::PopStyleColor();
+
+      // Draw the highlight inside the input's frame, shifted by the input's own
+      // horizontal scroll, so long lines stay in the box and scroll with it.
+      const ImGuiID input_id = ImGui::GetItemID();
+      const ImVec2 frame_min = ImGui::GetItemRectMin();
+      const ImVec2 frame_max = ImGui::GetItemRectMax();
+      const ImGuiInputTextState* st = ImGui::GetInputTextState(input_id);
+      const float scroll_x = st != nullptr ? st->Scroll.x : 0.0f;
+
+      // The input renders into its own child window, whose translucent frame is
+      // composited after the parent — so draw onto that child's draw list to
+      // land *above* the frame background instead of being washed out by it.
+      ImDrawList* dl = ImGui::GetWindowDrawList();
+      ImGuiContext& g = *ImGui::GetCurrentContext();
+      for (ImGuiWindow* w : g.Windows) {
+        if (w->ChildId == input_id) {
+          dl = w->DrawList;
+          break;
+        }
       }
+
+      dl->PushClipRect(ImVec2(frame_min.x + style.FramePadding.x, frame_min.y),
+                       ImVec2(frame_max.x - style.FramePadding.x, frame_max.y),
+                       true);
+      highlight_qasm(dl, ImVec2(text_origin.x - scroll_x, text_origin.y), code,
+                     line_h, IM_COL32(245, 246, 250, 255));
+      dl->PopClipRect();
+      if (changed) reparse();
     }
     ImGui::End();
 
