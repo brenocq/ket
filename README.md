@@ -2,6 +2,24 @@
   <img width="360" height="300" alt="ket_title" src="https://github.com/user-attachments/assets/7e518df6-a526-45a4-8b9a-58f3a39b2833" />
 </div>
 
+<h6 align="center">
+    <a href="#examples">Examples</a>
+    ·
+    <a href="#benchmark">Benchmark</a>
+    ·
+    <a href="https://github.com/brenocq/ket/issues">Issues</a>
+    ·
+    <a href="https://github.com/sponsors/brenocq">Sponsor</a>
+</h6>
+
+<div align="center">
+  <a href="https://github.com/brenocq/ket/actions/workflows/linux.yml"><img src="https://github.com/brenocq/ket/actions/workflows/linux.yml/badge.svg" alt="🐧 Linux"/></a>
+  <a href="https://github.com/brenocq/ket/actions/workflows/macos.yml"><img src="https://github.com/brenocq/ket/actions/workflows/macos.yml/badge.svg" alt="🍎 macOS"/></a>
+  <a href="https://github.com/brenocq/ket/actions/workflows/windows.yml"><img src="https://github.com/brenocq/ket/actions/workflows/windows.yml/badge.svg" alt="🪟 Windows"/></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"/></a>
+  <a href="https://github.com/sponsors/brenocq"><img src="https://img.shields.io/github/sponsors/brenocq?logo=githubsponsors&label=Sponsor" alt="Sponsor"/></a>
+</div>
+
 **Ket** (|⟩) is a quantum computing library for C++20, with first-class Python
 bindings. You build a circuit, simulate it on a built-in state-vector
 simulator, and sample measurement outcomes — from C++, from Python, from the

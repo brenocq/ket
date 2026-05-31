@@ -1,0 +1,42 @@
+name: 🐧 Linux
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # The GUI needs GLFW's X11/OpenGL dev headers.
+      - name: Install GUI build dependencies
+        run: sudo apt-get update && sudo apt-get install -y xorg-dev libgl1-mesa-dev
+
+      - name: Configure
+        run: >
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          -DKET_TESTS=ON -DKET_CLI=ON -DKET_GUI=ON -DGLFW_BUILD_WAYLAND=OFF
+
+      - name: Build
+        run: cmake --build build --config Release
+
+      - name: Test
+        run: ctest --test-dir build --build-config Release --output-on-failure
+
+  python-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install (builds the bindings from source)
+        run: pip install ".[test]"
+
+      - name: Test
+        run: pytest
