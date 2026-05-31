@@ -3,17 +3,13 @@
 </div>
 
 <h6 align="center">
-    <a href="https://brenocq.github.io/ket/demo/">Live demo</a>
+    <a href="https://brenocq.github.io/ket/demo/">Online demo</a>
     ·
     <a href="https://brenocq.github.io/ket/">Website</a>
     ·
     <a href="#examples">Examples</a>
     ·
     <a href="#benchmark">Benchmark</a>
-    ·
-    <a href="CONTRIBUTING.md">Contributing</a>
-    ·
-    <a href="https://github.com/sponsors/brenocq">Sponsor</a>
 </h6>
 
 <div align="center">
@@ -29,8 +25,9 @@ bindings. You build a circuit, simulate it on a built-in state-vector
 simulator, and sample measurement outcomes — from C++, from Python, the command
 line, a desktop GUI, or right in your browser.
 
+https://github.com/user-attachments/assets/5b14a6eb-3eb7-4a7f-a1ba-e406af6a2c3b
+
 <div align="center">
-  <img width="760" src="website/assets/demo.mp4"/>
   <p>
     <b><a href="https://brenocq.github.io/ket/demo/">▶&nbsp; Try the debugger in your browser</a></b><br/>
     No install — step a circuit gate by gate and watch every amplitude and Bloch vector.
