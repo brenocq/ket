@@ -1,21 +1,24 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: MIT
 # SPDX-FileCopyrightText: 2026 Breno Cunha Queiroz
-"""Benchmark ket's state-vector simulator against other libraries.
+"""Benchmark Ket's state-vector simulator against other libraries.
 
-Runs each OpenQASM circuit in every available library, times the simulation
-(averaged over many runs), and writes a grouped bar chart to results/.
+Verifies every library computes the same state, then times each on a set of
+OpenQASM circuits (median over many runs) and writes a grouped bar chart.
 
-  python benchmark.py [--reps N]
+  python benchmark.py [--reps N] [--big-reps M]
 
-Libraries that are not installed (or, for Quantum++, cannot be built) are
-skipped. To keep the comparison about the simulation algorithm rather than
-core count, everything runs single-threaded.
+Small circuits only expose per-call overhead, so the set also includes large
+(24-qubit) circuits where the 2ⁿ state-vector update dominates. Libraries that
+aren't installed (or, for Quantum++, can't be built) are skipped. Everything
+runs single-threaded so the comparison is about the kernel, not core count.
 """
 
 import argparse
 import importlib
+import math
 import os
+import statistics
 import sys
 
 # Pin every OpenMP-based backend (Aer, lightning, qpp, ...) to one thread for an
@@ -25,17 +28,14 @@ os.environ.setdefault("OMP_NUM_THREADS", "1")
 HERE = os.path.dirname(os.path.abspath(__file__))
 ADAPTERS_DIR = os.path.join(HERE, "adapters")
 REPO_ROOT = os.path.normpath(os.path.join(HERE, "..", "..", ".."))
+sys.path.insert(0, HERE)
 sys.path.insert(0, ADAPTERS_DIR)
 
-# Circuit name -> QASM file. Add an entry to benchmark another circuit.
-CIRCUITS = {
-    "Bell": os.path.join(REPO_ROOT, "examples", "bell.qasm"),
-    "Grover": os.path.join(REPO_ROOT, "examples", "grover.qasm"),
-}
+import circuits  # noqa: E402  (after sys.path setup)
 
 # Left-to-right order of the bars within each group. Adapters whose name starts
-# with one of these prefixes are sorted accordingly; any others follow, in
-# discovery order.
+# with one of these prefixes sort accordingly; any others follow, in discovery
+# order.
 PLOT_ORDER = ["Ket", "Quantum++", "Qiskit", "Cirq", "PennyLane"]
 
 
@@ -46,16 +46,25 @@ def plot_order_key(name):
     return len(PLOT_ORDER)
 
 
-def clean_qasm(text: str) -> str:
-    """Strip measurements/classical registers/barriers so every library runs
-    the same pure unitary and reports a state vector."""
-    keep = []
-    for line in text.splitlines():
-        head = line.strip().split(" ", 1)[0]
-        if head in ("measure", "creg", "barrier"):
-            continue
-        keep.append(line)
-    return "\n".join(keep) + "\n"
+def timing_circuits(reps, big_reps):
+    """(name, qasm, reps) for the timed benchmark: a small overhead reference
+    plus large circuits that are dominated by the state-vector kernel."""
+    return [
+        ("Bell (2q)", circuits.bell(), reps),
+        ("GHZ (24q)", circuits.ghz(24), big_reps),
+        ("QFT (24q)", circuits.qft(24), big_reps),
+        ("Random (24q)", circuits.random_circuit(24, depth=10, seed=7), big_reps),
+    ]
+
+
+# Small circuits for the correctness cross-check. Correctness is a property of
+# the kernel, not the width, so small representative instances suffice — and a
+# non-symmetric random circuit is the strongest discriminator.
+CHECK_CIRCUITS = [
+    ("Bell", circuits.bell()),
+    ("QFT-5", circuits.qft(5)),
+    ("Random-5", circuits.random_circuit(5, depth=6, seed=1)),
+]
 
 
 def discover_adapters():
@@ -76,31 +85,101 @@ def discover_adapters():
     return adapters
 
 
-def run(reps: int):
-    print(f"Discovering simulators (single-threaded, {reps} runs each):")
-    available = []
+def _bit_reverse_perm(n):
+    import numpy as np
+
+    idx = np.arange(1 << n)
+    rev = np.zeros_like(idx)
+    for b in range(n):
+        rev |= ((idx >> b) & 1) << (n - 1 - b)
+    return rev
+
+
+def _agree(ref, vec, tol):
+    """Do two state vectors match up to global phase and qubit-ordering
+    convention? Returns (ok, fidelity). Global phase drops out of |⟨ref|vec⟩|;
+    differing endianness is absorbed by also trying the bit-reversed vector."""
+    import numpy as np
+
+    ref = np.asarray(ref, dtype=complex)
+    vec = np.asarray(vec, dtype=complex)
+    if ref.shape != vec.shape:
+        return False, 0.0
+    nr, nv = np.linalg.norm(ref), np.linalg.norm(vec)
+    if nr == 0 or nv == 0:
+        return False, 0.0
+    n = int(round(math.log2(len(ref))))
+    perm = _bit_reverse_perm(n)
+    fidelity = max(abs(np.vdot(ref, vec)), abs(np.vdot(ref, vec[perm]))) / (nr * nv)
+    return (1 - fidelity) <= tol, fidelity
+
+
+def check_correctness(adapters, tol=1e-4):
+    print("\nCorrectness (final state vector, up to global phase & qubit order):")
+    all_ok = True
+    for cname, qasm in CHECK_CIRCUITS:
+        states = {}
+        for a in adapters:
+            try:
+                sv = a.statevector(qasm)
+            except Exception as exc:  # noqa: BLE001
+                print(f"  {cname}: {a.name} state failed: {exc}")
+                sv = None
+            if sv is not None:
+                states[a.name] = sv
+        if len(states) < 2:
+            continue
+        ref_name = "Ket" if "Ket" in states else next(iter(states))
+        print(f"  {cname}  (reference: {ref_name})")
+        for a in adapters:
+            if a.name == ref_name:
+                continue
+            if a.name not in states:
+                print(f"    [n/a ]  {a.name:24s} no state vector exposed")
+                continue
+            ok, fid = _agree(states[ref_name], states[a.name], tol)
+            all_ok &= ok
+            print(f"    [{'ok  ' if ok else 'FAIL'}]  {a.name:24s} fidelity={fid:.6f}")
+    if not all_ok:
+        print("  WARNING: a simulator disagrees — timings below are not comparable.")
+    return all_ok
+
+
+def run(reps, big_reps):
+    print(f"Discovering simulators (single-threaded, reps: {reps} / {big_reps}):")
+    available, versions = [], {}
     for adapter in discover_adapters():
         if adapter.available():
             available.append(adapter)
-            print(f"  [ok]      {adapter.name}")
+            try:
+                versions[adapter.name] = adapter.version()
+            except Exception:  # noqa: BLE001
+                versions[adapter.name] = "?"
+            print(f"  [ok]      {adapter.name:24s} {versions[adapter.name]}")
         else:
             print(f"  [skipped] {adapter.name}")
 
-    results = {}  # results[circuit][adapter_name] = avg seconds
-    for cname, path in CIRCUITS.items():
-        qasm = clean_qasm(open(path, encoding="utf-8").read())
-        print(f"\n{cname}  ({path}):")
+    check_correctness(available)
+
+    results = {}  # results[circuit][adapter] = {"median": s, "std": s}
+    for cname, qasm, creps in timing_circuits(reps, big_reps):
+        print(f"\n{cname}:")
         for adapter in available:
             try:
-                seconds = adapter.benchmark(qasm, reps)
-                results.setdefault(cname, {})[adapter.name] = seconds
-                print(f"  {adapter.name:24s} {seconds * 1e3:10.4f} ms")
+                times = adapter.benchmark(qasm, creps)
+                median = statistics.median(times)
+                std = statistics.stdev(times) if len(times) > 1 else 0.0
+                results.setdefault(cname, {})[adapter.name] = {
+                    "median": median,
+                    "std": std,
+                }
+                print(f"  {adapter.name:24s} {median * 1e3:12.4f} ms  (n={len(times)})")
             except Exception as exc:  # noqa: BLE001 - keep going on a bad backend
                 print(f"  {adapter.name:24s} FAILED: {exc}")
-    return [a.name for a in available], results
+    return [a.name for a in available], results, versions
 
 
-def plot(adapter_names, results, reps, out_path):
+def plot(adapter_names, results, versions, out_path):
     import matplotlib
 
     matplotlib.use("Agg")
@@ -108,48 +187,80 @@ def plot(adapter_names, results, reps, out_path):
     import numpy as np
 
     adapter_names = sorted(adapter_names, key=plot_order_key)
-    circuits = list(results.keys())
-    x = np.arange(len(circuits))
+    circuit_names = list(results.keys())
+    x = np.arange(len(circuit_names))
     width = 0.8 / max(1, len(adapter_names))
 
-    fig, ax = plt.subplots(figsize=(8, 5))
+    fig, ax = plt.subplots(figsize=(9, 5.5))
     for i, name in enumerate(adapter_names):
-        heights = [results[c].get(name, np.nan) * 1e3 for c in circuits]  # ms
+        cells = [results[c].get(name) for c in circuit_names]
+        heights = [(c["median"] * 1e3 if c else np.nan) for c in cells]  # ms
+        errs = [(c["std"] * 1e3 if c else 0.0) for c in cells]
         offset = (i - (len(adapter_names) - 1) / 2) * width
-        bars = ax.bar(x + offset, heights, width, label=name)
-        ax.bar_label(bars, fmt="%.3g", fontsize=7, padding=2)
+        bars = ax.bar(x + offset, heights, width, label=name, yerr=errs, capsize=2)
+        ax.bar_label(bars, fmt="%.3g", fontsize=6, padding=2)
 
     ax.set_yscale("log")
     ax.set_ylabel("simulation time (ms) — lower is better")
     ax.set_xticks(x)
-    ax.set_xticklabels(circuits)
-    ax.set_title(
-        f"OpenQASM state-vector simulation\n(single-threaded, average of {reps} runs)"
-    )
+    ax.set_xticklabels(circuit_names)
+    ax.set_title("OpenQASM state-vector simulation\n(single-threaded; bars = median, error bars = std)")
     ax.legend()
     ax.grid(axis="y", which="both", linewidth=0.3, alpha=0.4)
 
+    vers = "   ".join(f"{n} {versions.get(n, '?')}" for n in adapter_names)
+    note = (
+        "Ket and Quantum++ are compiled locally; the other libraries use generic "
+        "pip wheels (no -march=native).\n" + vers
+    )
+    fig.text(0.5, 0.005, note, ha="center", va="bottom", fontsize=6, color="0.35")
+
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
-    fig.tight_layout()
+    fig.tight_layout(rect=(0, 0.06, 1, 1))
     fig.savefig(out_path, dpi=150)
     print(f"\nWrote {out_path}")
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--reps", type=int, default=50, help="runs per measurement")
+    parser.add_argument("--reps", type=int, default=50, help="runs for small circuits")
+    parser.add_argument(
+        "--big-reps", type=int, default=3, help="runs for the large (24-qubit) circuits"
+    )
     parser.add_argument(
         "--out",
         default=os.path.join(HERE, "results", "benchmark.png"),
         help="output PNG path",
     )
+    parser.add_argument(
+        "--replot",
+        action="store_true",
+        help="skip simulation; redraw from the cached results JSON",
+    )
     args = parser.parse_args()
 
-    adapter_names, results = run(args.reps)
-    if results:
-        plot(adapter_names, results, args.reps, args.out)
-    else:
+    import json
+
+    data_path = os.path.splitext(args.out)[0] + ".json"
+
+    if args.replot:
+        with open(data_path, encoding="utf-8") as f:
+            cached = json.load(f)
+        plot(cached["adapter_names"], cached["results"], cached["versions"], args.out)
+        return
+
+    adapter_names, results, versions = run(args.reps, args.big_reps)
+    if not results:
         print("No results to plot.")
+        return
+    os.makedirs(os.path.dirname(data_path), exist_ok=True)
+    with open(data_path, "w", encoding="utf-8") as f:
+        json.dump(
+            {"adapter_names": adapter_names, "results": results, "versions": versions},
+            f,
+            indent=2,
+        )
+    plot(adapter_names, results, versions, args.out)
 
 
 if __name__ == "__main__":

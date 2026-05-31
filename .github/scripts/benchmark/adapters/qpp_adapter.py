@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: MIT
 # SPDX-FileCopyrightText: 2026 Breno Cunha Queiroz
 import os
+import re
 import shutil
 import subprocess
 import tempfile
@@ -19,6 +20,29 @@ def _binary() -> str:
         if os.path.exists(path):
             return path
     return os.path.join(_BUILD, "qpp_bench")
+
+
+def _pinned_version() -> str:
+    """The qpp tag pinned in the harness CMakeLists (e.g. v7.0.3)."""
+    try:
+        text = open(os.path.join(_SRC, "CMakeLists.txt"), encoding="utf-8").read()
+        m = re.search(r"GIT_TAG\s+v?([\w.]+)", text)  # [\w.] stops at the ')'
+        return m.group(1) if m else "?"
+    except OSError:
+        return "?"
+
+
+def _run(args: list) -> str:
+    with tempfile.NamedTemporaryFile("w", suffix=".qasm", delete=False) as f:
+        f.write(args[0])
+        path = f.name
+    try:
+        out = subprocess.run(
+            [_binary(), path, *args[1:]], check=True, capture_output=True, text=True
+        )
+        return out.stdout
+    finally:
+        os.unlink(path)
 
 
 class QppAdapter(Adapter):
@@ -50,17 +74,14 @@ class QppAdapter(Adapter):
             return False
         return os.path.exists(_binary())
 
-    def benchmark(self, qasm: str, reps: int) -> float:
-        with tempfile.NamedTemporaryFile("w", suffix=".qasm", delete=False) as f:
-            f.write(qasm)
-            path = f.name
-        try:
-            out = subprocess.run(
-                [_binary(), path, str(reps)],
-                check=True,
-                capture_output=True,
-                text=True,
-            )
-            return float(out.stdout.strip())
-        finally:
-            os.unlink(path)
+    def version(self) -> str:
+        return _pinned_version()
+
+    def benchmark(self, qasm: str, reps: int) -> list:
+        return [float(t) for t in _run([qasm, str(reps)]).split()]
+
+    def statevector(self, qasm: str):
+        import numpy as np
+
+        pairs = [line.split() for line in _run([qasm, "--state"]).splitlines() if line]
+        return np.array([float(re_) + 1j * float(im) for re_, im in pairs], dtype=complex)

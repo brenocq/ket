@@ -15,6 +15,11 @@ class CirqAdapter(PythonAdapter):
         except ImportError:
             return False
 
+    def version(self) -> str:
+        import cirq
+
+        return cirq.__version__
+
     def load(self, qasm: str):
         import cirq
         from cirq.contrib.qasm_import import circuit_from_qasm
@@ -24,3 +29,9 @@ class CirqAdapter(PythonAdapter):
     def simulate(self, circuit) -> None:
         sim, c = circuit
         sim.simulate(c)
+
+    def state(self, circuit):
+        import numpy as np
+
+        sim, c = circuit
+        return np.asarray(sim.simulate(c).final_state_vector, dtype=complex)

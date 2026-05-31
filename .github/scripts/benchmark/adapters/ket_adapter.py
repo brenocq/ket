@@ -14,6 +14,11 @@ class KetAdapter(PythonAdapter):
         except ImportError:
             return False
 
+    def version(self) -> str:
+        import importlib.metadata
+
+        return importlib.metadata.version("ket")
+
     def load(self, qasm: str):
         import ket
 
@@ -23,3 +28,10 @@ class KetAdapter(PythonAdapter):
         import ket
 
         ket.run(circuit)
+
+    def state(self, circuit):
+        import ket
+        import numpy as np
+
+        s = ket.run(circuit)
+        return np.array([s[i] for i in range(len(s))], dtype=complex)

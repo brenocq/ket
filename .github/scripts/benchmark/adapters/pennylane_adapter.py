@@ -15,6 +15,13 @@ class PennyLaneAdapter(PythonAdapter):
         except ImportError:
             return False
 
+    def version(self) -> str:
+        import importlib.metadata
+
+        pl = importlib.metadata.version("pennylane")
+        lightning = importlib.metadata.version("pennylane-lightning")
+        return f"{pl}/lightning {lightning}"
+
     def load(self, qasm: str):
         import pennylane as qml
 
@@ -31,3 +38,8 @@ class PennyLaneAdapter(PythonAdapter):
 
     def simulate(self, circuit) -> None:
         circuit()
+
+    def state(self, circuit):
+        import numpy as np
+
+        return np.asarray(circuit(), dtype=complex)

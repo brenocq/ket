@@ -15,6 +15,12 @@ class QiskitAdapter(PythonAdapter):
         except ImportError:
             return False
 
+    def version(self) -> str:
+        import qiskit
+        import qiskit_aer
+
+        return f"{qiskit.__version__}/aer {qiskit_aer.__version__}"
+
     def load(self, qasm: str):
         from qiskit import QuantumCircuit, transpile
         from qiskit_aer import AerSimulator
@@ -27,3 +33,10 @@ class QiskitAdapter(PythonAdapter):
     def simulate(self, circuit) -> None:
         sim, compiled = circuit
         sim.run(compiled).result()
+
+    def state(self, circuit):
+        import numpy as np
+
+        sim, compiled = circuit
+        result = sim.run(compiled).result()
+        return np.asarray(result.get_statevector(), dtype=complex)
