@@ -13,3 +13,4 @@ ply               # Cirq's OpenQASM importer (cirq.contrib.qasm_import) needs it
 pennylane
 pennylane-lightning
 pennylane-qiskit  # provides PennyLane's qml.from_qasm OpenQASM loader
+stim              # backs PennyLane's default.clifford device (Clifford circuits)

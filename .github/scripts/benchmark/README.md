@@ -12,7 +12,7 @@ python .github/scripts/benchmark/benchmark.py --multicore # 8 threads per backen
 ```
 
 A library that is not installed is skipped, so it shows whatever you have. Use
-`--reps` / `--big-reps` to change run counts.
+`--reps` to change the run count.
 
 ## Single-core vs. multi-core
 
@@ -30,18 +30,27 @@ is exactly the gap the multi-core chart is meant to show.
 
 ## What it measures
 
-For each circuit and library, only the **simulation** is timed (parsing and
-circuit construction are excluded), reported as the **median** over several runs
-after a warm-up, with the standard deviation as an error bar. Every library
-computes the full **state vector**, on the same thread count.
+The timed task is **evolve the circuit and draw one measurement sample**, and
+each library uses its **best method for that circuit** — a stabilizer engine for
+Clifford circuits, a state vector otherwise — chosen automatically where the
+library supports it (Ket's `auto`, Aer's `automatic`) or selected by the harness
+otherwise (Cirq's `CliffordSimulator`, PennyLane's `default.clifford`). Only the
+sampling call is timed (parsing and setup are excluded), reported as the
+**median** over several runs after a warm-up, on the same thread count.
 
-Two circuit sizes matter:
+The circuits ([`circuits.py`](circuits.py)) cover three regimes, kept small
+enough that the whole run finishes in a few seconds:
 
-- **Small** circuits (Bell) are dominated by per-call overhead — Python
-  dispatch, object construction, job setup — not the kernel.
-- **Large** circuits (24-qubit GHZ, QFT, and a random brickwork circuit, in
-  [`circuits.py`](circuits.py)) put the `2ⁿ` amplitude update in charge, which is
-  what a simulator's throughput actually is.
+- **Bell (2q)** — per-call overhead, not the kernel.
+- **Dense (16-qubit QFT and random)** — every library pays the `2ⁿ` cost, so
+  this is state-vector throughput.
+- **Clifford (16- and 64-qubit)** — a stabilizer simulator runs these in `O(n²)`.
+  The 64-qubit case is out of reach for any state vector, so libraries without a
+  stabilizer engine (Quantum++) are skipped — exactly the point of the
+  circuit-specific optimization.
+
+A library declares which `(n, clifford)` circuits it can handle via
+`supports()`, so the harness skips cells it can't reach instead of crashing.
 
 ## Correctness
 
@@ -65,13 +74,13 @@ property of the kernel, not the width, so small instances are enough.
 
 ## Libraries
 
-| Library | Backend | Requirement |
-| --- | --- | --- |
-| ket | our C++ state vector | `pip install .` |
-| Qiskit (Aer) | C++ `AerSimulator` | `pip install qiskit qiskit-aer` |
-| Cirq | Python `cirq.Simulator` | `pip install cirq-core ply` |
-| PennyLane (lightning) | C++ `lightning.qubit` | `pip install pennylane pennylane-lightning pennylane-qiskit` |
-| Quantum++ | C++ header-only | CMake + a C++ compiler (auto-built) |
+| Library | Dense backend | Clifford backend | Requirement |
+| --- | --- | --- | --- |
+| Ket | C++ state vector | C++ stabilizer (`auto`) | `pip install .` |
+| Qiskit (Aer) | `AerSimulator` | stabilizer (`automatic`) | `pip install qiskit qiskit-aer` |
+| Cirq | `cirq.Simulator` | `cirq.CliffordSimulator` | `pip install cirq-core ply` |
+| PennyLane | `lightning.qubit` | `default.clifford` (stim) | `pip install pennylane pennylane-lightning pennylane-qiskit stim` |
+| Quantum++ | C++ state vector | — (none) | CMake + a C++ compiler (auto-built) |
 
 Quantum++ has no Python API, so `adapters/qpp_adapter.py` builds a small C++
 harness (`qpp_bench/`) that loads the QASM and times the simulation itself (and
@@ -81,8 +90,9 @@ on the first run.
 ## Extending
 
 - **Add a circuit:** add an entry to `timing_circuits()` in `benchmark.py` — a
-  generator from `circuits.py` or any QASM string. It becomes a new group.
+  generator from `circuits.py` or any QASM string, plus its `clifford` flag. It
+  becomes a new group.
 - **Add a library:** create `adapters/<name>_adapter.py` with a subclass of
-  `Adapter` (usually `PythonAdapter`, implementing `load`, `simulate`, and —
-  for the correctness check — `state`). It is discovered automatically and
-  included whenever `available()` is true.
+  `Adapter` (usually `PythonAdapter`, implementing `load` and `sample_once`,
+  plus `supports` and `statevector` for the correctness check). It is discovered
+  automatically and included whenever `available()` is true.

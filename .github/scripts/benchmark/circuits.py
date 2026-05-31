@@ -64,3 +64,22 @@ def bell() -> str:
     """The 2-qubit Bell state — kept as a small-circuit reference point that
     shows the per-call-overhead regime alongside the large circuits."""
     return "\n".join(_header(2) + ["h q[0];", "cx q[0],q[1];"]) + "\n"
+
+
+def random_clifford(n: int, depth: int, seed: int) -> str:
+    """A random *Clifford* brickwork circuit (only H/S/Sdg/X/Y/Z + CX/CZ). A
+    stabilizer simulator runs this in O(n²) per gate, so it stays tractable at
+    qubit counts where a state vector is hopeless — which is the whole point of
+    routing Clifford circuits to a different backend.
+
+    Deterministic in ``seed`` so every library runs the identical circuit."""
+    rng = random.Random(seed)
+    singles = ["h", "s", "sdg", "x", "y", "z"]
+    lines = _header(n)
+    for layer in range(depth):
+        for q in range(n):
+            lines.append(f"{rng.choice(singles)} q[{q}];")
+        for a in range(layer % 2, n - 1, 2):
+            two = "cx" if rng.random() < 0.5 else "cz"
+            lines.append(f"{two} q[{a}],q[{a + 1}];")
+    return "\n".join(lines) + "\n"

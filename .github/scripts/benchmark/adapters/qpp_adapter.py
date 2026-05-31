@@ -6,7 +6,7 @@ import shutil
 import subprocess
 import tempfile
 
-from base import Adapter
+from base import Adapter, num_qubits
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _SRC = os.path.normpath(os.path.join(_HERE, "..", "qpp_bench"))
@@ -32,6 +32,13 @@ def _pinned_version() -> str:
         return "?"
 
 
+def _with_measurements(qasm: str, n: int) -> str:
+    """Append a classical register and a measurement of every qubit."""
+    lines = [qasm.rstrip(), f"creg c[{n}];"]
+    lines += [f"measure q[{i}] -> c[{i}];" for i in range(n)]
+    return "\n".join(lines) + "\n"
+
+
 def _run(args: list) -> str:
     with tempfile.NamedTemporaryFile("w", suffix=".qasm", delete=False) as f:
         f.write(args[0])
@@ -46,8 +53,9 @@ def _run(args: list) -> str:
 
 
 class QppAdapter(Adapter):
-    """Quantum++ has no Python API, so we compile a small C++ harness that
-    loads the QASM and times the simulation itself, and shell out to it."""
+    """Quantum++ has no Python API, so we compile a small C++ harness that loads
+    the QASM and times the simulation. It has no stabilizer engine, so its best
+    (and only) method is the state vector — which caps the qubit count."""
 
     name = "Quantum++"
 
@@ -77,8 +85,12 @@ class QppAdapter(Adapter):
     def version(self) -> str:
         return _pinned_version()
 
-    def benchmark(self, qasm: str, reps: int) -> list:
-        return [float(t) for t in _run([qasm, str(reps)]).split()]
+    def supports(self, n: int, clifford: bool) -> bool:
+        return n <= 28  # state vector only, no stabilizer fast path
+
+    def benchmark(self, qasm: str, reps: int, clifford: bool) -> list:
+        measured = _with_measurements(qasm, num_qubits(qasm))
+        return [float(t) for t in _run([measured, str(reps)]).split()]
 
     def statevector(self, qasm: str):
         import numpy as np

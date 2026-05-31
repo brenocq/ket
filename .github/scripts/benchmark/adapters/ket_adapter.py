@@ -19,19 +19,25 @@ class KetAdapter(PythonAdapter):
 
         return importlib.metadata.version("ket")
 
-    def load(self, qasm: str):
+    def supports(self, n: int, clifford: bool) -> bool:
+        return True if clifford else n <= 28  # stabilizer handles any Clifford n
+
+    def load(self, qasm: str, clifford: bool):
         import ket
 
-        return ket.from_qasm(qasm)
+        circuit = ket.from_qasm(qasm)
+        circuit.measure_all()
+        return circuit
 
-    def simulate(self, circuit) -> None:
+    def sample_once(self, circuit) -> None:
         import ket
 
-        ket.run(circuit)
+        # Auto-selects the stabilizer backend for Clifford circuits.
+        ket.sample(circuit)
 
-    def state(self, circuit):
+    def statevector(self, qasm: str):
         import ket
         import numpy as np
 
-        s = ket.run(circuit)
+        s = ket.run(ket.from_qasm(qasm))
         return np.array([s[i] for i in range(len(s))], dtype=complex)

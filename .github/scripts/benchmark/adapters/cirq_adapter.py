@@ -20,18 +20,29 @@ class CirqAdapter(PythonAdapter):
 
         return cirq.__version__
 
-    def load(self, qasm: str):
+    def supports(self, n: int, clifford: bool) -> bool:
+        # CliffordSimulator handles any Clifford n; the dense simulator is pure
+        # Python, so cap it well below the others.
+        return True if clifford else n <= 24
+
+    def load(self, qasm: str, clifford: bool):
         import cirq
         from cirq.contrib.qasm_import import circuit_from_qasm
 
-        return cirq.Simulator(), circuit_from_qasm(qasm)
+        circuit = circuit_from_qasm(qasm)
+        qubits = sorted(circuit.all_qubits())
+        circuit.append(cirq.measure(*qubits, key="m"))
+        sim = cirq.CliffordSimulator() if clifford else cirq.Simulator()
+        return sim, circuit
 
-    def simulate(self, circuit) -> None:
-        sim, c = circuit
-        sim.simulate(c)
+    def sample_once(self, prepared) -> None:
+        sim, circuit = prepared
+        sim.run(circuit, repetitions=1)
 
-    def state(self, circuit):
+    def statevector(self, qasm: str):
+        import cirq
         import numpy as np
+        from cirq.contrib.qasm_import import circuit_from_qasm
 
-        sim, c = circuit
-        return np.asarray(sim.simulate(c).final_state_vector, dtype=complex)
+        result = cirq.Simulator().simulate(circuit_from_qasm(qasm))
+        return np.asarray(result.final_state_vector, dtype=complex)
