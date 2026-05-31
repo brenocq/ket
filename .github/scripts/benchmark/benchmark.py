@@ -62,7 +62,7 @@ from base import num_qubits  # noqa: E402
 # Left-to-right order of the bars within each group. Adapters whose name starts
 # with one of these prefixes sort accordingly; any others follow, in discovery
 # order.
-PLOT_ORDER = ["Ket", "Qiskit", "Quantum++", "Cirq", "PennyLane"]
+PLOT_ORDER = ["Ket", "Qiskit", "PennyLane", "Cirq", "Quantum++"]
 
 
 def plot_order_key(name):

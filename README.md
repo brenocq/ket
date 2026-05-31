@@ -18,7 +18,8 @@ explicit and leaves room for future analysis and optimization passes.
   (including controlled rotations and controlled-phase), `SWAP`, and the
   three-qubit Toffoli (`CCX`) and Fredkin (`CSWAP`).
 - **Exact state-vector simulation** of the full `2ⁿ` amplitude vector,
-  **multithreaded** across a persistent `std::` thread pool (`set_num_threads`).
+  **multithreaded** across a persistent `std::` thread pool (`set_num_threads`),
+  with gate fusion.
 - **Automatic backend selection** — Clifford circuits are routed to an `O(n²)`
   stabilizer simulator (scaling to thousands of qubits), everything else to the
   state vector. The choice is automatic but overridable.
@@ -167,7 +168,9 @@ The state-vector backend applies each gate's `2ⁿ`-amplitude update across a
 persistent `std::thread` pool (the pairs are independent, so the split needs no
 locks). `set_num_threads(n)` controls it — `0` selects the hardware concurrency;
 it defaults to `1` (or `KET_NUM_THREADS`). Small states stay serial, since the
-synchronization would cost more than the work.
+synchronization would cost more than the work. Consecutive gates on the same
+qubits are **fused** into one combined gate, so a deep circuit makes fewer
+sweeps over the state vector.
 
 ## Roadmap
 
@@ -175,7 +178,8 @@ synchronization would cost more than the work.
   scheduler that no longer relies on insertion order.
 - A state panel in the GUI (amplitudes / Bloch-style plots via ImPlot3D).
 - More backends behind `simulate()` — e.g. a tensor-network (MPS) simulator.
-- Gate fusion and SIMD kernels for the state-vector backend.
+- Cache-blocking with qubit reordering, to fuse across non-adjacent qubits
+  without thrashing the cache (the remaining gap to Aer on deep circuits).
 
 ## Benchmark
 
